@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dan Dare 1 - ZX Spectrum</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay">
+            <h1 class="spectrum-title">DAN DARE 1</h1>
+            <p class="subtitle">ZX SPECTRUM CLASSIC</p>
+            <div class="instructions">
+                <p>ARROW KEYS / WASD - Move</p>
+                <p>SPACE - Fire</p>
+                <p>P - Pause</p>
+            </div>
+            <button id="start-btn" class="spectrum-btn">START GAME</button>
+        </div>
+        
+        <!-- HUD -->
+        <div id="hud" class="hidden">
+            <div id="score-display">SCORE: <span id="score">0</span></div>
+            <div id="lives-display">LIVES: <span id="lives">3</span></div>
+            <div id="level-display">LEVEL: <span id="level">1</span></div>
+        </div>
+        
+        <!-- Pause Screen -->
+        <div id="pause-screen" class="overlay hidden">
+            <h2>PAUSED</h2>
+            <button id="resume-btn" class="spectrum-btn">RESUME</button>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="overlay hidden">
+            <h2>GAME OVER</h2>
+            <p>FINAL SCORE: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="spectrum-btn">PLAY AGAIN</button>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

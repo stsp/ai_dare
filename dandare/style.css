@@ -1,0 +1,174 @@
+/* ZX Spectrum Color Palette */
+:root {
+    --zx-black: #000000;
+    --zx-blue: #0000D7;
+    --zx-red: #D70000;
+    --zx-magenta: #D700D7;
+    --zx-green: #00D700;
+    --zx-cyan: #00D7D7;
+    --zx-yellow: #D7D700;
+    --zx-white: #FFFFFF;
+    --zx-bright-blue: #0000FF;
+    --zx-bright-red: #FF0000;
+    --zx-bright-magenta: #FF00FF;
+    --zx-bright-green: #00FF00;
+    --zx-bright-cyan: #00FFFF;
+    --zx-bright-yellow: #FFFF00;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--zx-black);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    width: 512px;
+    height: 384px;
+    border: 4px solid var(--zx-white);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-color: var(--zx-black);
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--zx-white);
+    z-index: 10;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.spectrum-title {
+    font-size: 48px;
+    color: var(--zx-yellow);
+    text-shadow: 3px 3px var(--zx-magenta);
+    margin-bottom: 20px;
+    letter-spacing: 4px;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: var(--zx-cyan);
+    margin-bottom: 40px;
+}
+
+.instructions {
+    margin-bottom: 40px;
+    text-align: center;
+    line-height: 2;
+}
+
+.instructions p {
+    color: var(--zx-white);
+    font-size: 16px;
+}
+
+.spectrum-btn {
+    background-color: var(--zx-blue);
+    color: var(--zx-white);
+    border: 3px solid var(--zx-cyan);
+    padding: 15px 40px;
+    font-size: 20px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.spectrum-btn:hover {
+    background-color: var(--zx-bright-blue);
+    border-color: var(--zx-bright-cyan);
+}
+
+.spectrum-btn:active {
+    transform: scale(0.95);
+}
+
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--zx-white);
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#score-display {
+    color: var(--zx-yellow);
+}
+
+#lives-display {
+    color: var(--zx-red);
+}
+
+#level-display {
+    color: var(--zx-cyan);
+}
+
+#pause-screen h2,
+#gameover-screen h2 {
+    font-size: 42px;
+    color: var(--zx-red);
+    margin-bottom: 30px;
+}
+
+#gameover-screen p {
+    font-size: 24px;
+    color: var(--zx-yellow);
+    margin-bottom: 30px;
+}
+
+/* CRT scanline effect */
+#game-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1),
+        rgba(0, 0, 0, 0.1) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 20;
+}
