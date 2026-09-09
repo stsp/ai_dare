@@ -1,0 +1,45 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+}
+
+#wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#screen {
+  width: 960px;
+  height: 720px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+  border: 4px solid #444;
+  box-shadow: 0 0 40px rgba(0, 200, 255, 0.25);
+}
+
+#help {
+  color: #6cf;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+#help b {
+  color: #ff0;
+}
+
+@media (max-width: 1000px) {
+  #screen {
+    width: 96vw;
+    height: calc(96vw * 0.75);
+  }
+}
