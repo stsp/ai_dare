@@ -19,13 +19,16 @@ const C = {
 
 // Sector palettes, keyed by the colour signature the extractor found in each
 // screen's floor band, so each area keeps the tint it has on the map.
+// `solid` is the dark body of walls and machinery, `wall` the lit edge on a
+// ledge, `band` the two courses of a ceiling or floor stripe.
+const DARK = "#00696e", DARKER = "#004a52";
 const SECTOR_STYLE = {
-  "cyan": { band: [C.cyan, C.white], wall: C.cyan, back: C.black, name: "LANDING ZONE" },
-  "cyan,white": { band: [C.cyan, C.white], wall: C.cyan, back: C.blue, name: "SECTOR 1" },
-  "cyan,red": { band: [C.red, C.cyan], wall: C.cyan, back: C.blue, name: "SECTOR 2" },
-  "magenta,white": { band: [C.magenta, C.white], wall: C.cyan, back: C.blue, name: "SECTOR 3" },
-  "cyan,green": { band: [C.green, C.cyan], wall: C.cyan, back: C.blue, name: "SECTOR 4" },
-  "cyan,yellow": { band: [C.yellow, C.cyan], wall: C.cyan, back: C.blue, name: "SECTOR 5" },
+  "cyan": { band: [C.cyan, C.white], wall: C.cyan, solid: DARKER, back: C.black, name: "LANDING ZONE" },
+  "cyan,white": { band: [C.cyan, C.white], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 1" },
+  "cyan,red": { band: [C.red, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 2" },
+  "magenta,white": { band: [C.magenta, C.white], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 3" },
+  "cyan,green": { band: [C.green, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 4" },
+  "cyan,yellow": { band: [C.yellow, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 5" },
 };
 const DEFAULT_STYLE = SECTOR_STYLE["cyan,white"];
 
@@ -85,56 +88,79 @@ function drawBackWall(ctx, key, style) {
 
 // ------------------------------------------------------------------ geometry
 
-/** A floor/walkway: a striped band, one cell tall, that Dan stands on top of. */
-function drawPlatform(ctx, p, style) {
-  const x = p.x0 * CELL, w = (p.x1 - p.x0) * CELL, y = p.y * CELL;
+/* Rooms are drawn from the per-cell classes the extractor read off the map,
+   so every screen keeps the shape the original has - ceiling and floor bands,
+   walkways, pillars, machinery - coloured by the sector it belongs to. */
+const CELL_EMPTY = 0, CELL_SOLID = 1, CELL_SHAFT = 2, CELL_BAND = 3;
+
+/** A striped band: the ceiling and floor courses that top and tail each room. */
+function drawBandCell(ctx, x, y, style) {
   ctx.fillStyle = style.band[0];
-  ctx.fillRect(x, y, w, 3);
+  ctx.fillRect(x, y, CELL, CELL);
   ctx.fillStyle = C.black;
-  ctx.fillRect(x, y + 3, w, 1);
+  ctx.fillRect(x, y + 3, CELL, 1);
+  ctx.fillRect(x + 7, y, 1, CELL);
   ctx.fillStyle = style.band[1];
-  ctx.fillRect(x, y + 4, w, 3);
+  ctx.fillRect(x + 1, y + 4, 6, 3);
   ctx.fillStyle = C.black;
-  for (let i = x; i < x + w; i += 4) ctx.fillRect(i, y + 4, 1, 3);
-  ctx.fillStyle = style.band[0];
-  ctx.fillRect(x, y + 7, w, 1);
+  ctx.fillRect(x + 3, y + 5, 2, 2);
 }
 
-/** A wall/pillar: a solid column with a shaded edge. */
-function drawWall(ctx, wl, style) {
-  const x = wl.x * CELL, y = wl.y0 * CELL, h = (wl.y1 - wl.y0) * CELL;
-  ctx.fillStyle = style.wall;
-  ctx.fillRect(x, y, CELL, h);
+/* Structure recedes: the room's back wall and the figures moving in front of
+   it should carry the picture, so walls, pillars and machinery are drawn dark
+   with only their lit top edge picked out. Filling these cells with bright
+   colour swamps the screen. */
+function drawSolidCell(ctx, x, y, style, covered) {
+  ctx.fillStyle = style.solid;
+  ctx.fillRect(x, y, CELL, CELL);
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(x + CELL - 1, y, 1, CELL);
+  ctx.fillRect(x, y + CELL - 1, CELL, 1);
+  if (!covered) {                    // a ledge Dan can stand on: light the lip
+    ctx.fillStyle = style.wall;
+    ctx.fillRect(x, y, CELL, 2);
+    ctx.fillStyle = C.bwhite;
+    ctx.fillRect(x, y, CELL, 1);
+  }
+}
+
+/* A grav-lift shaft. Deliberately not two rails and rungs: this game has no
+   ladders, and a railed column reads as one. It is a soft column of field with
+   a charge running along it. */
+function drawShaftCell(ctx, x, y, phase) {
   ctx.fillStyle = "rgba(0,0,0,0.45)";
-  ctx.fillRect(x + CELL - 2, y, 2, h);
-  ctx.fillStyle = "rgba(255,255,255,0.18)";
-  ctx.fillRect(x, y, 1, h);
-  ctx.fillStyle = C.black;
-  for (let i = y + 4; i < y + h; i += 8) ctx.fillRect(x, i, CELL, 1);
-}
-
-/** A grav-lift shaft: the magnetic column Dan rides between floors. */
-function drawLift(ctx, l, phase) {
-  const x = l.x * CELL, y = l.y0 * CELL, h = (l.y1 - l.y0) * CELL;
-  ctx.fillStyle = C.black;
-  ctx.fillRect(x + 1, y, CELL - 2, h);
-  ctx.fillStyle = C.green;
-  ctx.fillRect(x + 1, y, 2, h);
-  ctx.fillRect(x + CELL - 3, y, 2, h);
-  ctx.fillStyle = C.bgreen;
-  for (let i = 0; i < h; i += 4) {
-    const yy = y + ((i + Math.floor(phase)) % h);
-    ctx.fillRect(x + 3, yy, 2, 2);
+  ctx.fillRect(x + 2, y, 4, CELL);
+  ctx.fillStyle = "rgba(0,216,0,0.35)";
+  ctx.fillRect(x + 3, y, 2, CELL);
+  const off = (Math.floor(phase * 0.5 + y) % 24);
+  if (off < 3) {
+    ctx.fillStyle = C.bgreen;
+    ctx.fillRect(x + 3, y + off, 2, 3 - off);
   }
 }
 
 function drawRoom(ctx, level, key, room, phase) {
   const style = sectorStyle(level, room);
+  const W = level.room.w, H = level.room.h;
+  const cells = room.cells;
   if (style.back === C.black) drawStarfield(ctx, key);
   else drawBackWall(ctx, key, style);
-  for (const w of room.walls) drawWall(ctx, w, style);
-  for (const l of room.lifts) drawLift(ctx, l, phase);
-  for (const p of room.platforms) drawPlatform(ctx, p, style);
+
+  for (let j = 0; j < H; j++) {
+    for (let i = 0; i < W; i++) {
+      const v = cells.charCodeAt(j * W + i) - 48;
+      if (v === CELL_EMPTY) continue;
+      const x = i * CELL, y = j * CELL;
+      if (v === CELL_BAND) {
+        drawBandCell(ctx, x, y, style);
+      } else if (v === CELL_SHAFT) {
+        drawShaftCell(ctx, x, y, phase);
+      } else {
+        const above = j > 0 ? cells.charCodeAt((j - 1) * W + i) - 48 : CELL_EMPTY;
+        drawSolidCell(ctx, x, y, style, above === CELL_SOLID || above === CELL_BAND);
+      }
+    }
+  }
 }
 
 // --------------------------------------------------------------- text / chrome
