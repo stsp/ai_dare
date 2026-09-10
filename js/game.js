@@ -41,9 +41,8 @@ const ROOM_LIST = ROOM_KEYS.map((k) => {
   const [r, c] = k.split(",").map(Number);
   return { key: k, r, c, room: LEVEL.rooms[k] };
 });
-/* Screens Dan can actually get to, per the extractor's walk of the map. Keys,
-   cells and the self-destruct room only ever go in these, so the mission is
-   always completable. */
+/* Rooms the link graph can actually reach. Keys, cells and the self-destruct
+   room only go in these, so the mission is always completable. */
 const PLAYABLE = ROOM_LIST.filter((x) => x.room.reach !== 0);
 
 /** Platforms Dan can stand on, as pixel spans. */
@@ -53,28 +52,38 @@ function platformsOf(room) {
   }));
 }
 
-/** Vertical structure Dan collides with - currently none.
- *
- *  The map's full-height columns are the sector-coloured ladder shafts, which
- *  the extractor turns into lifts. What is left is scenery: bay dividers, door
- *  frames and machinery that Dan runs straight past in the original. Treating
- *  that scenery as solid walls him into a corner within a screen or two, so
- *  what constrains him is floors, the holes in them, the shafts, and the edges
- *  of the screen. */
-function wallsOf() {
-  return [];
-}
-
+/** Grav-lift shafts, as pixel boxes. */
 function liftsOf(room) {
-  return room.lifts.map((l) => ({
+  return room.shafts.map((l) => ({
     x0: l.x * 8, x1: (l.x + 1) * 8, y0: l.y0 * 8, y1: l.y1 * 8,
   }));
+}
+
+/* Which rooms join which. The map does not describe a connected building, so
+   the extractor reads the connections it can see and generates the rest; both
+   arrive here in LEVEL.links. A room boundary with no link is a solid wall. */
+const LINKS = (() => {
+  const out = {};
+  const add = (a, b, kind) => {
+    (out[a] || (out[a] = {}))[b] = kind;
+  };
+  for (const [a, b, kind] of LEVEL.links) {
+    add(a, b, kind);
+    if (kind !== "drop") add(b, a, kind);   // a drop is one-way: you fall down it
+  }
+  return out;
+})();
+
+function linked(fromKey, toKey) {
+  return !!(LINKS[fromKey] && LINKS[fromKey][toKey]);
 }
 
 // ------------------------------------------------------- world layout (fixed)
 
 /** Choose the screen Dan lands on: the leftmost surface screen. */
 function findStart() {
+  const named = ROOM_LIST.find((x) => x.key === LEVEL.start);
+  if (named) return named;
   const surface = PLAYABLE.filter((x) => x.room.sector === 0);
   const pool = surface.length ? surface : PLAYABLE;
   return pool.reduce((a, b) => (b.r < a.r || (b.r === a.r && b.c < a.c) ? b : a));
@@ -311,7 +320,6 @@ const held = {
 function updateDan(dt) {
   const room = currentRoom();
   const platforms = platformsOf(room);
-  const walls = wallsOf(room);
   const lifts = liftsOf(room);
 
   if (dan.hurt > 0) dan.hurt -= dt;
@@ -378,7 +386,7 @@ function updateDan(dt) {
     dan.vy += GRAVITY * dt;
     const h = dan.kneeling ? DAN_KNEEL_H : DAN_H;
     const yOff = DAN_H - h;
-    moveX(dan, dan.vx * dt, walls, DAN_W, h, yOff);
+    moveX(dan, dan.vx * dt, [], DAN_W, h, yOff);
     moveY(dan, dan.vy * dt, platforms, DAN_W, h, yOff);
   }
 
@@ -402,13 +410,18 @@ function updateDan(dt) {
  *  The tests fire as his leading edge touches the boundary, before the
  *  keep-him-on-screen clamp below can pin him there. */
 function moveBetweenRooms() {
-  if (dan.x <= 0 && roomAt(state.r, state.c - 1)) {
+  const here = roomKey(state.r, state.c);
+  const to = (dr, dc) => {
+    const k = roomKey(state.r + dr, state.c + dc);
+    return LEVEL.rooms[k] && linked(here, k) ? k : null;
+  };
+  if (dan.x <= 0 && to(0, -1)) {
     enterRoom(state.r, state.c - 1, VIEW_W - DAN_W - 3, dan.y);
-  } else if (dan.x + DAN_W >= VIEW_W && roomAt(state.r, state.c + 1)) {
+  } else if (dan.x + DAN_W >= VIEW_W && to(0, 1)) {
     enterRoom(state.r, state.c + 1, 3, dan.y);
-  } else if (dan.y > VIEW_H && roomAt(state.r + 1, state.c)) {
+  } else if (dan.y > VIEW_H && to(1, 0)) {
     enterRoom(state.r + 1, state.c, dan.x, 2);
-  } else if (dan.y + DAN_H < 0 && roomAt(state.r - 1, state.c)) {
+  } else if (dan.y + DAN_H < 0 && to(-1, 0)) {
     enterRoom(state.r - 1, state.c, dan.x, VIEW_H - DAN_H - 2);
   } else {
     // no neighbour that way: keep Dan on this screen
@@ -562,7 +575,9 @@ function danSprite() {
   if (dan.onLift) return "dan_stand";
   if (dan.kneeling) return "dan_kneel";
   if (!dan.onGround) return "dan_jump";
-  if (Math.abs(dan.vx) > 1) return Math.floor(dan.anim) % 2 ? "dan_run1" : "dan_run2";
+  if (Math.abs(dan.vx) > 1) {
+    return ["dan_run1", "dan_run2", "dan_run3", "dan_run4"][Math.floor(dan.anim) % 4];
+  }
   return "dan_stand";
 }
 
