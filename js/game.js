@@ -326,6 +326,14 @@ function updateDan(dt) {
     dan.onLift = null;
   }
 
+  if (dan.onLift && (held.left() || held.right())) {
+    // step off sideways: clear the shaft completely, or liftUnder grabs again
+    dan.face = held.left() ? -1 : 1;
+    dan.x = dan.face < 0 ? dan.onLift.x0 - DAN_W : dan.onLift.x1;
+    dan.onLift = null;
+    dan.vy = 0;
+  }
+
   if (dan.onLift) {
     dan.vy = 0;
     const dir = held.up() ? -1 : held.down() ? 1 : 0;
