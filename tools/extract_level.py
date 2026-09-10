@@ -169,28 +169,17 @@ def extract_room(reader, r, c):
             platforms.append({"y": j, "x0": a, "x1": b})
 
     # --- vertical structure ---
-    # A column of structure that runs the whole height of a screen is a shaft:
-    # the ladder/lift the sector draws in its own colour, which is how Dan
-    # moves between floors. (Only the green ones are grav-lifts proper.) A
-    # genuine floor-to-ceiling *wall* would seal the screen off, which this
-    # game does not do - so anything shorter is scenery: bay dividers, door
-    # frames and machinery that Dan runs straight past.
+    # Scenery: pillars, bay dividers, door frames and machinery. The grav-lifts
+    # are the green shafts found above and nothing else - the game has no
+    # ladders, so a column is never climbable just because it is tall.
     floor_tops = {(p["y"], x) for p in platforms for x in range(p["x0"], p["x1"])}
     walls = []
     for i in range(TW):
-        if i in lift_cols or i in (0, TW - 1):
+        if i in lift_cols:
             continue
         for (a, b) in runs(solid[:, i], WALL_MIN_RUN):
-            if a <= 1 and b >= TH - 1:
-                lifts.append({"x": i, "y0": 0, "y1": TH, "c": 1})   # climbable
-            else:
-                grounded = b >= TH - 2 or (b, i) in floor_tops
-                walls.append({"x": i, "y0": a, "y1": b, "b": 1 if grounded else 0})
-
-    # the screen's own side columns stay as drawn scenery
-    for i in (0, TW - 1):
-        for (a, b) in runs(solid[:, i], WALL_MIN_RUN):
-            walls.append({"x": i, "y0": a, "y1": b, "b": 0})
+            grounded = b >= TH - 2 or (b, i) in floor_tops
+            walls.append({"x": i, "y0": a, "y1": b, "b": 1 if grounded else 0})
 
     return {
         "platforms": platforms,
