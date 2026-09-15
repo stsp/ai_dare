@@ -28,8 +28,8 @@ const START_TIME = 2 * 3600;
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
-const DAN_W = 8, DAN_H = 22, DAN_KNEEL_H = 15;   // sprites are 14x22; kneel keeps the top 7 rows clear
-const TREEN_W = 8, TREEN_H = 22;
+const DAN_W = 10, DAN_H = 32, DAN_KNEEL_H = 22;  // sprites are 18x32; kneel keeps the top 10 rows clear
+const TREEN_W = 10, TREEN_H = 32;
 
 // --------------------------------------------------------------- level utils
 
@@ -154,8 +154,11 @@ function makeTreens(key, room) {
     const p = wide[Math.floor(r() * wide.length)];
     const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
     if (x1 <= x0) continue;
+    const x = x0 + r() * (x1 - x0);
+    // keep guards apart: two drawn on top of each other read as one broken sprite
+    if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
     out.push({
-      x: x0 + r() * (x1 - x0), y: p.y * 8 - TREEN_H,
+      x, y: p.y * 8 - TREEN_H,
       x0, x1, dir: r() < 0.5 ? -1 : 1,
       cool: r() * 2, anim: 0, dead: false,
     });
@@ -397,8 +400,8 @@ function updateDan(dt) {
   if (held.fire() && dan.fireCool <= 0) {
     dan.fireCool = 0.32;
     lasers.push({
-      x: dan.x + (dan.face > 0 ? DAN_W : -4),
-      y: dan.y + (dan.kneeling ? 13 : 7),
+      x: dan.x + (dan.face > 0 ? DAN_W + 6 : -8),
+      y: dan.y + (dan.kneeling ? 22 : 13),
       dir: dan.face, travelled: 0, friendly: true,
     });
     beep(880, 0.05);
@@ -467,7 +470,7 @@ function updateTreens(dt) {
       const dir = dan.x > t.x ? 1 : -1;
       t.dir = dir;
       lasers.push({
-        x: t.x + (dir > 0 ? TREEN_W : -4), y: t.y + 8,
+        x: t.x + (dir > 0 ? TREEN_W + 8 : -8), y: t.y + 14,
         dir, travelled: 0, friendly: false,
       });
     }
@@ -632,7 +635,7 @@ function draw() {
   for (const t of treens) {
     if (t.dead) continue;
     drawSprite(ctx, Math.floor(t.anim) % 2 ? "treen_walk" : "treen_stand",
-               Math.round(t.x - 3), Math.round(t.y),
+               Math.round(t.x - 5), Math.round(t.y),
                { main: C.bgreen, shade: C.green, light: C.bwhite }, t.dir < 0);
   }
   for (const l of lasers) {
@@ -640,7 +643,7 @@ function draw() {
     ctx.fillRect(Math.round(l.x), Math.round(l.y), 4, 2);
   }
   if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
-    drawSprite(ctx, danSprite(), Math.round(dan.x - 3), Math.round(dan.y),
+    drawSprite(ctx, danSprite(), Math.round(dan.x - 4), Math.round(dan.y),
                { main: C.bcyan, shade: C.cyan, light: C.bwhite }, dan.face < 0);
   }
 
