@@ -28,8 +28,8 @@ const START_TIME = 2 * 3600;
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
-const DAN_W = 8, DAN_H = 18, DAN_KNEEL_H = 11;
-const TREEN_W = 8, TREEN_H = 18;
+const DAN_W = 8, DAN_H = 22, DAN_KNEEL_H = 15;   // sprites are 14x22; kneel keeps the top 7 rows clear
+const TREEN_W = 8, TREEN_H = 22;
 
 // --------------------------------------------------------------- level utils
 
@@ -186,6 +186,7 @@ const state = {
   messageTimer: 0,
   sectorSeen: new Set(),
   clearedRooms: new Set(),
+  burst: 0,              // lift-transfer flash, seconds left
   phase: 0,
 };
 
@@ -406,6 +407,23 @@ function updateDan(dt) {
   moveBetweenRooms();
 }
 
+
+/** Ride a shaft into the next room. Shafts do not line up across rooms - the
+ *  lift is a transfer, as the gameplay footage shows: a burst of field and Dan
+ *  arrives at the destination room's own shaft, still riding it. dir is +1
+ *  going down (arrive at the top of a shaft) or -1 going up (at the bottom). */
+function arriveByShaft(r, c, dir) {
+  const room = roomAt(r, c);
+  const shafts = liftsOf(room);
+  const pick = shafts.find((l) => (dir > 0 ? l.y0 <= 0 : l.y1 >= VIEW_H)) || shafts[0];
+  const x = pick ? (pick.x0 + pick.x1) / 2 - DAN_W / 2 : dan.x;
+  const y = dir > 0 ? 2 : VIEW_H - DAN_H - 2;
+  enterRoom(r, c, x, y);
+  if (pick) dan.onLift = pick;
+  state.burst = 0.35;
+  beep(1200, 0.12, "triangle");
+}
+
 /** Flip to the neighbouring screen when Dan walks or falls off this one.
  *  The tests fire as his leading edge touches the boundary, before the
  *  keep-him-on-screen clamp below can pin him there. */
@@ -420,9 +438,9 @@ function moveBetweenRooms() {
   } else if (dan.x + DAN_W >= VIEW_W && to(0, 1)) {
     enterRoom(state.r, state.c + 1, 3, dan.y);
   } else if (dan.y > VIEW_H && to(1, 0)) {
-    enterRoom(state.r + 1, state.c, dan.x, 2);
+    arriveByShaft(state.r + 1, state.c, +1);
   } else if (dan.y + DAN_H < 0 && to(-1, 0)) {
-    enterRoom(state.r - 1, state.c, dan.x, VIEW_H - DAN_H - 2);
+    arriveByShaft(state.r - 1, state.c, -1);
   } else {
     // no neighbour that way: keep Dan on this screen
     if (dan.x < 0) dan.x = 0;
@@ -614,7 +632,7 @@ function draw() {
   for (const t of treens) {
     if (t.dead) continue;
     drawSprite(ctx, Math.floor(t.anim) % 2 ? "treen_walk" : "treen_stand",
-               Math.round(t.x - 1), Math.round(t.y),
+               Math.round(t.x - 3), Math.round(t.y),
                { main: C.bgreen, shade: C.green, light: C.bwhite }, t.dir < 0);
   }
   for (const l of lasers) {
@@ -622,10 +640,24 @@ function draw() {
     ctx.fillRect(Math.round(l.x), Math.round(l.y), 4, 2);
   }
   if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
-    drawSprite(ctx, danSprite(), Math.round(dan.x - 1), Math.round(dan.y),
+    drawSprite(ctx, danSprite(), Math.round(dan.x - 3), Math.round(dan.y),
                { main: C.bcyan, shade: C.cyan, light: C.bwhite }, dan.face < 0);
   }
 
+  if (state.burst > 0) {
+    const cx = dan.x + DAN_W / 2, cy = dan.y + DAN_H / 2;
+    const t = 1 - state.burst / 0.35;
+    ctx.strokeStyle = C.bwhite;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const r0 = 4 + t * 10, r1 = 10 + t * 26;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      ctx.stroke();
+    }
+  }
   if (state.messageTimer > 0) {
     if (state.msgTop) drawMessage(ctx, state.msgTop, true);
     if (state.msgBottom) drawMessage(ctx, state.msgBottom, false);
@@ -701,6 +733,7 @@ function frame(now) {
   } else {
     state.timeLeft -= dt * CLOCK_RATE;
     if (state.messageTimer > 0) state.messageTimer -= dt;
+    if (state.burst > 0) state.burst -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       state.mode = "lost";
