@@ -194,6 +194,7 @@ const state = {
 };
 
 let dan = null;
+let boss = null;          // the seated figure in the self-destruct room
 let treens = [];
 let pickups = [];
 let lasers = [];
@@ -225,7 +226,12 @@ function enterRoom(r, c, x, y) {
     const style = sectorStyle(LEVEL, room);
     say(["DAN IS NOW IN", style.name], 2.5);
   }
-  if (key === SDS_ROOM) say(["THE SELF DESTRUCT ROOM"], 2.5);
+  boss = null;
+  if (key === SDS_ROOM) {
+    const p = widestPlatform(room);
+    boss = { x: p.x + 40, y: p.y - 28, anim: 0 };
+    say(["THE SELF DESTRUCT ROOM"], 2.5);
+  }
 }
 
 /** Narration box at the top of the play area; one box, one sentence. */
@@ -631,6 +637,12 @@ function draw() {
       drawSprite(ctx, "key", Math.round(k.x), Math.round(k.y),
                  { main: C.byellow, shade: C.red, light: C.bwhite });
     }
+  }
+  if (boss) {
+    boss.anim += 0.05;
+    const bob = Math.round(Math.sin(boss.anim) * 2);
+    drawSprite(ctx, "boss", Math.round(boss.x), Math.round(boss.y + bob),
+               { main: C.bgreen, shade: C.green, light: C.bwhite });
   }
   for (const t of treens) {
     if (t.dead) continue;
