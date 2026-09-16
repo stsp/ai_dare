@@ -352,8 +352,12 @@ function updateDan(dt) {
                                                  Math.abs(dan.y + DAN_H - l.feet) <= 14);
   if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
   if (!dan.onLift && dan.onGround && !dan.liftLatch) {
-    if (held.down() && liftHere("down")) dan.onLift = { dir: 1, link: liftHere("down"), stop: liftHere("down").stop };
-    else if (held.up() && liftHere("up")) dan.onLift = { dir: -1, link: liftHere("up"), stop: liftHere("up").stop };
+    const call = held.down() ? liftHere("down") : held.up() ? liftHere("up") : null;
+    if (call) {
+      // the stop is in the room the link leads to: here only for a ride
+      // between this room's own floors
+      dan.onLift = { dir: held.down() ? 1 : -1, link: call, stop: call.stop, stopHere: call.to === state.room };
+    }
   }
   // the field carries him between the rails, whichever cell he called it from;
   // arriving in a room by lift, the ride goes on only where that room's own
@@ -377,7 +381,7 @@ function updateDan(dt) {
     const lift = dan.onLift, dir = lift.dir;
     const hold = dir > 0 ? held.down() : held.up();
     const onward = lift.link && lift.link.to !== state.room && isOpen(lift.link);   // the shaft goes on
-    if (hold && onward) lift.stop = lift.link.stop;       // riding through: the next stop is the next link's
+    if (hold && onward) { lift.stop = lift.link.stop; lift.stopHere = false; }   // riding through: the next stop is the next link's
     const sh = lift.shaft;
     if (sh) {
       const cx = (sh.x + sh.w / 2) * 8 - DAN_W / 2;
@@ -394,7 +398,7 @@ function updateDan(dt) {
       const beside = dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8;
       // the course a step sits on is the same floor as the step
       const past = dir > 0 ? p.y > lift.startFeet + 16 : p.y < lift.startFeet - 16;
-      const isStop = lift.stop == null || Math.abs(p.y - lift.stop) <= 14;
+      const isStop = lift.stopHere && (lift.stop == null || Math.abs(p.y - lift.stop) <= 14);
       if (at && beside && past && isStop && !(hold && onward) && !(feet > VIEW_H)) {
         dan.y = p.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
         break;
@@ -482,13 +486,13 @@ function moveBetweenRooms() {
     enterRoom(e.right.to, 3, dan.y);
   } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
-    dan.onLift = { dir: 1, link: null, stop: ride.stop };
+    dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true };
     dan.liftLatch = true;
   } else if (dan.y > VIEW_H - DAN_H && !dan.onLift && isOpen(zone(e.drops))) {
     enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);                   // fell through
   } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
-    dan.onLift = { dir: -1, link: null, stop: ride.stop };
+    dan.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true };
     dan.liftLatch = true;
   } else {
     // no way out that way: keep Dan on this screen
