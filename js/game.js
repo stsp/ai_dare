@@ -18,7 +18,7 @@ const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 const RUN_SPEED = 72;          // px/s, as measured in the original
 const GRAVITY = 500;
 const JUMP_VY = -100;          // the original's jump: 10 px high, 0.4 s in the air
-const JUMP_VX = 80;            // ... and four cells along
+const JUMP_VX = 90;            // ... and four or five cells along
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 const LASER_SPEED = 210;
@@ -135,11 +135,15 @@ function highestPlatform(room) {
   return { x: (p.x0 + p.x1) * 4, y: p.y * 8 };
 }
 
-/** Prison cells: one screen per sector, where a captured Dan is dumped. */
+/** Prison cells: the rooms the original puts a captured Dan in, one per
+ *  sector; a sector without one of its own uses the nearest by zone. */
 function placePrisons() {
   const out = new Map();
+  const cells = (LEVEL.prisons || []).map((k) => ({ key: k, zone: ROOMS[k].zone }));
   for (const item of PLAYABLE) {
-    if (!out.has(item.room.sector)) out.set(item.room.sector, item.key);
+    if (!cells.length) break;
+    const best = cells.reduce((a, b) => (Math.abs(b.zone - item.room.zone) < Math.abs(a.zone - item.room.zone) ? b : a));
+    out.set(item.room.sector, best.key);
   }
   return out;
 }
@@ -196,6 +200,7 @@ const state = {
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0,
+  taunts: 0, nextTaunt: 40,   // the Mekon's calls
   clearedRooms: new Set(),
   deadTreens: new Map(),   // room -> which of its guards have been shot
   burst: 0,              // lift-transfer flash, seconds left
@@ -230,12 +235,13 @@ function enterRoom(key, x, y) {
   treens = treens.filter((t) => Math.abs(t.x - dan.x) > 28 || Math.abs(t.y - dan.y) > 24);
   if (treens.some((t) => !t.dead) && !state.alerted.has(key)) {
     state.alerted.add(key);
-    call(["INTRUDER ALERT !"], 2.5);
+    say(["INTRUDER ALERT !"], 2.5);
   }
   const zone = room.zone;
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
     say([zone ? "DAN IS NOW IN SECTOR " + zone : "DAN IS ON THE SURFACE"], 2.5);
+    if (zone > 1) taunt();
   }
   boss = null;
   if (key === SDS_ROOM) {
@@ -250,6 +256,19 @@ function call(lines, secs) {
   say(lines, secs);
   state.viewer = "mekon";
   state.viewerTimer = secs;
+}
+
+const TAUNTS = [
+  ["YOU WILL NOT", "SUCCEED, DARE!"],
+  ["THE ASTEROID CANNOT", "BE STOPPED, DARE"],
+  ["MY TREENS WILL", "FIND YOU, DARE"],
+  ["TIME IS RUNNING", "OUT, EARTHMAN"],
+  ["GIVE UP, DARE.", "EARTH IS FINISHED"],
+];
+/** He calls to gloat: on a new sector, a fitted part, a capture, and now and then. */
+function taunt() {
+  call(TAUNTS[state.taunts++ % TAUNTS.length], 3);
+  state.nextTaunt = 45 + Math.random() * 60;
 }
 
 /** Narration box at the top of the play area; one box, one sentence. */
@@ -394,11 +413,6 @@ function updateDan(dt) {
     dan.kneeling = false;
     dan.onGround = false;
     const lift = dan.onLift;
-    if (lift.hanging) {
-      if (held.left() || held.right()) { dan.onLift = null; dan.liftLatch = true; dan.face = held.left() ? -1 : 1; }
-      moveBetweenRooms();
-      return;
-    }
     const dir = lift.dir;
     const hold = dir > 0 ? held.down() : held.up();
     const onward = lift.link && lift.link.to !== state.room && isOpen(lift.link);   // the shaft goes on
@@ -415,14 +429,14 @@ function updateDan(dt) {
     // the room it leads to, whatever is there: a floor beside the shaft, and
     // Dan steps out on it; nothing, as with the one broken lift, and he drops.
     // Held on, it rides through the stop where the shaft goes on to another room.
-    if (lift.stopHere && lift.stop != null && !(hold && onward) && !(feet > VIEW_H)) {
+    if (lift.stopHere && lift.stop != null && lift.stop >= 0 && !(hold && onward) && !(feet > VIEW_H)) {
       const reached = dir > 0 ? (before <= lift.stop && feet >= lift.stop) : (before >= lift.stop && feet <= lift.stop);
       const past = dir > 0 ? lift.stop > lift.startFeet + 16 : lift.stop < lift.startFeet - 16;
       if (reached && past) {
         dan.y = lift.stop - DAN_H;
         const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8);
-        if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true; }
-        else { lift.hanging = true; lift.dir = 0; }     // the broken lift: he hangs there until he moves
+        dan.onLift = null; dan.liftLatch = true;
+        if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }   // else the broken lift: he falls
       }
     }
     if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; }
@@ -520,10 +534,12 @@ function moveBetweenRooms() {
     if (dan.x < 0) dan.x = 0;
     if (dan.x + DAN_W > VIEW_W) dan.x = VIEW_W - DAN_W;
     if (dan.y + DAN_H > VIEW_H && !dan.onLift) {
-      // below the floor with no way out: stand him on the floor under him
+      // below the floor with no way out: a floor under him, and he stands on
+      // it; none, and he has fallen into the pit - the original's "fell too far"
       // (a lift arriving from below is still half off the screen - leave it)
       const under = platformsOf(currentRoom()).filter((p) => dan.x + DAN_W > p.x0 && dan.x < p.x1);
-      const floor = under.length ? under.reduce((a, b) => (b.y > a.y ? b : a)) : { y: VIEW_H };
+      if (!under.length) { fellTooFar(); return; }
+      const floor = under.reduce((a, b) => (b.y > a.y ? b : a));
       dan.y = floor.y - DAN_H; dan.vy = 0; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
     }
     const ridingOut = ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride);
@@ -603,6 +619,11 @@ function hurtDan(amount) {
   if (state.energy <= 0) capture();
 }
 
+function fellTooFar() {
+  note(["DAN FELL TOO FAR!"], 3);
+  capture();
+}
+
 /** Out of energy: the original does not kill you, it jails you and burns
  *  ten minutes off the clock. */
 function capture() {
@@ -613,7 +634,8 @@ function capture() {
   const p = highestPlatform(ROOMS[cell]);
   resetDan(p.x, p.y - DAN_H);
   enterRoom(cell, p.x, p.y - DAN_H);
-  call(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"], 3);
+  say(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"], 3);
+  state.nextTaunt = 4;                         // he calls to gloat once Dan wakes
 }
 
 // ------------------------------------------------------------------- pickups
@@ -654,6 +676,7 @@ function updatePickups() {
     } else {
       say(["PART " + state.fitted + " FITTED"], 3);
       note(["A DOOR OPENS TO", "THE NEXT SECTOR"], 4);
+      state.nextTaunt = 5;
     }
   }
 }
@@ -910,6 +933,7 @@ function frame(now) {
     state.timeLeft -= dt * CLOCK_RATE;
     if (state.messageTimer > 0) state.messageTimer -= dt;
     if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
+    if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
