@@ -159,6 +159,7 @@ const PRISONS = placePrisons();
 // ------------------------------------------------------------------ entities
 
 function makeTreens(key, room) {
+  const dead = state.deadTreens.get(key) || new Set();   // a Treen shot stays shot
   const r = rng(hashKey(key));
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
   const n = wide.length === 0 ? 0 : Math.floor(r() * 3);
@@ -171,9 +172,9 @@ function makeTreens(key, room) {
     // keep guards apart: two drawn on top of each other read as one broken sprite
     if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
     out.push({
-      x, y: p.y * 8 - TREEN_H,
+      id: i, x, y: p.y * 8 - TREEN_H,
       x0, x1, dir: r() < 0.5 ? -1 : 1,
-      cool: r() * 2, anim: 0, dead: false,
+      cool: r() * 2, anim: 0, dead: dead.has(i),
     });
   }
   return out;
@@ -202,6 +203,7 @@ const state = {
   messageTimer: 0,
   sectorSeen: new Set(),
   clearedRooms: new Set(),
+  deadTreens: new Map(),   // room -> which of its guards have been shot
   burst: 0,              // lift-transfer flash, seconds left
   phase: 0,
 };
@@ -266,6 +268,7 @@ function startGame() {
   state.keys = 0;
   state.sectorSeen = new Set();
   state.clearedRooms = new Set();
+  state.deadTreens = new Map();
   sdsKeys = placeKeys();
   const spawn = widestPlatform(START.room);
   resetDan(16, spawn.y - DAN_H);
@@ -541,6 +544,8 @@ function updateLasers(dt) {
       for (const t of treens) {
         if (!t.dead && overlaps(l.x, l.y, 4, 2, t.x, t.y, TREEN_W, TREEN_H)) {
           t.dead = true;
+          if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
+          state.deadTreens.get(state.room).add(t.id);
           l.travelled = 1e9;
           state.score += 75;
           beep(160, 0.18, "sawtooth");
