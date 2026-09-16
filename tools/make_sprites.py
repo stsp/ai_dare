@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build assets/dan.png from the four Dan renders in the repository root.
+"""Build assets/dan.png from the Dan renders in the repository root.
 
 Each render is one pose on a fake checkerboard, with a caption and a panel
 border. The checkerboard is recognised by its two grey levels, captions and
@@ -11,7 +11,6 @@ hit box can be centred on him rather than on the rifle.
 
 Usage: python3 tools/make_sprites.py
 """
-import glob
 import json
 
 import cv2
@@ -20,8 +19,12 @@ from PIL import Image
 
 SCALE = 3            # canvas pixels per screen pixel
 RUN_H = 33           # a running frame, in screen pixels (hit box is 32)
-FRAMES = {           # sheet name -> which render
-    "fire": 0, "kneel": 1, "run1": 2, "run2": 3,
+FRAMES = {           # sheet name -> render in the repository root
+    "fire": "VeniceAI_2KHeIZa68KmmRm_0.png",
+    "kneel": "VeniceAI_2KHeIZa68KmmRm_1.png",
+    "run1": "VeniceAI_2KHeIZa68KmmRm_2.png",
+    "run2": "VeniceAI_2KHeIZa68KmmRm_3.png",
+    "jump": "VeniceAI_WPP_sYd1siUeoh_1.png",
 }
 
 
@@ -79,15 +82,14 @@ def shrink(rgb, a, scale):
 
 
 def main():
-    files = sorted(glob.glob("VeniceAI_*.png"))
-    cuts = [cut(f) for f in files]
-    ref_h = cuts[FRAMES["run1"]][1].shape[0]
+    cuts = {name: cut(f) for name, f in FRAMES.items()}
+    ref_h = cuts["run1"][1].shape[0]
     scale = RUN_H * SCALE / ref_h
 
     frames, x = {}, 0
     tiles = []
-    for name, idx in FRAMES.items():
-        rgb, a = cuts[idx]
+    for name in FRAMES:
+        rgb, a = cuts[name]
         tile = shrink(rgb, a, scale)
         th, tw = tile.shape[:2]
         # body centre: where the head is, from the top fifth of the figure

@@ -608,13 +608,13 @@ function danSprite() {
   return "dan_stand";
 }
 
-/** Which drawn frame shows Dan now. The sheet has four poses - two strides,
- *  a kneel and a firing stride - so the run is a two-frame cycle, the leap is
- *  the wide stride, and firing shows the muzzle flash for a moment. */
+/** Which drawn frame shows Dan now. The sheet has five poses - two strides,
+ *  a kneel, a jump and a firing stride - so the run is a two-frame cycle and
+ *  firing shows the muzzle flash for a moment. */
 function danFrame() {
   if (dan.kneeling) return "kneel";
   if (dan.fireCool > 0.16 && dan.onGround) return "fire";
-  if (!dan.onGround && !dan.onLift) return "run1";
+  if (!dan.onGround && !dan.onLift) return "jump";
   if (Math.abs(dan.vx) > 1 && dan.onGround) return Math.floor(dan.anim) % 2 ? "run1" : "run2";
   return "run2";
 }
