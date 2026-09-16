@@ -160,7 +160,7 @@ def main():
                 # a node caught in mid-fall is no floor: he has to have walked
                 # at least a cell at this height before anything counts
                 walked = {x for x, y in trace if x != "room" and abs(y - base) <= 1}
-                if len(walked) < 4 and not any(x == "room" for x, _ in trace):
+                if len(walked) < 4:
                     continue
                 for (x, y) in trace:
                     if x == "room":
