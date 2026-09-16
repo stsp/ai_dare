@@ -399,7 +399,8 @@ function updateDan(dt) {
     for (const p of platforms) {
       const at = dir > 0 ? (before <= p.y + 1 && feet >= p.y) : (before >= p.y - 1 && feet <= p.y);
       const beside = dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8;
-      const past = dir > 0 ? p.y > lift.startFeet + 2 : p.y < lift.startFeet - 2;
+      // the course a step sits on is the same floor as the step
+      const past = dir > 0 ? p.y > lift.startFeet + 16 : p.y < lift.startFeet - 16;
       if (at && beside && past && !(hold && onward) && !(feet > VIEW_H)) {
         dan.y = p.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
         break;
