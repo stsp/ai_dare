@@ -142,26 +142,29 @@ def main():
     walks = defaultdict(set)              # (from, kind) -> targets by walking
     zones = defaultdict(lambda: [TW, -1])  # (from, to, kind) -> [x0, x1]
     for e in g["edges"]:
-        a, b, via = room_of(e["from"]), room_of(e["to"]), e["via"].rstrip("*")
-        if a not in rooms or b not in rooms:
+        a, b, via = room_of(e["from"]), room_of(e["to"]), e["via"].rstrip("*!")
+        if a not in rooms or b not in rooms or e["via"].endswith("!"):
             continue
         arr = e.get("arrive", {})
+        jumping = via.endswith("~")
+        via = via.rstrip("~")
         if via in ("right", "left"):
             if a == b:
                 continue
             edge_entry = arr.get("x", 0) <= 3 if via == "right" else arr.get("x", 29) >= 26
             if edge_entry:
                 walks[(a, via)].add(b)
-            else:
+            elif not jumping:
                 # Dan walked off a hole and fell: a drop, over the room's holes
                 walks[(a, "drop")].add(b)
+            # a jumping walk that ended elsewhere took a lift on the way: not a walk
         else:
             # a ride tried over a hole in the floor is a fall, not a lift; a
             # "ride" that left Dan on the floor he started from was a jump
             if any(h0 <= e["x0"] <= h1 or h0 <= e["x1"] <= h1 for h0, h1 in rooms[a]["holes"]):
                 continue
-            if a == b and e["from"].split(":")[1] == e["to"].split(":")[1]:
-                continue
+            # (a ride that ends on the floor it started from is the broken lift:
+            # it climbs to its stop, breaks, and drops him back - kept)
             # the floor the ride was called from: the original's y for Dan
             # standing there (123 on a room's floor, less on an upper one)
             floor = g["nodes"][e["from"]]["y"] // 16
@@ -198,8 +201,15 @@ def main():
             continue
         # ... and the floor the ride stops at, in the room it arrives in: the
         # original passes every other floor on the way
+        stop_feet = (TH - 2) * 8 - (7 - stop) * 16
+        if a == b and abs(stop_feet - feet) < 16:
+            # the broken lift: it breaks at the height another ride in this
+            # shaft stopped at, and Dan drops back to where he called it
+            others = [z[4] for z in zones if z[1] == a and abs(((TH - 2) * 8 - (7 - z[4]) * 16) - feet) >= 16]
+            stop_feet = (TH - 2) * 8 - (7 - others[0]) * 16 if others else 48
         links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet,
-                      "stop": (TH - 2) * 8 - (7 - stop) * 16})
+                      "stop": stop_feet, **({"broken": True} if a == b and abs(stop_feet - feet) >= 16 and not any(
+                          abs(p["y"] * 8 - stop_feet) <= 14 for p in rooms[a]["platforms"]) else {})})
         if a != b and needs.get((a, b), 0):
             links[-1]["needs"] = needs[(a, b)]
 
