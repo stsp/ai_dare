@@ -221,7 +221,7 @@ function textWidth(text) {
 }
 
 /** The narration boxes the original pops up over the play area. */
-function drawMessage(ctx, lines, atTop) {
+function drawMessage(ctx, lines, atTop, flash) {
   if (!lines || !lines.length) return;
   const w = Math.max(...lines.map(textWidth)) + 8;
   const h = lines.length * 8 + 6;
@@ -230,7 +230,7 @@ function drawMessage(ctx, lines, atTop) {
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = C.black;
   ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-  ctx.fillStyle = C.white;
+  ctx.fillStyle = flash ? [C.byellow, C.white, C.white, C.bblue][Math.floor(state.phase * 6) % 4] : C.white;
   ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
   lines.forEach((ln, i) => drawText(ctx, ln, x + 4, y + 4 + i * 8, C.black));
 }
@@ -273,7 +273,13 @@ function drawPanel(ctx, state) {
   ctx.fillRect(vx - 1, vy - 1, vs + 2, vs + 2);
   ctx.fillStyle = C.black;
   ctx.fillRect(vx, vy, vs, vs);
-  if (state.viewer === "mekon") {
+  if (state.viewer === "mekon" && state.viewerStatic > 0) {
+    // the link locking on: bars of interference
+    for (let j = 0; j < vs; j += 3) {
+      ctx.fillStyle = (Math.floor(state.phase * 40) + j) % 6 < 3 ? C.white : C.black;
+      ctx.fillRect(vx, vy + j, vs, 2);
+    }
+  } else if (state.viewer === "mekon") {
     ctx.fillStyle = C.bgreen;
     ctx.beginPath();
     ctx.ellipse(vx + vs / 2, vy + 11, 9, 8, 0, 0, Math.PI * 2);
