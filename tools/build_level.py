@@ -100,9 +100,10 @@ def main():
             "map": where, "sector": src["sector"], "colours": src["colours"],
             "cells": src["cells"], "platforms": src["platforms"],
             "shafts": src["shafts"], "holes": src["holes"],
-            # the game's own numbering: the surface, then sector 1, 2, ... in
-            # the order the doors open (the survey that first reached the room)
-            "zone": 0 if where.startswith("0,") else node["phase"] + 1,
+            # the game's own numbering: the surface and the rooms below it are
+            # sector 1, each door opens the next (the survey that first reached
+            # the room)
+            "zone": node["phase"] + 1,
         }
     # rooms a ride or a fall passed through exist too: they are read from the
     # screen dumped in passing, and joined by links the shaft does not stop at

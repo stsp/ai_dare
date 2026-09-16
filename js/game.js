@@ -199,7 +199,7 @@ const state = {
   messageTimer: 0,
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
-  viewerTimer: 0,
+  viewerTimer: 0, viewerStatic: 0,
   taunts: 0, nextTaunt: 40,   // the Mekon's calls
   clearedRooms: new Set(),
   deadTreens: new Map(),   // room -> which of its guards have been shot
@@ -240,7 +240,7 @@ function enterRoom(key, x, y) {
   const zone = room.zone;
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
-    say([zone ? "DAN IS NOW IN SECTOR " + zone : "DAN IS ON THE SURFACE"], 2.5);
+    say(["DAN IS NOW IN SECTOR " + zone], 2.5);
     if (zone > 1) taunt();
   }
   boss = null;
@@ -253,9 +253,10 @@ function enterRoom(key, x, y) {
 /** The Mekon on the video link: his face on the screen at the bottom right,
  *  his words in the box at the top. */
 function call(lines, secs) {
-  say(lines, secs);
+  note(lines, secs);                 // over the link his words come up in the lower box
   state.viewer = "mekon";
   state.viewerTimer = secs;
+  state.viewerStatic = 0.5;          // the picture takes a moment to lock on
 }
 
 const TAUNTS = [
@@ -793,7 +794,8 @@ function draw() {
   const scale = canvas.width / SCREEN_W;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
-  if (state.mode === "title") return drawTitle();
+  if (state.mode === "title") return drawMenu(ctx);
+  if (state.mode === "intro") return drawIntro(ctx);
 
   drawFrame(ctx);
   ctx.save();
@@ -859,7 +861,7 @@ function draw() {
   }
   if (state.messageTimer > 0) {
     if (state.msgTop) drawMessage(ctx, state.msgTop, true);
-    if (state.msgBottom) drawMessage(ctx, state.msgBottom, false);
+    if (state.msgBottom) drawMessage(ctx, state.msgBottom, false, state.viewer === "mekon");
   } else {
     state.msgTop = state.msgBottom = null;
   }
@@ -928,11 +930,15 @@ function frame(now) {
   state.phase += dt;
 
   if (state.mode === "title" || state.mode === "won" || state.mode === "lost") {
-    if (tapped.Enter) startGame();
+    updateMenu(dt);
+    if (tapped.Enter || tapped.Space) beginIntro();
+  } else if (state.mode === "intro") {
+    updateIntro(dt);
   } else {
     state.timeLeft -= dt * CLOCK_RATE;
     if (state.messageTimer > 0) state.messageTimer -= dt;
     if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
+    if (state.viewerStatic > 0) state.viewerStatic -= dt;
     if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.timeLeft <= 0) {
