@@ -23,12 +23,12 @@ const C = {
 // ledge, `band` the two courses of a ceiling or floor stripe.
 const DARK = "#00696e", DARKER = "#004a52";
 const SECTOR_STYLE = {
-  "cyan": { band: [C.cyan, C.white], wall: C.cyan, solid: DARKER, back: C.black, name: "LANDING ZONE" },
-  "cyan,white": { band: [C.cyan, C.white], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 1" },
-  "cyan,red": { band: [C.red, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 2" },
-  "magenta,white": { band: [C.magenta, C.white], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 3" },
-  "cyan,green": { band: [C.green, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 4" },
-  "cyan,yellow": { band: [C.yellow, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, name: "SECTOR 5" },
+  "cyan": { band: [C.cyan, C.white], wall: C.cyan, solid: DARKER, back: C.black, rail: C.bcyan, name: "LANDING ZONE" },
+  "cyan,white": { band: [C.cyan, C.white], wall: C.cyan, solid: DARK, back: C.blue, rail: C.bgreen, name: "SECTOR 1" },
+  "cyan,red": { band: [C.red, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, rail: C.bgreen, name: "SECTOR 2" },
+  "magenta,white": { band: [C.magenta, C.white], wall: C.cyan, solid: DARK, back: C.blue, rail: C.bcyan, name: "SECTOR 3" },
+  "cyan,green": { band: [C.green, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, rail: C.bgreen, name: "SECTOR 4" },
+  "cyan,yellow": { band: [C.yellow, C.cyan], wall: C.cyan, solid: DARK, back: C.blue, rail: C.bgreen, name: "SECTOR 5" },
 };
 const DEFAULT_STYLE = SECTOR_STYLE["cyan,white"];
 
@@ -91,7 +91,7 @@ function drawBackWall(ctx, key, style) {
 /* Rooms are drawn from the per-cell classes the extractor read off the map,
    so every screen keeps the shape the original has - ceiling and floor bands,
    walkways, pillars, machinery - coloured by the sector it belongs to. */
-const CELL_EMPTY = 0, CELL_SOLID = 1, CELL_SHAFT = 2, CELL_BAND = 3;
+const CELL_EMPTY = 0, CELL_DECOR = 1, CELL_RAIL = 2, CELL_BAND = 3, CELL_WALL = 4, CELL_FIELD = 5;
 
 /** A striped band: the ceiling and floor courses that top and tail each room. */
 function drawBandCell(ctx, x, y, style) {
@@ -108,15 +108,17 @@ function drawBandCell(ctx, x, y, style) {
 
 /* Structure recedes: the room's back wall and the figures moving in front of
    it should carry the picture, so walls, pillars and machinery are drawn dark
-   with only their lit top edge picked out. Filling these cells with bright
-   colour swamps the screen. */
-function drawSolidCell(ctx, x, y, style, covered) {
+   with only their lit top edge picked out. Scenery Dan walks in front of is
+   drawn a shade darker again than the walls that stop him. */
+function drawSolidCell(ctx, x, y, style, covered, scenery) {
   ctx.fillStyle = style.solid;
   ctx.fillRect(x, y, CELL, CELL);
+  ctx.fillStyle = scenery ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.55)";
+  if (scenery) ctx.fillRect(x, y, CELL, CELL);
   ctx.fillStyle = "rgba(0,0,0,0.55)";
   ctx.fillRect(x + CELL - 1, y, 1, CELL);
   ctx.fillRect(x, y + CELL - 1, CELL, 1);
-  if (!covered) {                    // a ledge Dan can stand on: light the lip
+  if (!covered && !scenery) {        // a ledge Dan can stand on: light the lip
     ctx.fillStyle = style.wall;
     ctx.fillRect(x, y, CELL, 2);
     ctx.fillStyle = C.bwhite;
@@ -124,19 +126,25 @@ function drawSolidCell(ctx, x, y, style, covered) {
   }
 }
 
-/* A grav-lift shaft. Deliberately not two rails and rungs: this game has no
-   ladders, and a railed column reads as one. It is a soft column of field with
-   a charge running along it. */
-function drawShaftCell(ctx, x, y, phase) {
-  ctx.fillStyle = "rgba(0,0,0,0.45)";
-  ctx.fillRect(x + 2, y, 4, CELL);
-  ctx.fillStyle = "rgba(0,216,0,0.35)";
-  ctx.fillRect(x + 3, y, 2, CELL);
-  const off = (Math.floor(phase * 0.5 + y) % 24);
-  if (off < 3) {
-    ctx.fillStyle = C.bgreen;
-    ctx.fillRect(x + 3, y + off, 2, 3 - off);
+/* A grav-lift, drawn as the game draws it: two dotted rails with the field
+   between them, and a charge running along the rails. */
+function drawRailCell(ctx, x, y, style, phase) {
+  ctx.fillStyle = style.rail;
+  for (let j = 0; j < CELL; j += 2) {
+    ctx.fillRect(x + 1, y + j, 1, 1);
+    ctx.fillRect(x + 4, y + j, 3, 1);
   }
+  const off = (Math.floor(phase * 12) + y) % 32;
+  if (off < 4) {
+    ctx.fillStyle = C.bwhite;
+    ctx.fillRect(x + 1, y + off, 1, 1);
+    ctx.fillRect(x + 4, y + off, 3, 1);
+  }
+}
+
+function drawFieldCell(ctx, x, y) {
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(x, y, CELL, CELL);
 }
 
 function drawRoom(ctx, level, key, room, phase) {
@@ -153,11 +161,13 @@ function drawRoom(ctx, level, key, room, phase) {
       const x = i * CELL, y = j * CELL;
       if (v === CELL_BAND) {
         drawBandCell(ctx, x, y, style);
-      } else if (v === CELL_SHAFT) {
-        drawShaftCell(ctx, x, y, phase);
+      } else if (v === CELL_RAIL) {
+        drawRailCell(ctx, x, y, style, phase);
+      } else if (v === CELL_FIELD) {
+        drawFieldCell(ctx, x, y);
       } else {
         const above = j > 0 ? cells.charCodeAt((j - 1) * W + i) - 48 : CELL_EMPTY;
-        drawSolidCell(ctx, x, y, style, above === CELL_SOLID || above === CELL_BAND);
+        drawSolidCell(ctx, x, y, style, above === CELL_WALL || above === CELL_BAND, v === CELL_DECOR);
       }
     }
   }
