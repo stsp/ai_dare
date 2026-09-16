@@ -118,7 +118,7 @@ function placeKeys() {
     if (!cur || far(item) > far(cur)) bySector.set(item.room.sector, item);
   }
   return [...bySector.values()].slice(0, 5).map((item, i) => {
-    const p = highestPlatform(item.room);
+    const p = widestPlatform(item.room);
     return { id: i, key: item.key, x: p.x, y: p.y - 10, taken: false };
   });
 }
@@ -182,7 +182,7 @@ function makeTreens(key, room) {
 function makePickups(key, room) {
   const r = rng(hashKey(key) ^ 0xa5a5);
   if (r() > 0.35) return [];
-  const p = highestPlatform(room);
+  const p = widestPlatform(room);
   return [{ x: p.x + 12, y: p.y - 9, taken: false }];
 }
 

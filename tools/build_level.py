@@ -102,9 +102,15 @@ def main():
         if b in walks[(a, "drop")]:
             continue
         # feet height, in the recreation's pixels, of the floor it is called
-        # from: the original's floor (y 123) is the room's bottom course
-        links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1,
-                      "feet": (TH - 2) * 8 - (7 - floor) * 16})
+        # from: the original's floor (y 123) is the room's bottom course. A
+        # call recorded from mid-air - Dan caught in the field after a fall -
+        # has no floor at that height in the room, and is not a lift a player
+        # can take
+        feet = (TH - 2) * 8 - (7 - floor) * 16
+        if not any(abs(p["y"] * 8 - feet) <= 14 and p["x1"] >= x0 - 3 and p["x0"] <= x1 + 4
+                   for p in rooms[a]["platforms"]):
+            continue
+        links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet})
 
     # a doorway the game let Dan through is open, whatever the map's frame
     # around it looks like: clear wall cells at the edge, floor to head height
