@@ -74,6 +74,18 @@ for (const l of LEVEL.links) {
   else e.lifts.push(l);
 }
 
+/** The cells a lift answers from: the ones the original accepted (a cell or
+ *  two left of the rails) widened to the whole shaft, so standing anywhere
+ *  between the rails works too. */
+function liftSpan(room, l) {
+  const sh = room.shafts.find((s) => l.x1 >= s.x - 3 && l.x0 <= s.x + s.w);
+  return sh ? [Math.min(l.x0, sh.x - 1), sh.x + sh.w - 1] : [l.x0, l.x1];
+}
+function inLiftZone(room, l, cell) {
+  const [a, b] = liftSpan(room, l);
+  return cell >= a && cell <= b;
+}
+
 /** Rooms in order of how far they are from the start, walking the links. */
 const HOPS = (() => {
   const d = { [LEVEL.start]: 0 };
@@ -345,7 +357,7 @@ function updateDan(dt) {
   //     letting go leaves him hanging in the field; left or right steps off.
   const exits = EXITS[state.room];
   const cell = Math.floor((dan.x + DAN_W / 2) / 8);
-  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && cell >= l.x0 && cell <= l.x1);
+  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell));
   if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
   if (!dan.onLift && dan.onGround && !dan.liftLatch) {
     if (held.down() && liftHere("down")) dan.onLift = { dir: 1, link: liftHere("down") };
@@ -387,7 +399,7 @@ function updateDan(dt) {
       const kind = dir > 0 ? "down" : "up";
       const sh0 = dan.onLift.shaft;
       dan.onLift.link = exits.lifts.find((l) => l.kind === kind &&
-        (sh0 ? l.x1 >= sh0.x - 3 && l.x0 <= sh0.x + sh0.w : cell >= l.x0 && cell <= l.x1)) || null;
+        (sh0 ? l.x1 >= sh0.x - 3 && l.x0 <= sh0.x + sh0.w : inLiftZone(room, l, cell))) || null;
     }
     const sh = dan.onLift.shaft;
     if (sh) {
@@ -638,6 +650,27 @@ const canvas = document.getElementById("screen");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
+/** The markings by a lift: an arrow on the floor for each way it goes, over
+ *  the cells it answers from. */
+function drawLiftMarks(ctx, key, room) {
+  const plats = platformsOf(room);
+  for (const l of EXITS[key].lifts) {
+    const [a, b] = liftSpan(room, l);
+    const x0 = a * 8, x1 = (b + 1) * 8;
+    const under = plats.filter((p) => p.x1 > x0 && p.x0 < x1 && p.y > 40);
+    const floor = under.length ? under.reduce((p, q) => (q.y < p.y ? q : p)).y : VIEW_H - 16;
+    const cx = Math.round((x0 + x1) / 2) + (l.kind === "up" ? -4 : 4);
+    const y = floor - 3;
+    ctx.fillStyle = C.byellow;
+    ctx.fillRect(x0 + 1, floor - 1, x1 - x0 - 2, 1);
+    ctx.fillStyle = l.kind === "up" ? C.bcyan : C.byellow;
+    for (let i = 0; i < 3; i++) {
+      const w = l.kind === "up" ? i + 1 : 3 - i;
+      ctx.fillRect(cx - w, y - 2 + i, w * 2 + 1, 1);
+    }
+  }
+}
+
 function danSprite() {
   if (dan.onLift) return "dan_stand";
   if (dan.kneeling) return "dan_kneel";
@@ -678,6 +711,8 @@ function draw() {
   const key = state.room;
   const room = currentRoom();
   drawRoom(ctx, LEVEL, key, room, state.phase * 12);
+
+  drawLiftMarks(ctx, key, room);
 
   for (const p of pickups) {
     if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),
