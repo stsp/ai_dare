@@ -54,14 +54,12 @@ SPECTRUM = {
 # Blue and black are open space - the room's back wall and the void.
 STRUCTURE = ("cyan", "dcyan", "white", "bwhite", "yellow", "red", "magenta")
 
-STRUCT_MIN = 0.30
-GREEN_MIN = 0.08
-SHAFT_MIN_CELLS = 4
-SHAFT_MIN_SPAN = 5
+STRUCT_MIN = 0.30      # ink per cell that makes it structure
+RAIL_MIN_ROWS = 5      # a lift rail is at least this tall
+RAIL_GAP = (2, 3, 4)   # cells between a lift's two rails, rail to rail
 
 # cell classes emitted for drawing
-EMPTY, SOLID, SHAFT, BAND = 0, 1, 2, 3
-
+EMPTY, DECOR, RAIL, BAND, WALL, FIELD = 0, 1, 2, 3, 4, 5
 
 def load_map(path):
     if path:
@@ -127,96 +125,173 @@ class MapReader:
 
 
 def read_room(reader, r, c):
-    struct, green = reader.masks(r, c)
-    solid = struct >= STRUCT_MIN
+    """Classify one room's 30x18 cells and read the geometry Dan plays on.
 
-    # --- grav-lift shafts: green columns. The floor band is drawn over the
-    #     last rows of a shaft, so a shaft reaching the band counts as full.
-    shafts = {}
-    gmask = green >= GREEN_MIN
+    Everything is read from the shape of the ink, not its colour, because the
+    sectors recolour the same furniture: lift rails are cyan in one area and
+    green in the next.
+    """
+    cl = reader._cells(r, c)                       # (TH, TW, 8, 8, 3)
+    blue = (cl[..., 0] == 0) & (cl[..., 1] == 0) & (cl[..., 2] > 0)
+    ink = (cl.sum(axis=-1) > 0) & ~blue            # not the void, not the back wall
+    frac = ink.mean(axis=(2, 3))
+    colcnt = ink.sum(axis=2)                       # ink per pixel column, (TH, TW, 8)
+    strong = (colcnt >= 4).sum(axis=-1)
+
+    # --- bands: the floor course every room has, and a ceiling course if the
+    #     room is indoors (surface rooms open onto the starfield)
+    band = np.zeros((TH, TW), bool)
+    band[TH - 2:, :] = frac[TH - 2:, :] >= STRUCT_MIN
+    for j in (0, 1):
+        if (frac[j] >= STRUCT_MIN).sum() >= 20:
+            band[j] = frac[j] >= STRUCT_MIN
+
+    # --- lift rails. The game draws every rail with one 8x8 pattern, dotted
+    #     rows of ".#..###." on alternate lines, whatever colour the sector
+    #     paints it; matching the pattern keeps rockets and aerials out.
+    pat = np.array([[0, 1, 0, 0, 1, 1, 1, 0]] * 4, bool)
+    rows_even = ink[:, :, 0::2, :]
+    rows_odd = ink[:, :, 1::2, :]
+    railcell = ((np.all(rows_even == pat, axis=(2, 3)) & ~rows_odd.any(axis=(2, 3))) |
+                (np.all(rows_odd == pat, axis=(2, 3)) & ~rows_even.any(axis=(2, 3))))
+    railcell[:2, :] = False
+    railcell[TH - 2:, :] = False
+    rails = {}
     for i in range(TW):
-        hit = np.flatnonzero(gmask[:, i])
-        if len(hit) >= SHAFT_MIN_CELLS and hit[-1] - hit[0] >= SHAFT_MIN_SPAN:
+        hit = np.flatnonzero(railcell[:, i])
+        if len(hit) >= RAIL_MIN_ROWS - 1:
+            # the lift car and its panel interrupt the rail: bridge short gaps
             top, bot = int(hit[0]), int(hit[-1]) + 1
-            shafts[i] = (0 if top <= 1 else top, TH if bot >= TH - 3 else bot)
+            if bot - top >= RAIL_MIN_ROWS:
+                rails[i] = (top, bot)
+    shafts = []
+    used = set()
+    for i in sorted(rails):
+        if i in used:
+            continue
+        x, w, (top, bot) = i - 1, 3, rails[i]       # a single rail: the car beside it
+        for d in RAIL_GAP:
+            j = i + d
+            if j in rails and j not in used:
+                top, bot = min(top, rails[j][0]), max(bot, rails[j][1])
+                x, w = i, d + 1
+                used.add(j)
+                break
+        used.add(i)
+        x = max(0, min(TW - w, x))
+        shafts.append({"x": x, "w": w,
+                       "y0": 0 if top <= 3 else top,
+                       "y1": TH if bot >= TH - 6 else bot})
 
-    # --- per-cell classes, for drawing the room as the map shows it ---
-    cls = np.where(solid, SOLID, EMPTY)
-    cls[TH - 2:, :][solid[TH - 2:, :]] = BAND      # the floor band
-    for i, (a, b) in shafts.items():
-        cls[a:b, i] = SHAFT
+    # --- structure: everything else with enough ink. A cell is a wall Dan
+    #     collides with when it sits in a horizontal run of three or more -
+    #     blocks, steps and ledges. Thinner uprights - door frames, pillars,
+    #     rockets, aerials - are scenery he walks in front of.
+    solid = (frac >= STRUCT_MIN) & ~band
+    for s in shafts:
+        solid[s["y0"]:s["y1"], s["x"]:s["x"] + s["w"]] = False
+    solid[:2, :] &= ~band[:2, :]
+    cls = np.where(solid, DECOR, EMPTY)
+    cls[band] = BAND
+    wall = np.zeros((TH, TW), bool)
+    for j in range(TH):
+        for a, b in runs(solid[j], 3):
+            wall[j, a:b] = True
+    cls[wall] = WALL
+    for s in shafts:
+        cls[s["y0"]:s["y1"], s["x"]:s["x"] + s["w"]] = FIELD
+        cls[s["y0"]:s["y1"], s["x"]] = RAIL
+        cls[s["y0"]:s["y1"], s["x"] + s["w"] - 1] = RAIL
 
-    # --- floors Dan stands on: solid cell with open space above ---
-    standable = solid.copy()
-    standable[1:, :] &= ~solid[:-1, :]
-    standable[0, :] = False
-    for i in shafts:
-        standable[:, i] = False
-    platforms = [{"y": j, "x0": a, "x1": b}
-                 for j in range(TH) for (a, b) in runs(standable[j], 3)]
+    # --- the floor: continuous across its own pattern; a real hole is two or
+    #     more cells missing from both courses
+    floor = band[TH - 2] | band[TH - 1]
+    for i in range(1, TW - 1):
+        if not floor[i] and floor[i - 1] and floor[i + 1]:
+            floor[i] = True
+    holes = runs(~floor, 2)
 
-    # --- the room's own side walls, and any gap in them ---
-    def edge(col):
-        walled = bool(solid[:, col].mean() >= 0.5)
-        gaps = [g for g in runs(~solid[:, col], 3)]
-        return {"wall": 1 if walled else 0, "gaps": gaps}
+    # --- platforms: the floor, and the tops of walls
+    top = wall.copy()
+    top[1:, :] &= ~wall[:-1, :]
+    top[0, :] = False
+    platforms = [{"y": TH - 2, "x0": a, "x1": b} for (a, b) in runs(floor, 1)]
+    platforms += [{"y": j, "x0": a, "x1": b}
+                  for j in range(2, TH - 2) for (a, b) in runs(top[j], 2)]
+
+    # --- openings in the room's own edges: a platform running to the edge
+    #     with headroom above it
+    def edge(col, near):
+        walled = int(wall[2:TH - 2, col].sum() >= 7)
+        open_rows = []
+        for p in platforms:
+            if (p["x0"] <= 1 if near == "left" else p["x1"] >= TW - 1):
+                if not wall[max(0, p["y"] - 4):p["y"], col].any():
+                    open_rows.append(p["y"])
+        return {"wall": walled, "open": sorted(set(open_rows))}
 
     return {
         "cells": "".join(str(int(v)) for v in cls.reshape(-1)),
         "platforms": platforms,
-        "shafts": [{"x": i, "y0": a, "y1": b} for i, (a, b) in sorted(shafts.items())],
-        "left": edge(0),
-        "right": edge(TW - 1),
+        "shafts": shafts,
+        "holes": [[a, b] for a, b in holes],
+        "left": edge(0, "left"),
+        "right": edge(TW - 1, "right"),
         "colours": reader.band_colours(r, c),
     }
 
 
 def plan_doors(rooms):
-    """Generate the connection graph.
+    """Build the connection graph.
 
-    The map does not describe one, so this builds it: start from the boundaries
-    that really are open in the image, then open the fewest extra ones needed to
-    join every room into a single building. Everything it adds is reported as a
-    generated door, so the game can say which connections are the map's and
-    which are ours.
+    The montage lays each area of the asteroid out as a block of the grid, and
+    within a block the rooms sit in their relative positions, so a boundary
+    that is open on both sides is read as a doorway, a lift shaft that reaches
+    the floor of one room and the ceiling of the room below is read as one
+    lift, and a hole in a floor with a room beneath is a drop. Blocks are not
+    joined to each other by the image, so the fewest usable extra doors are
+    generated to make one building, and reported as such.
     """
     S = set(rooms)
     natural, generated = [], []
 
-    def shaft_link(a, b):
-        up = {s["x"] for s in rooms[a]["shafts"] if s["y1"] >= TH}
-        dn = {s["x"] for s in rooms[b]["shafts"] if s["y0"] <= 0}
-        return sorted(up & dn)
+    def col(k):
+        return int(k.split(",")[1])
 
-    def floor_hole(a):
-        cells = rooms[a]["cells"]
-        bottom = [cells[(TH - 1) * TW + i] for i in range(TW)]
-        return [i for i, v in enumerate(bottom) if v == "0"]
+    def shaft_pairs(a, b):
+        """Shafts of a (above) and b (below) that line up across the boundary."""
+        out = []
+        for s in rooms[a]["shafts"]:
+            if s["y1"] < TH:
+                continue
+            for t in rooms[b]["shafts"]:
+                if t["y0"] <= 0 and abs(s["x"] - t["x"]) <= 1:
+                    out.append((s, t))
+        return out
 
     for (r, c) in [tuple(map(int, k.split(","))) for k in S]:
         me = f"{r},{c}"
         right = f"{r},{c + 1}"
         if right in S:
             a, b = rooms[me]["right"], rooms[right]["left"]
-            open_rows = ({y for g in a["gaps"] for y in range(*g)} &
-                         {y for g in b["gaps"] for y in range(*g)})
-            if open_rows or (not a["wall"] and not b["wall"]):
+            if set(a["open"]) & set(b["open"]):
                 natural.append([me, right, "side"])
         down = f"{r + 1},{c}"
         if down in S:
-            if shaft_link(me, down):
+            if shaft_pairs(me, down):
                 natural.append([me, down, "shaft"])
-            elif floor_hole(me):
+            elif rooms[me]["holes"]:
                 natural.append([me, down, "drop"])
+        elif rooms[me]["holes"]:
+            # a hole with nothing under it: close the floor, Dan cannot fall
+            # into a room that does not exist
+            fill_holes(rooms[me])
 
-    # Reachability has to be measured the way the game moves: a drop is one
-    # way, because Dan cannot climb back up a hole he fell through. Counting
-    # drops as two-way here would report a connected map that is not one.
     def reachable(links):
         graph = {}
         for a, b, kind in links:
             graph.setdefault(a, set()).add(b)
-            if kind != "drop":
+            if kind != "drop":              # a drop is one way
                 graph.setdefault(b, set()).add(a)
         seen, q = {start}, deque([start])
         while q:
@@ -225,57 +300,23 @@ def plan_doors(rooms):
                     seen.add(nxt); q.append(nxt)
         return seen
 
-    # A generated link is only worth anything if Dan can actually use it: a
-    # doorway needs a floor running to the room edge on both sides, and a
-    # vertical link needs a real shaft to ride. Generating one without that
-    # gives a graph that claims to be connected while the player is stuck.
-    def walks_to_edge(key, side):
-        # The outermost cell is usually the wall itself, so a floor that stops
-        # one cell short still puts Dan against the boundary.
-        if side == "left":
-            return any(p["x0"] <= 2 for p in rooms[key]["platforms"])
-        return any(p["x1"] >= TW - 2 for p in rooms[key]["platforms"])
+    # A generated door is only worth anything if Dan can use it: a doorway
+    # needs the floor open to the edge on both sides, a lift needs a shaft.
+    def usable(a, b, kind):
+        if kind == "side":
+            left, right = (a, b) if col(a) < col(b) else (b, a)
+            return TH - 2 in rooms[left]["right"]["open"] and TH - 2 in rooms[right]["left"]["open"]
+        up, dn = (a, b) if int(a.split(",")[0]) < int(b.split(",")[0]) else (b, a)
+        return half_shaft(up, dn) is not None
 
-    def half_shaft(a, b):
-        """A shaft column reaching the boundary in one of the two rooms.
-
-        Going up is what the map is short of: shafts exist but rarely line up
-        across a boundary. Where one room already has a shaft at the boundary,
-        the generator extends it into its neighbour - the same move the game
-        itself makes with grav-lifts - rather than inventing a new mechanic.
-        """
-        for s in rooms[a]["shafts"]:
+    def half_shaft(up, dn):
+        for s in rooms[up]["shafts"]:
             if s["y1"] >= TH:
                 return s["x"]
-        for s in rooms[b]["shafts"]:
+        for s in rooms[dn]["shafts"]:
             if s["y0"] <= 0:
                 return s["x"]
         return None
-
-    def extend_shaft(key, col):
-        """Run a shaft down the full height of a room, in cells and in data."""
-        room = rooms[key]
-        if any(s["x"] == col and s["y0"] <= 0 and s["y1"] >= TH for s in room["shafts"]):
-            return
-        room["shafts"] = [s for s in room["shafts"] if s["x"] != col]
-        room["shafts"].append({"x": col, "y0": 0, "y1": TH})
-        room["shafts"].sort(key=lambda s: s["x"])
-        cells = list(room["cells"])
-        for j in range(TH):
-            cells[j * TW + col] = str(SHAFT)
-        room["cells"] = "".join(cells)
-        room["platforms"] = [p for p in room["platforms"]
-                             if not (p["x0"] <= col < p["x1"])] + \
-            [q for p in room["platforms"] if p["x0"] <= col < p["x1"]
-             for q in ({"y": p["y"], "x0": p["x0"], "x1": col},
-                       {"y": p["y"], "x0": col + 1, "x1": p["x1"]})
-             if q["x1"] - q["x0"] >= 3]
-
-    def usable(a, b, kind):
-        if kind == "side":
-            left, right = (a, b) if int(a.split(",")[1]) < int(b.split(",")[1]) else (b, a)
-            return walks_to_edge(left, "right") and walks_to_edge(right, "left")
-        return half_shaft(a, b) is not None
 
     start = min(S, key=lambda k: tuple(map(int, k.split(","))))
     got = reachable(natural)
@@ -287,20 +328,57 @@ def plan_doors(rooms):
                                  (1, 0, "shaft"), (-1, 0, "shaft")):
                 n = f"{r + dr},{c + dc}"
                 if n in S and n not in got and usable(k, n, kind):
-                    cost = 0 if kind == "side" else 1     # prefer a doorway
+                    cost = 0 if kind == "side" else 1
                     if best is None or cost < best[0]:
                         best = (cost, k, n, kind)
         if best is None:
-            break            # nothing left that Dan could actually walk or ride
+            break
         _, k, n, kind = best
         if kind == "shaft":
-            col = half_shaft(k, n)
-            extend_shaft(k, col)
-            extend_shaft(n, col)
-        generated.append([k, n, kind])
+            up, dn = (k, n) if int(k.split(",")[0]) < int(n.split(",")[0]) else (n, k)
+            x = half_shaft(up, dn)
+            extend_shaft(rooms[up], x)
+            extend_shaft(rooms[dn], x)
+            generated.append([up, dn, kind])
+        else:
+            generated.append([k, n, kind])
         got = reachable(natural + generated)
 
     return natural, generated, len(got), start
+
+
+def fill_holes(room):
+    room["holes"] = []
+    floor = [p for p in room["platforms"] if p["y"] == TH - 2]
+    rest = [p for p in room["platforms"] if p["y"] != TH - 2]
+    if floor:
+        room["platforms"] = rest + [{"y": TH - 2, "x0": min(p["x0"] for p in floor),
+                                     "x1": max(p["x1"] for p in floor)}]
+    cells = list(room["cells"])
+    for i in range(room["platforms"][-1]["x0"], room["platforms"][-1]["x1"]):
+        for j in (TH - 2, TH - 1):
+            if cells[j * TW + i] == str(EMPTY):
+                cells[j * TW + i] = str(BAND)
+    room["cells"] = "".join(cells)
+
+
+def extend_shaft(room, x, w=4):
+    """Run a lift the full height of a room, in the data and in the picture."""
+    for s in room["shafts"]:
+        if abs(s["x"] - x) <= 1:
+            s["y0"], s["y1"] = 0, TH
+            x, w = s["x"], s["w"]
+            break
+    else:
+        room["shafts"].append({"x": x, "w": w, "y0": 0, "y1": TH})
+        room["shafts"].sort(key=lambda s: s["x"])
+    cells = list(room["cells"])
+    for j in range(TH):
+        for i in range(x, x + w):
+            cells[j * TW + i] = str(FIELD)
+        cells[j * TW + x] = str(RAIL)
+        cells[j * TW + x + w - 1] = str(RAIL)
+    room["cells"] = "".join(cells)
 
 
 def main():

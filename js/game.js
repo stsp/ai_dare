@@ -33,17 +33,9 @@ const TREEN_W = 10, TREEN_H = 32;
 
 // --------------------------------------------------------------- level utils
 
-function roomAt(r, c) { return LEVEL.rooms[r + "," + c]; }
-function roomKey(r, c) { return r + "," + c; }
-
-const ROOM_KEYS = Object.keys(LEVEL.rooms);
-const ROOM_LIST = ROOM_KEYS.map((k) => {
-  const [r, c] = k.split(",").map(Number);
-  return { key: k, r, c, room: LEVEL.rooms[k] };
-});
-/* Rooms the link graph can actually reach. Keys, cells and the self-destruct
-   room only go in these, so the mission is always completable. */
-const PLAYABLE = ROOM_LIST.filter((x) => x.room.reach !== 0);
+const ROOMS = LEVEL.rooms;
+const ROOM_IDS = Object.keys(ROOMS);
+const PLAYABLE = ROOM_IDS.map((key) => ({ key, room: ROOMS[key] }));
 
 /** Platforms Dan can stand on, as pixel spans. */
 function platformsOf(room) {
@@ -52,41 +44,53 @@ function platformsOf(room) {
   }));
 }
 
-/** Grav-lift shafts, as pixel boxes. */
-function liftsOf(room) {
-  return room.shafts.map((l) => ({
-    x0: l.x * 8, x1: (l.x + 1) * 8, y0: l.y0 * 8, y1: l.y1 * 8,
-  }));
-}
-
-/* Which rooms join which. The map does not describe a connected building, so
-   the extractor reads the connections it can see and generates the rest; both
-   arrive here in LEVEL.links. A room boundary with no link is a solid wall. */
-const LINKS = (() => {
-  const out = {};
-  const add = (a, b, kind) => {
-    (out[a] || (out[a] = {}))[b] = kind;
-  };
-  for (const [a, b, kind] of LEVEL.links) {
-    add(a, b, kind);
-    if (kind !== "drop") add(b, a, kind);   // a drop is one-way: you fall down it
+/** Walls Dan collides with (cell class 4), as pixel boxes, one per row run. */
+const WALL_CACHE = new Map();
+function wallsOf(key) {
+  if (WALL_CACHE.has(key)) return WALL_CACHE.get(key);
+  const cells = ROOMS[key].cells, out = [];
+  for (let j = 0; j < RH; j++) {
+    let run = null;
+    for (let i = 0; i <= RW; i++) {
+      const wall = i < RW && cells.charCodeAt(j * RW + i) === 52;   // "4"
+      if (wall && run === null) run = i;
+      if (!wall && run !== null) { out.push({ x0: run * 8, y0: j * 8, x1: i * 8, y1: j * 8 + 8 }); run = null; }
+    }
   }
+  WALL_CACHE.set(key, out);
   return out;
-})();
-
-function linked(fromKey, toKey) {
-  return !!(LINKS[fromKey] && LINKS[fromKey][toKey]);
 }
+
+/* How the rooms join: recorded by playing the original in an emulator (see
+   tools/build_level.py). Walking off an edge, falling through a hole, and
+   riding a lift from the cells the game accepts - nothing here is guessed. */
+const EXITS = {};
+for (const key of ROOM_IDS) EXITS[key] = { left: null, right: null, drops: [], lifts: [] };
+for (const l of LEVEL.links) {
+  const e = EXITS[l.from];
+  if (!e) continue;
+  if (l.kind === "left" || l.kind === "right") e[l.kind] = l.to;
+  else if (l.kind === "drop") e.drops.push(l);
+  else e.lifts.push(l);
+}
+
+/** Rooms in order of how far they are from the start, walking the links. */
+const HOPS = (() => {
+  const d = { [LEVEL.start]: 0 };
+  const q = [LEVEL.start];
+  while (q.length) {
+    const k = q.shift(), e = EXITS[k];
+    const next = [e.left, e.right, ...e.drops.map((x) => x.to), ...e.lifts.map((x) => x.to)];
+    for (const n of next) if (n && !(n in d)) { d[n] = d[k] + 1; q.push(n); }
+  }
+  return d;
+})();
 
 // ------------------------------------------------------- world layout (fixed)
 
 /** Choose the screen Dan lands on: the leftmost surface screen. */
 function findStart() {
-  const named = ROOM_LIST.find((x) => x.key === LEVEL.start);
-  if (named) return named;
-  const surface = PLAYABLE.filter((x) => x.room.sector === 0);
-  const pool = surface.length ? surface : PLAYABLE;
-  return pool.reduce((a, b) => (b.r < a.r || (b.r === a.r && b.c < a.c) ? b : a));
+  return { key: LEVEL.start, room: ROOMS[LEVEL.start] };
 }
 
 const START = findStart();
@@ -94,12 +98,12 @@ const START = findStart();
 /** One SDS key per sector (excluding the surface), in the screen furthest from
  *  the landing point - the original makes you cross each area to find one. */
 function placeKeys() {
-  const dist = (x) => Math.abs(x.r - START.r) + Math.abs(x.c - START.c);
+  const far = (x) => HOPS[x.key] ?? -1;
   const bySector = new Map();
   for (const item of PLAYABLE) {
-    if (item.room.sector === 0) continue;
+    if (item.room.sector === START.room.sector) continue;
     const cur = bySector.get(item.room.sector);
-    if (!cur || dist(item) > dist(cur)) bySector.set(item.room.sector, item);
+    if (!cur || far(item) > far(cur)) bySector.set(item.room.sector, item);
   }
   return [...bySector.values()].slice(0, 5).map((item, i) => {
     const p = highestPlatform(item.room);
@@ -134,10 +138,7 @@ function placePrisons() {
 
 /** The self-destruct room: the most central screen on the bottom row. */
 function findSdsRoom() {
-  const bottom = Math.max(...PLAYABLE.map((x) => x.r));
-  const row = PLAYABLE.filter((x) => x.r === bottom);
-  const mid = row.reduce((a, b) => a + b.c, 0) / row.length;
-  return row.reduce((a, b) => (Math.abs(b.c - mid) < Math.abs(a.c - mid) ? b : a)).key;
+  return PLAYABLE.reduce((a, b) => ((HOPS[b.key] ?? -1) > (HOPS[a.key] ?? -1) ? b : a)).key;
 }
 
 const SDS_ROOM = findSdsRoom();
@@ -177,7 +178,7 @@ function makePickups(key, room) {
 
 const state = {
   mode: "title",           // title | play | captured | won | lost
-  r: START.r, c: START.c,
+  room: START.key,
   timeLeft: START_TIME,
   energy: ENERGY_MAX,
   energyMax: ENERGY_MAX,
@@ -200,24 +201,23 @@ let pickups = [];
 let lasers = [];
 let sdsKeys = placeKeys();
 
-function currentRoom() { return roomAt(state.r, state.c); }
+function currentRoom() { return ROOMS[state.room]; }
 
 function resetDan(x, y) {
   dan = {
     x, y, vx: 0, vy: 0, face: 1,
     onGround: false, kneeling: false, turning: 0,
-    onLift: null, anim: 0, hurt: 0, invuln: 0, fireCool: 0,
+    onLift: null, liftLatch: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0,
   };
 }
 
-function enterRoom(r, c, x, y) {
-  state.r = r; state.c = c;
-  const key = roomKey(r, c);
+function enterRoom(key, x, y) {
+  state.room = key;
   const room = currentRoom();
   treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   pickups = makePickups(key, room);
   lasers = [];
-  if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; dan.onLift = null; }
+  if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
   dan.invuln = Math.max(dan.invuln, 0.8);
   treens = treens.filter((t) => Math.abs(t.x - dan.x) > 28 || Math.abs(t.y - dan.y) > 24);
   const sector = room.sector;
@@ -255,9 +255,9 @@ function startGame() {
   state.sectorSeen = new Set();
   state.clearedRooms = new Set();
   sdsKeys = placeKeys();
-  const spawn = widestPlatform(roomAt(START.r, START.c));
-  resetDan(spawn.x, spawn.y - DAN_H);
-  enterRoom(START.r, START.c, spawn.x, spawn.y - DAN_H);
+  const spawn = widestPlatform(START.room);
+  resetDan(16, spawn.y - DAN_H);
+  enterRoom(START.key, 16, spawn.y - DAN_H);
   say(["DAN LANDS ON", "THE ASTEROID"], 3);
 }
 
@@ -275,6 +275,11 @@ function moveX(body, dx, walls, w, h, yOff) {
   body.x += dx;
   for (const wl of walls) {
     if (overlaps(body.x, body.y + yOff, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
+      const feet = body.y + yOff + h;
+      if (wl.y0 >= feet - 9 && wl.y0 < feet) {
+        body.y = wl.y0 - h - yOff;          // a low step: walk up onto it
+        continue;
+      }
       body.x = dx > 0 ? wl.x0 - w : wl.x1;
       body.vx = 0;
     }
@@ -330,37 +335,81 @@ const held = {
 function updateDan(dt) {
   const room = currentRoom();
   const platforms = platformsOf(room);
-  const lifts = liftsOf(room);
 
   if (dan.hurt > 0) dan.hurt -= dt;
   if (dan.invuln > 0) dan.invuln -= dt;
   if (dan.fireCool > 0) dan.fireCool -= dt;
 
-  // --- grav-lift: hold up or down inside a shaft to ride it ---
-  const shaft = liftUnder(dan.x, DAN_W, dan.y, DAN_H, lifts);
-  if (shaft && (held.up() || held.down())) {
-    dan.onLift = shaft;
-  } else if (!shaft) {
-    dan.onLift = null;
+  // --- grav-lift: stand on the cells the game accepts, just left of the
+  //     rails, and hold up or down. Holding carries Dan on into the next room;
+  //     letting go leaves him hanging in the field; left or right steps off.
+  const exits = EXITS[state.room];
+  const cell = Math.floor((dan.x + DAN_W / 2) / 8);
+  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && cell >= l.x0 && cell <= l.x1);
+  if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
+  if (!dan.onLift && dan.onGround && !dan.liftLatch) {
+    if (held.down() && liftHere("down")) dan.onLift = { dir: 1, link: liftHere("down") };
+    else if (held.up() && liftHere("up")) dan.onLift = { dir: -1, link: liftHere("up") };
   }
+  // the field carries him between the rails, whichever cell he called it from;
+  // arriving in a room by lift, the ride goes on only where that room's own
+  // lift continues the same way
+  if (dan.onLift && dan.onLift.shaft === undefined) {
+    const sh = room.shafts.find((s) => cell >= s.x - 3 && cell <= s.x + s.w) || null;
+    dan.onLift.shaft = sh;
+    dan.onLift.startFeet = dan.y + DAN_H;      // the floor he set off from does not catch him
+    if (!dan.onLift.link && sh) {
+      const kind = dan.onLift.dir > 0 ? "down" : "up";
+      dan.onLift.link = exits.lifts.find((l) => l.kind === kind && l.x1 >= sh.x - 3 && l.x0 <= sh.x + sh.w) || null;
+    }
+  }
+  const inField = (px, py) => {
+    const i = Math.floor((px + DAN_W / 2) / 8), j = Math.floor(py / 8);
+    if (j < 0 || j >= RH || i < 0 || i >= RW) return false;
+    const v = room.cells.charCodeAt(j * RW + i) - 48;
+    return v === 2 || v === 5;
+  };
 
   if (dan.onLift && (held.left() || held.right())) {
-    // step off sideways: clear the shaft completely, or liftUnder grabs again
     dan.face = held.left() ? -1 : 1;
-    dan.x = dan.face < 0 ? dan.onLift.x0 - DAN_W : dan.onLift.x1;
     dan.onLift = null;
     dan.vy = 0;
   }
 
   if (dan.onLift) {
     dan.vy = 0;
-    const dir = held.up() ? -1 : held.down() ? 1 : 0;
-    dan.y += dir * LIFT_SPEED * dt;
-    // centre Dan on the shaft while riding
-    const cx = (dan.onLift.x0 + dan.onLift.x1) / 2 - DAN_W / 2;
-    dan.x += Math.sign(cx - dan.x) * Math.min(40 * dt, Math.abs(cx - dan.x));
+    dan.vx = 0;
     dan.kneeling = false;
     dan.onGround = false;
+    const dir = held.down() ? 1 : held.up() ? -1 : 0;
+    if (dir !== 0 && dir !== dan.onLift.dir) {      // reversing: pick up that direction's link
+      dan.onLift.dir = dir;
+      const kind = dir > 0 ? "down" : "up";
+      const sh0 = dan.onLift.shaft;
+      dan.onLift.link = exits.lifts.find((l) => l.kind === kind &&
+        (sh0 ? l.x1 >= sh0.x - 3 && l.x0 <= sh0.x + sh0.w : cell >= l.x0 && cell <= l.x1)) || null;
+    }
+    const sh = dan.onLift.shaft;
+    if (sh) {
+      const cx = (sh.x + sh.w / 2) * 8 - DAN_W / 2;
+      dan.x += Math.sign(cx - dan.x) * Math.min(60 * dt, Math.abs(cx - dan.x));
+    }
+    if (dir !== 0) {
+      const before = dan.y + DAN_H;
+      dan.y += dir * LIFT_SPEED * dt;
+      if (dir > 0) {                 // riding down: a floor catches him, unless the field cuts through it
+        const link = dan.onLift.link;
+        for (const p of platforms) {
+          const through = link && link.to !== state.room;   // called away: the field has him
+          if (before <= p.y + 1 && dan.y + DAN_H >= p.y && dan.x + DAN_W > p.x0 && dan.x < p.x1 &&
+              p.y > dan.onLift.startFeet + 2 && !(dan.y + DAN_H > VIEW_H) && !through) {
+            dan.y = p.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
+            break;
+          }
+        }
+      }
+    }
+    if (dan.onLift && dan.y < 0 && !(dan.onLift.link && dan.onLift.link.kind === "up" && dan.onLift.link.to !== state.room)) dan.y = 0;
   } else {
     // --- kneel: no turning while down ---
     dan.kneeling = held.down() && dan.onGround;
@@ -384,7 +433,7 @@ function updateDan(dt) {
 
     if (dan.onGround) {
       dan.vx = dir * RUN_SPEED;
-      if (held.up() && !shaft) {
+      if (held.up()) {
         dan.vy = JUMP_VY;
         dan.vx = dir * JUMP_VX;   // straight up, or a diagonal hop
         dan.onGround = false;
@@ -396,7 +445,7 @@ function updateDan(dt) {
     dan.vy += GRAVITY * dt;
     const h = dan.kneeling ? DAN_KNEEL_H : DAN_H;
     const yOff = DAN_H - h;
-    moveX(dan, dan.vx * dt, [], DAN_W, h, yOff);
+    moveX(dan, dan.vx * dt, wallsOf(state.room), DAN_W, h, yOff);
     moveY(dan, dan.vy * dt, platforms, DAN_W, h, yOff);
   }
 
@@ -417,45 +466,37 @@ function updateDan(dt) {
 }
 
 
-/** Ride a shaft into the next room. Shafts do not line up across rooms - the
- *  lift is a transfer, as the gameplay footage shows: a burst of field and Dan
- *  arrives at the destination room's own shaft, still riding it. dir is +1
- *  going down (arrive at the top of a shaft) or -1 going up (at the bottom). */
-function arriveByShaft(r, c, dir) {
-  const room = roomAt(r, c);
-  const shafts = liftsOf(room);
-  const pick = shafts.find((l) => (dir > 0 ? l.y0 <= 0 : l.y1 >= VIEW_H)) || shafts[0];
-  const x = pick ? (pick.x0 + pick.x1) / 2 - DAN_W / 2 : dan.x;
-  const y = dir > 0 ? 2 : VIEW_H - DAN_H - 2;
-  enterRoom(r, c, x, y);
-  if (pick) dan.onLift = pick;
-  state.burst = 0.35;
-  beep(1200, 0.12, "triangle");
-}
-
-/** Flip to the neighbouring screen when Dan walks or falls off this one.
- *  The tests fire as his leading edge touches the boundary, before the
- *  keep-him-on-screen clamp below can pin him there. */
+/** Flip to the next screen when Dan walks off this one, falls through a
+ *  hole, or rides a lift out of it - each only where the original allows. */
 function moveBetweenRooms() {
-  const here = roomKey(state.r, state.c);
-  const to = (dr, dc) => {
-    const k = roomKey(state.r + dr, state.c + dc);
-    return LEVEL.rooms[k] && linked(here, k) ? k : null;
-  };
-  if (dan.x <= 0 && to(0, -1)) {
-    enterRoom(state.r, state.c - 1, VIEW_W - DAN_W - 3, dan.y);
-  } else if (dan.x + DAN_W >= VIEW_W && to(0, 1)) {
-    enterRoom(state.r, state.c + 1, 3, dan.y);
-  } else if (dan.y > VIEW_H && to(1, 0)) {
-    arriveByShaft(state.r + 1, state.c, +1);
-  } else if (dan.y + DAN_H < 0 && to(-1, 0)) {
-    arriveByShaft(state.r - 1, state.c, -1);
+  const e = EXITS[state.room];
+  const cell = Math.floor((dan.x + DAN_W / 2) / 8);
+  const zone = (list) => list.find((l) => cell >= l.x0 && cell <= l.x1);
+  const ride = dan.onLift && dan.onLift.link;
+  if (dan.x <= 0 && e.left) {
+    enterRoom(e.left, VIEW_W - DAN_W - 3, dan.y);
+  } else if (dan.x + DAN_W >= VIEW_W && e.right) {
+    enterRoom(e.right, 3, dan.y);
+  } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room) {
+    enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
+    dan.onLift = { dir: 1, link: null };
+  } else if (dan.y > VIEW_H - DAN_H && !dan.onLift && zone(e.drops)) {
+    enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);                   // fell through
+  } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room) {
+    enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
+    dan.onLift = { dir: -1, link: null };
   } else {
-    // no neighbour that way: keep Dan on this screen
+    // no way out that way: keep Dan on this screen
     if (dan.x < 0) dan.x = 0;
     if (dan.x + DAN_W > VIEW_W) dan.x = VIEW_W - DAN_W;
-    if (dan.y > VIEW_H) { dan.y = VIEW_H - DAN_H; dan.vy = 0; }
-    if (dan.y < 0) { dan.y = 0; dan.vy = 0; }
+    if (dan.y + DAN_H > VIEW_H) {
+      // below the floor with no way out: stand him on the floor under him
+      const under = platformsOf(currentRoom()).filter((p) => dan.x + DAN_W > p.x0 && dan.x < p.x1);
+      const floor = under.length ? under.reduce((a, b) => (b.y > a.y ? b : a)) : { y: VIEW_H };
+      dan.y = floor.y - DAN_H; dan.vy = 0; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
+    }
+    const ridingOut = ride && ride.kind === "up" && ride.to !== state.room;
+    if (dan.y < 0 && !ridingOut) { dan.y = 0; dan.vy = 0; }
   }
 }
 
@@ -512,7 +553,7 @@ function updateLasers(dt) {
   lasers = lasers.filter((l) => l.travelled < LASER_RANGE && l.x > -8 && l.x < VIEW_W + 8);
 
   if (treens.length && treens.every((t) => t.dead)) {
-    const key = roomKey(state.r, state.c);
+    const key = state.room;
     if (!state.clearedRooms.has(key)) {
       state.clearedRooms.add(key);
       note(["THIS ROOM IS SAFE"], 1.8);
@@ -535,10 +576,9 @@ function capture() {
   state.timeLeft -= CAPTURE_PENALTY;
   state.score = Math.max(0, state.score - 200);
   const cell = PRISONS.get(currentRoom().sector) || START.key;
-  const [r, c] = cell.split(",").map(Number);
-  const p = highestPlatform(roomAt(r, c));
+  const p = highestPlatform(ROOMS[cell]);
   resetDan(p.x, p.y - DAN_H);
-  enterRoom(r, c, p.x, p.y - DAN_H);
+  enterRoom(cell, p.x, p.y - DAN_H);
   state.viewer = "mekon";
   say(["DAN IS CAPTURED!"], 3);
   note(["TEN MINUTES LOST"], 3);
@@ -548,7 +588,7 @@ function capture() {
 // ------------------------------------------------------------------- pickups
 
 function updatePickups() {
-  const key = roomKey(state.r, state.c);
+  const key = state.room;
   for (const p of pickups) {
     if (!p.taken && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 8)) {
       p.taken = true;
@@ -568,7 +608,7 @@ function updatePickups() {
       say(["DAN PICKS UP", "AN SDS KEY"], 2.5);
     }
   }
-  if (key === SDS_ROOM && state.keys >= 5) {
+  if (key === SDS_ROOM && state.keys >= sdsKeys.length) {
     state.mode = "won";
     state.score += 2000;
     beep(1320, 0.5, "triangle");
@@ -635,7 +675,7 @@ function draw() {
   ctx.clip();
   ctx.translate(VIEW_X, VIEW_Y);
 
-  const key = roomKey(state.r, state.c);
+  const key = state.room;
   const room = currentRoom();
   drawRoom(ctx, LEVEL, key, room, state.phase * 12);
 
@@ -779,6 +819,6 @@ function frame(now) {
 }
 
 resetDan(24, 40);
-enterRoom(START.r, START.c, 24, 40);
+enterRoom(START.key, 24, 40);
 state.mode = "title";
 requestAnimationFrame(frame);

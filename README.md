@@ -25,61 +25,48 @@ shoot; clear a room and it stays safe. Kneeling ducks their fire and gets Dan
 under low headers. Grav-lift shafts carry him between floors — press left or
 right to step off one.
 
-## Reading the map
+## Where the level comes from
 
-The map is a montage of the game's rooms. Measured from the image:
+Two sources, kept apart.
 
-* a room is **240×144 px** — 30×18 character cells — matching the play window
-  in screenshots of the real game;
-* rooms tile a grid at `x = 31 + 240·col`, `y = 39 + 144·row`, 21×8 cells, of
-  which **106 hold a room**;
-* that origin sits on the Spectrum's 8×8 attribute grid — at this offset 99.7%
-  of cells hold at most two colours, the hardware limit for a character cell.
+**Which rooms exist and how they join** comes from the original itself. The
+game was run in a headless emulator and surveyed by playing it: from the
+start, in every room reached, Dan walks off either edge and tries up and down
+on each of the room's thirty cells. Every move that changed the room, or the
+floor he stood on, is recorded as a link (`data/emu/graph.json`), and every
+room's screen is dumped. That survey found what no reading of the map could:
+the surface is three screens with holes in the floor of the third, a grav-lift
+answers only when Dan stands a cell or two left of its rails and holds down or
+up, holding on carries him through the next room and beyond, and letting go
+leaves him hanging in the field to step off onto an upper floor. The scripts
+are in `tools/emu/`, with what they need and where the numbers come from.
 
-Two further checks agree with it: the map's sector colouring changes exactly on
-the column lines, and floor bands end exactly on the row lines.
+**What each room looks like** comes from the published map at
+[maps.speccy.cz](https://maps.speccy.cz/maps/DanDare1.png), which is a montage
+of the game's screens. Measured from it: a room is 240×144 px (30×18 cells),
+rooms tile at `x = 31 + 240·col, y = 39 + 144·row`, and that origin sits on
+the Spectrum's attribute grid (99.7% of cells hold at most two colours).
+`tools/extract_level.py` classifies every cell - floor and ceiling courses,
+walls Dan collides with, scenery he walks in front of, lift rails (matched by
+their exact 8×8 dot pattern, since the sectors recolour them) - and
+`tools/match_rooms.py` says which map room each surveyed screen is, by
+comparing them cell for cell after reducing both to the Spectrum's hues, with
+rooms of one corridor placed together.
 
-`tools/extract_level.py` reads every room's cells and emits `level.json` — the
-floors Dan stands on, the grav-lift shafts, the walls and machinery, and the
-colour signature of each floor band, which sorts the 106 rooms into the game's
-six colour-coded sectors. Rooms are then drawn from that classification, so
-each one keeps the shape it has on the map.
+`tools/build_level.py` joins the two into `level.json`: only rooms the original
+let Dan reach, linked only as the original let him move. Nothing is generated.
 
-## What the map does not contain
+## What is in so far
 
-**How the rooms connect.** Only 24 of 85 side-by-side boundaries are open, and
-only 18 of 72 vertically stacked pairs even share a lift-shaft column, so the
-montage does not describe a connected building. Five different readings of it
-all failed to produce a traversable map.
+The survey from a fresh start reaches **24 rooms**: the surface, the sector
+below it and its lifts, down to the self-destruct room. The original opens the
+door to each further sector when a part of the self-destruct mechanism is
+brought back and fitted, so the survey has to be resumed from that state; that
+is the next piece of work, and until then the game has one sector.
 
-So the connection graph is split and labelled. Of 130 connections, **89 are
-read from the map** — real doorways, shafts that line up across a boundary,
-holes to drop through — and **41 are generated** by `plan_doors` to join the
-islands into one building. The generated ones are level design, not extraction,
-and `level.json` records which is which.
-
-Two things keep that honest:
-
-* **Reachability is measured the way Dan moves.** A hole in a floor is one-way,
-  since he cannot climb back up it. Counting drops as two-way reports a
-  connected building that is not one.
-* **A generated link has to be usable.** A doorway needs a floor running to the
-  room edge on both sides; a vertical link needs a real shaft to ride. Where a
-  shaft reaches a boundary in one room only, the generator extends it into the
-  neighbour — the same move the game makes with grav-lifts — rather than
-  inventing a mechanic. An earlier pass generated links with no shaft at either
-  end, which reported a connected map while the player was stuck.
-
-The map's own connections reach **11 of 106 rooms**; with the generated links it
-is **101 of 106**. The last five are isolated pockets with no usable boundary at
-all, and the game never places a key, a cell or the self-destruct room in them.
-`check_reachability.py` prints both figures, so how much level design is being
-carried stays visible.
-
-A room boundary with no connection is a solid wall. Nothing in the map is
-reinterpreted as a ladder to paper over a gap — the game has no ladders, and an
-earlier version of this project invented them, which both wrecked the look and
-silently inflated its own reachability figure.
+A play-test harness walks the recreation the same way the survey walked the
+original, so a room the survey reached but the recreation cannot is caught
+before it ships.
 
 ## Sprites
 
@@ -101,20 +88,17 @@ and the pickups are still the project's own single-colour bitmaps in
 ## Tools
 
 ```
-python3 tools/extract_level.py                      # fetch map -> level.json + js/level.js
-python3 tools/validate_level.py MAP.png level.json  # draw the geometry back over the map
-python3 tools/check_reachability.py level.json      # walk the level the way Dan moves
-python3 tools/make_sprites.py                       # renders in ./ -> assets/dan.png + js/dan_sheet.js
+python3 tools/extract_level.py -o level_map.json           # map -> geometry of all 106 rooms
+python3 tools/validate_level.py MAP.png level_map.json 1,5  # draw a room's geometry over the map
+python3 tools/match_rooms.py MAP.png data/emu --graph data/emu/graph.json --level level_map.json -o data/emu/match.json
+python3 tools/build_level.py data/emu/graph.json data/emu/match.json   # -> level.json + js/level.js
+python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
 ```
-
-`validate_level.py` is the one that matters: it draws the extracted floors and
-shafts back over the original rooms, so a misreading is visible rather than
-merely plausible.
 
 ## Other departures
 
 * Guards, pickups and key placement are procedural, from a seeded hash of each
-  room — the map shows architecture, not where things stood.
+  room; the parts of the mechanism are not yet where the original keeps them.
 * The clock runs at 3× real time, so a two-hour mission is about forty minutes.
 
 Dan Dare is someone else's property; this is a personal recreation of a
