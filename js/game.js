@@ -498,8 +498,9 @@ function moveBetweenRooms() {
     // no way out that way: keep Dan on this screen
     if (dan.x < 0) dan.x = 0;
     if (dan.x + DAN_W > VIEW_W) dan.x = VIEW_W - DAN_W;
-    if (dan.y + DAN_H > VIEW_H) {
+    if (dan.y + DAN_H > VIEW_H && !dan.onLift) {
       // below the floor with no way out: stand him on the floor under him
+      // (a lift arriving from below is still half off the screen - leave it)
       const under = platformsOf(currentRoom()).filter((p) => dan.x + DAN_W > p.x0 && dan.x < p.x1);
       const floor = under.length ? under.reduce((a, b) => (b.y > a.y ? b : a)) : { y: VIEW_H };
       dan.y = floor.y - DAN_H; dan.vy = 0; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
