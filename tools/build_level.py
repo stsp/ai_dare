@@ -56,6 +56,33 @@ def main():
     def room_of(node_key):
         return node_key.split(":")[0]
 
+    # Upper floors the original walked along. Where Dan walked out of a room
+    # at an upper level and arrived in the next at the same level, that
+    # walkway runs the room's full width, whatever gaps the map shows in it
+    # (the map's picture of it is not what the game collides with).
+    bucket = lambda k: int(k.split(":")[1])
+    for k, node in g["nodes"].items():
+        b = bucket(k)
+        room = str(node["room"])
+        if b > 5 or room not in rooms:
+            continue
+        crossed = any(e["from"] == k and e["via"] in ("left", "right") and
+                      room_of(e["to"]) != room and bucket(e["to"]) == b
+                      for e in g["edges"])
+        if not crossed:
+            continue
+        feet = (TH - 2) * 8 - (7 - b) * 16
+        plats = rooms[room]["platforms"]
+        near = [p["y"] for p in plats if abs(p["y"] * 8 - feet) <= 12]
+        row = min(near, key=lambda y: abs(y * 8 - feet)) if near else feet // 8
+        rooms[room]["platforms"] = [p for p in plats if p["y"] != row] + [{"y": row, "x0": 0, "x1": TW}]
+        rooms[room]["platforms"].sort(key=lambda p: (p["y"], p["x0"]))
+        cells = list(rooms[room]["cells"])
+        for i in range(TW):                     # draw the walkway where the map left a gap
+            if cells[row * TW + i] == "0":
+                cells[row * TW + i] = "4"
+        rooms[room]["cells"] = "".join(cells)
+
     walks = defaultdict(set)              # (from, kind) -> targets by walking
     zones = defaultdict(lambda: [TW, -1])  # (from, to, kind) -> [x0, x1]
     for e in g["edges"]:
