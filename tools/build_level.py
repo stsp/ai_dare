@@ -27,13 +27,32 @@ TW, TH = 30, 18
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("graph")
-    ap.add_argument("match")
+    ap.add_argument("graph", nargs="+",
+                    help="survey graphs in order: from a fresh start, then after one part fitted, ...")
+    ap.add_argument("--match", required=True)
     ap.add_argument("--geometry", default="level_map.json")
+    ap.add_argument("--parts", default="",
+                    help="rooms holding the parts, in order, e.g. 83,...")
+    ap.add_argument("--slot", default="143", help="the self-destruct room")
     ap.add_argument("-o", "--out", default="level.json")
     args = ap.parse_args()
 
-    g = json.load(open(args.graph))
+    # Later surveys were made after more parts of the mechanism were fitted;
+    # a link or room first seen in survey n needs n parts. Merge them, tagging
+    # each edge and node with the phase it first appeared in.
+    graphs = [json.load(open(f)) for f in args.graph]
+    g = {"nodes": {}, "edges": []}
+    seen_edges = set()
+    for phase, gp in enumerate(graphs):
+        for k, v in gp["nodes"].items():
+            if k not in g["nodes"]:
+                g["nodes"][k] = dict(v, phase=phase)
+        for e in gp["edges"]:
+            sig = (e["from"], e["via"], e["to"], e.get("x0"), e.get("x1"))
+            if sig in seen_edges:
+                continue
+            seen_edges.add(sig)
+            g["edges"].append(dict(e, phase=phase))
     match = {int(k): v for k, v in json.load(open(args.match)).items()}
     geo = json.load(open(args.geometry))
 
@@ -52,6 +71,12 @@ def main():
             "cells": src["cells"], "platforms": src["platforms"],
             "shafts": src["shafts"], "holes": src["holes"],
         }
+    # the phase in which each room-to-room move first became possible
+    needs = {}
+    for e in g["edges"]:
+        a, b = e["from"].split(":")[0], e["to"].split(":")[0]
+        if a != b:
+            needs[(a, b)] = min(needs.get((a, b), 99), e["phase"])
 
     def room_of(node_key):
         return node_key.split(":")[0]
@@ -121,6 +146,8 @@ def main():
                     links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1})
             else:
                 links.append({"from": a, "to": b, "kind": via})
+            if needs.get((a, b), 0):
+                links[-1]["needs"] = needs[(a, b)]
     for (a, b, via, floor), (x0, x1) in sorted(zones.items()):
         # a ride tried at the very edge that merely walked into the next room,
         # or beside a hole that Dan simply fell through
@@ -138,6 +165,8 @@ def main():
                    for p in rooms[a]["platforms"]):
             continue
         links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet})
+        if a != b and needs.get((a, b), 0):
+            links[-1]["needs"] = needs[(a, b)]
 
     # a doorway the game let Dan through is open, whatever the map's frame
     # around it looks like: clear wall cells at the edge, floor to head height
@@ -153,6 +182,18 @@ def main():
         rooms[l["from"]]["cells"] = "".join(cells)
 
     start = str(g["nodes"][next(iter(g["nodes"]))]["room"])
+    # the self-destruct mechanism is fitted by walking to the left of its room
+    # in front of it: at floor level the machine is scenery, not a wall
+    if args.slot in rooms:
+        cells = list(rooms[args.slot]["cells"])
+        for j in range(TH - 8, TH - 3):
+            for i in range(TW):
+                if cells[j * TW + i] == "4":
+                    cells[j * TW + i] = "1"
+        rooms[args.slot]["cells"] = "".join(cells)
+        rooms[args.slot]["platforms"] = [p for p in rooms[args.slot]["platforms"] if p["y"] >= TH - 3 or p["y"] < TH - 8]
+
+    parts = [p for p in args.parts.split(",") if p]
     level = {
         "source": geo.get("source"),
         "room": geo["room"],
@@ -161,6 +202,8 @@ def main():
         "explored": len(rooms),
         "links": links,
         "rooms": rooms,
+        "parts": [{"room": p} for p in parts if p in rooms],
+        "slot": args.slot if args.slot in rooms else None,
     }
     with open(args.out, "w") as f:
         json.dump(level, f, separators=(",", ":"))
@@ -173,7 +216,9 @@ def main():
     kinds = defaultdict(int)
     for l in links:
         kinds[l["kind"]] += 1
-    print(f"{len(rooms)} rooms from the emulator, {len(links)} links {dict(kinds)} -> {args.out}")
+    gated = sum(1 for l in links if l.get("needs"))
+    print(f"{len(rooms)} rooms from {len(graphs)} survey(s), {len(links)} links {dict(kinds)}, "
+          f"{gated} behind doors, {len(level['parts'])} parts -> {args.out}")
 
 
 if __name__ == "__main__":
