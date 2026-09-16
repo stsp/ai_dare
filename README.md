@@ -47,7 +47,7 @@ of the game's screens. Measured from it: a room is 240×144 px (30×18 cells),
 rooms tile at `x = 31 + 240·col, y = 39 + 144·row`, and that origin sits on
 the Spectrum's attribute grid (99.7% of cells hold at most two colours).
 `tools/extract_level.py` classifies every cell - floor and ceiling courses,
-walls Dan collides with, scenery he walks in front of, lift rails (matched by
+blocks and steps whose tops are ledges, scenery, lift rails (matched by
 their exact 8×8 dot pattern, since the sectors recolour them) - and
 `tools/match_rooms.py` says which map room each surveyed screen is, by
 comparing them cell for cell after reducing both to the Spectrum's hues, with

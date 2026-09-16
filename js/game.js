@@ -282,11 +282,6 @@ function moveX(body, dx, walls, w, h, yOff) {
   body.x += dx;
   for (const wl of walls) {
     if (overlaps(body.x, body.y + yOff, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
-      const feet = body.y + yOff + h;
-      if (wl.y0 >= feet - 9 && wl.y0 < feet) {
-        body.y = wl.y0 - h - yOff;          // a low step: walk up onto it
-        continue;
-      }
       body.x = dx > 0 ? wl.x0 - w : wl.x1;
       body.vx = 0;
     }
@@ -440,7 +435,16 @@ function updateDan(dt) {
     dan.vy += GRAVITY * dt;
     const h = dan.kneeling ? DAN_KNEEL_H : DAN_H;
     const yOff = DAN_H - h;
-    moveX(dan, dan.vx * dt, wallsOf(state.room), DAN_W, h, yOff);
+    // Nothing inside a room stops Dan: he walks in front of the machinery
+    // and the panelling, as in the original. Only floors and ledges count,
+    // and a low step is walked straight up onto.
+    moveX(dan, dan.vx * dt, [], DAN_W, h, yOff);
+    if (dan.onGround) {
+      const feet = dan.y + DAN_H;
+      for (const p of platforms) {
+        if (dan.x + DAN_W > p.x0 && dan.x < p.x1 && feet > p.y && feet - p.y <= 9) dan.y = p.y - DAN_H;
+      }
+    }
     moveY(dan, dan.vy * dt, platforms, DAN_W, h, yOff);
   }
 
