@@ -390,18 +390,18 @@ function updateDan(dt) {
     const before = dan.y + DAN_H;
     dan.y += dir * LIFT_SPEED * dt;
     const feet = dan.y + DAN_H;
-    // the ride stops only at the floor the original stopped it at; every
-    // other floor on the way is passed. Held on, it rides through that too
-    // where the shaft carries on into the next room
-    for (const p of platforms) {
-      const at = dir > 0 ? (before <= p.y + 1 && feet >= p.y) : (before >= p.y - 1 && feet <= p.y);
-      const beside = dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8;
-      // the course a step sits on is the same floor as the step
-      const past = dir > 0 ? p.y > lift.startFeet + 16 : p.y < lift.startFeet - 16;
-      const isStop = lift.stopHere && (lift.stop == null || Math.abs(p.y - lift.stop) <= 14);
-      if (at && beside && past && isStop && !(hold && onward) && !(feet > VIEW_H)) {
-        dan.y = p.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
-        break;
+    // the ride ends where the original ended it - the recorded stop height in
+    // the room it leads to, whatever is there: a floor beside the shaft, and
+    // Dan steps out on it; nothing, as with the one broken lift, and he drops.
+    // Held on, it rides through the stop where the shaft goes on to another room.
+    if (lift.stopHere && lift.stop != null && !(hold && onward) && !(feet > VIEW_H)) {
+      const reached = dir > 0 ? (before <= lift.stop && feet >= lift.stop) : (before >= lift.stop && feet <= lift.stop);
+      const past = dir > 0 ? lift.stop > lift.startFeet + 16 : lift.stop < lift.startFeet - 16;
+      if (reached && past) {
+        dan.y = lift.stop - DAN_H;
+        dan.onLift = null; dan.liftLatch = true;
+        const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8);
+        if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }
       }
     }
     if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; }
