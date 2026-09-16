@@ -162,7 +162,8 @@ def main():
             # the floor the ride was called from: the original's y for Dan
             # standing there (123 on a room's floor, less on an upper one)
             floor = g["nodes"][e["from"]]["y"] // 16
-            z = zones[(a, b, via, floor)]
+            stop = e.get("arrive", {}).get("y", 123) // 16     # where the ride stopped
+            z = zones[(a, b, via, floor, stop)]
             z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
 
     links = []
@@ -176,7 +177,7 @@ def main():
                 links.append({"from": a, "to": b, "kind": via})
             if needs.get((a, b), 0):
                 links[-1]["needs"] = needs[(a, b)]
-    for (a, b, via, floor), (x0, x1) in sorted(zones.items()):
+    for (a, b, via, floor, stop), (x0, x1) in sorted(zones.items()):
         # a ride tried at the very edge that merely walked into the next room,
         # or beside a hole that Dan simply fell through
         if (x0 <= 0 or x1 >= TW - 1) and b in walks[(a, "left" if x0 <= 0 else "right")]:
@@ -192,7 +193,10 @@ def main():
         if not any(abs(p["y"] * 8 - feet) <= 14 and p["x1"] >= x0 - 3 and p["x0"] <= x1 + 4
                    for p in rooms[a]["platforms"]):
             continue
-        links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet})
+        # ... and the floor the ride stops at, in the room it arrives in: the
+        # original passes every other floor on the way
+        links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet,
+                      "stop": (TH - 2) * 8 - (7 - stop) * 16})
         if a != b and needs.get((a, b), 0):
             links[-1]["needs"] = needs[(a, b)]
 
