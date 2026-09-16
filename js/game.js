@@ -18,7 +18,7 @@ const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 const RUN_SPEED = 72;          // px/s, as measured in the original
 const GRAVITY = 500;
 const JUMP_VY = -100;          // the original's jump: 10 px high, 0.4 s in the air
-const JUMP_VX = 90;            // ... and four or five cells along
+const JUMP_VX = 120;            // ... and four or five cells along
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 const LASER_SPEED = 210;
@@ -220,7 +220,7 @@ function resetDan(x, y) {
   dan = {
     x, y, vx: 0, vy: 0, face: 1,
     onGround: false, kneeling: false, turning: 0,
-    onLift: null, liftLatch: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0,
+    onLift: null, liftLatch: false, shaftFall: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0,
   };
 }
 
@@ -440,7 +440,9 @@ function updateDan(dt) {
         if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }   // else the broken lift: he falls
       }
     }
-    if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; }
+    // the field ends at the top of the shaft with no stop there: as in the
+    // original, Dan drops back down the shaft to its bottom, past any floor
+    if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; dan.shaftFall = true; }
     if (dan.onLift && dir > 0 && feet > VIEW_H && !onward) {
       dan.onLift = null; dan.liftLatch = true;               // no floor met: drop to it
     }
@@ -489,7 +491,14 @@ function updateDan(dt) {
         if (dan.x + DAN_W > p.x0 && dan.x < p.x1 && feet > p.y && feet - p.y <= 9) dan.y = p.y - DAN_H;
       }
     }
-    moveY(dan, dan.vy * dt, platforms, DAN_W, h, yOff);
+    let catchers = platforms;
+    if (dan.shaftFall) {                   // falling down the shaft: only its bottom floor catches him
+      const under = platforms.filter((p) => dan.x + DAN_W > p.x0 && dan.x < p.x1 && p.y >= dan.y + DAN_H - 2);
+      const lowest = under.length ? Math.max(...under.map((p) => p.y)) : -1;
+      catchers = platforms.filter((p) => p.y === lowest);
+    }
+    moveY(dan, dan.vy * dt, catchers, DAN_W, h, yOff);
+    if (dan.onGround) dan.shaftFall = false;
   }
 
   if (Math.abs(dan.vx) > 1 && dan.onGround) dan.anim += dt * 8;
@@ -513,8 +522,8 @@ function updateDan(dt) {
  *  hole, or rides a lift out of it - each only where the original allows. */
 function moveBetweenRooms() {
   const e = EXITS[state.room];
-  const cell = Math.floor((dan.x + DAN_W / 2) / 8);
-  const zone = (list) => list.find((l) => cell >= l.x0 && cell <= l.x1);
+  const c0 = Math.floor(dan.x / 8), c1 = Math.floor((dan.x + DAN_W - 1) / 8);   // the cells under his feet
+  const zone = (list) => list.find((l) => c1 >= l.x0 && c0 <= l.x1);
   const ride = dan.onLift && dan.onLift.link;
   if (dan.x <= 0 && isOpen(e.left)) {
     enterRoom(e.left.to, VIEW_W - DAN_W - 3, dan.y);
