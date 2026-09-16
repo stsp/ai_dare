@@ -42,6 +42,9 @@ def main():
     ap.add_argument("--screens", default="data/emu",
                     help="where the surveyed screens are; a room the map does not show "
                          "takes its geometry from its own screen")
+    ap.add_argument("--doors", default="",
+                    help="doors known from the walkthrough but not yet surveyed, as "
+                         "room:side:parts, e.g. 209:right:2 - drawn shut until surveyed")
     ap.add_argument("--exclude", default="",
                     help="room numbers that are not rooms: the capture sequence, for one")
     ap.add_argument("-o", "--out", default="level.json")
@@ -225,6 +228,14 @@ def main():
         rooms[args.slot]["cells"] = "".join(cells)
         rooms[args.slot]["platforms"] = [p for p in rooms[args.slot]["platforms"] if p["y"] >= TH - 3 or p["y"] < TH - 8]
 
+    doors = []
+    for d in args.doors.split(","):
+        if not d:
+            continue
+        room, side, n = d.split(":")
+        if room in rooms and not any(l["from"] == room and l["kind"] == side for l in links):
+            doors.append({"from": room, "kind": side, "needs": int(n)})
+
     parts = [p for p in args.parts.split(",") if p]
     level = {
         "source": geo.get("source"),
@@ -235,6 +246,7 @@ def main():
         "links": links,
         "rooms": rooms,
         "parts": [{"room": p} for p in parts if p in rooms],
+        "doors": doors,
         "slot": args.slot if args.slot in rooms else None,
     }
     with open(args.out, "w") as f:
