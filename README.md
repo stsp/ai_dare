@@ -83,11 +83,19 @@ silently inflated its own reachability figure.
 
 ## Sprites
 
-Drawn for this project, from studying gameplay footage: Dan is a running man in
-a flight suit with a four-phase cycle and counter-swinging arms; the Treens use
-a squatter, heavier silhouette so the two read apart at a glance even when each
-is a single colour. Nothing from the original game is redistributed here, and
-the map image is fetched by the extractor rather than committed.
+Dan is drawn from illustrations: the four renders in the repository root
+(two running strides, a kneel and a firing stride, all in profile).
+`tools/make_sprites.py` cuts each figure off its checkerboard, scales the set
+so a running Dan is 33 cells tall, packs them into `assets/dan.png` at the
+canvas's 3x scale, and writes `js/dan_sheet.js` with each frame's position and
+where Dan's body sits within it, so the hit box is centred on him rather than
+on the rifle. The game draws the frames 1:1, so they keep their line work.
+
+Four poses make a two-frame run cycle, a kneel, a leap (the wide stride) and
+a muzzle flash while firing; there is no standing pose, so a still Dan holds
+the narrower stride. The Treens, the seated figure in the self-destruct room
+and the pickups are still the project's own single-colour bitmaps in
+`js/sprites.js`.
 
 ## Tools
 
@@ -95,6 +103,7 @@ the map image is fetched by the extractor rather than committed.
 python3 tools/extract_level.py                      # fetch map -> level.json + js/level.js
 python3 tools/validate_level.py MAP.png level.json  # draw the geometry back over the map
 python3 tools/check_reachability.py level.json      # walk the level the way Dan moves
+python3 tools/make_sprites.py                       # renders in ./ -> assets/dan.png + js/dan_sheet.js
 ```
 
 `validate_level.py` is the one that matters: it draws the extracted floors and

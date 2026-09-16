@@ -608,6 +608,17 @@ function danSprite() {
   return "dan_stand";
 }
 
+/** Which drawn frame shows Dan now. The sheet has four poses - two strides,
+ *  a kneel and a firing stride - so the run is a two-frame cycle, the leap is
+ *  the wide stride, and firing shows the muzzle flash for a moment. */
+function danFrame() {
+  if (dan.kneeling) return "kneel";
+  if (dan.fireCool > 0.16 && dan.onGround) return "fire";
+  if (!dan.onGround && !dan.onLift) return "run1";
+  if (Math.abs(dan.vx) > 1 && dan.onGround) return Math.floor(dan.anim) % 2 ? "run1" : "run2";
+  return "run2";
+}
+
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = C.black;
@@ -655,8 +666,11 @@ function draw() {
     ctx.fillRect(Math.round(l.x), Math.round(l.y), 4, 2);
   }
   if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
-    drawSprite(ctx, danSprite(), Math.round(dan.x - 4), Math.round(dan.y),
-               { main: C.bcyan, shade: C.cyan, light: C.bwhite }, dan.face < 0);
+    const dx = Math.round(dan.x), dy = Math.round(dan.y);
+    if (!drawSheetFrame(ctx, "dan", danFrame(), dx, dy, DAN_W, DAN_H, dan.face < 0)) {
+      drawSprite(ctx, danSprite(), dx - 4, dy,
+                 { main: C.bcyan, shade: C.cyan, light: C.bwhite }, dan.face < 0);
+    }
   }
 
   if (state.burst > 0) {
