@@ -24,10 +24,10 @@
    "y": 123,
    "via": "walk P from 16:7"
   },
-  "48:3": {
+  "48:2": {
    "room": 48,
    "x": 16,
-   "y": 62,
+   "y": 35,
    "via": "Q at x=14 from 16:7"
   },
   "49:7": {
@@ -66,10 +66,10 @@
    "y": 59,
    "via": "A at x=13 from 81:7"
   },
-  "110:3": {
+  "110:7": {
    "room": 110,
    "x": 14,
-   "y": 53,
+   "y": 123,
    "via": "A at x=14 from 46:7"
   },
   "112:3": {
@@ -88,13 +88,7 @@
    "room": 111,
    "x": 1,
    "y": 123,
-   "via": "walk P from 110:3"
-  },
-  "110:7": {
-   "room": 110,
-   "x": 10,
-   "y": 123,
-   "via": "walk O within 110:3"
+   "via": "walk P from 110:7"
   },
   "111:3": {
    "room": 111,
@@ -201,6 +195,37 @@
    "arrive": {
     "x": 0,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "14:7",
+   "via": "left!",
+   "to": "14:7",
+   "stop": {
+    "x": 3,
+    "y": 123
+   }
+  },
+  {
+   "from": "14:7",
+   "via": "right~",
+   "to": "15:7",
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "14:7",
+   "via": "left~!",
+   "to": "14:7",
+   "stop": {
+    "x": 3,
+    "y": 114
    }
   },
   {
@@ -210,7 +235,9 @@
    "arrive": {
     "x": 0,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "15:7",
@@ -219,7 +246,31 @@
    "arrive": {
     "x": 29,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "15:7",
+   "via": "right~",
+   "to": "16:7",
+   "arrive": {
+    "x": 3,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "15:7",
+   "via": "left~",
+   "to": "14:7",
+   "arrive": {
+    "x": 29,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "16:7",
@@ -228,7 +279,10 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "16:7",
@@ -237,18 +291,44 @@
    "arrive": {
     "x": 29,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "16:7",
+   "via": "right~",
+   "to": "48:7",
+   "arrive": {
+    "x": 16,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "16:7",
+   "via": "left~",
+   "to": "15:7",
+   "arrive": {
+    "x": 29,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "16:7",
    "via": "up",
-   "to": "48:3",
+   "to": "48:2",
    "x0": 14,
    "x1": 14,
    "arrive": {
     "x": 16,
-    "y": 62
-   }
+    "y": 35
+   },
+   "through": []
   },
   {
    "from": "16:7",
@@ -259,7 +339,10 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "16:7",
@@ -270,7 +353,10 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "16:7",
@@ -281,7 +367,10 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "16:7",
@@ -292,7 +381,10 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "16:7",
@@ -303,7 +395,10 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "48:7",
@@ -312,7 +407,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "48:7",
@@ -321,7 +418,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "48:7",
+   "via": "right~",
+   "to": "49:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "48:7",
+   "via": "left~",
+   "to": "47:7",
+   "arrive": {
+    "x": 25,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "48:7",
@@ -332,7 +453,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "48:7",
@@ -343,28 +466,56 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
-   "from": "48:3",
+   "from": "48:2",
    "via": "right",
    "to": "49:7",
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
-   "from": "48:3",
+   "from": "48:2",
    "via": "left",
    "to": "47:7",
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
-   "from": "48:3",
+   "from": "48:2",
+   "via": "right~",
+   "to": "49:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "48:2",
+   "via": "left~",
+   "to": "47:7",
+   "arrive": {
+    "x": 26,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "48:2",
    "via": "down",
    "to": "47:7",
    "x0": 0,
@@ -372,10 +523,12 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
-   "from": "48:3",
+   "from": "48:2",
    "via": "up",
    "to": "48:7",
    "x0": 16,
@@ -383,10 +536,11 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
-   "from": "48:3",
+   "from": "48:2",
    "via": "down",
    "to": "48:7",
    "x0": 16,
@@ -394,10 +548,11 @@
    "arrive": {
     "x": 16,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
-   "from": "48:3",
+   "from": "48:2",
    "via": "down",
    "to": "49:7",
    "x0": 29,
@@ -405,7 +560,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "49:7",
@@ -414,7 +571,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "49:7",
@@ -423,7 +582,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "49:7",
+   "via": "right~",
+   "to": "50:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "49:7",
+   "via": "left~",
+   "to": "48:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "49:7",
@@ -434,7 +617,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "49:7",
@@ -445,7 +630,9 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "49:7",
@@ -456,7 +643,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "47:7",
@@ -465,7 +654,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "47:7",
@@ -474,7 +665,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "47:7",
+   "via": "right~",
+   "to": "48:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "47:7",
+   "via": "left~",
+   "to": "46:7",
+   "arrive": {
+    "x": 26,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "47:7",
@@ -485,7 +700,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "47:7",
@@ -495,6 +712,17 @@
    "x1": 29,
    "arrive": {
     "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "50:7",
+   "via": "right!",
+   "to": "50:7",
+   "stop": {
+    "x": 25,
     "y": 123
    }
   },
@@ -505,7 +733,29 @@
    "arrive": {
     "x": 28,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "50:7",
+   "via": "right~!",
+   "to": "50:7",
+   "stop": {
+    "x": 25,
+    "y": 113
    }
+  },
+  {
+   "from": "50:7",
+   "via": "left~",
+   "to": "49:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "50:7",
@@ -516,7 +766,49 @@
    "arrive": {
     "x": 28,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "81:7",
+   "via": "right!",
+   "to": "81:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
+  },
+  {
+   "from": "81:7",
+   "via": "left!",
+   "to": "81:7",
+   "stop": {
+    "x": 5,
+    "y": 123
+   }
+  },
+  {
+   "from": "81:7",
+   "via": "right~",
+   "to": "49:7",
+   "arrive": {
+    "x": 13,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "81:7",
+   "via": "left~",
+   "to": "49:7",
+   "arrive": {
+    "x": 13,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "81:7",
@@ -527,7 +819,9 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "81:7",
@@ -538,7 +832,9 @@
    "arrive": {
     "x": 13,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "81:7",
@@ -549,7 +845,9 @@
    "arrive": {
     "x": 14,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "81:7",
@@ -560,7 +858,9 @@
    "arrive": {
     "x": 14,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "46:7",
@@ -569,18 +869,54 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "46:7",
+   "via": "left!",
+   "to": "46:7",
+   "stop": {
+    "x": 10,
+    "y": 123
+   }
+  },
+  {
+   "from": "46:7",
+   "via": "right~",
+   "to": "47:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "46:7",
+   "via": "left~!",
+   "to": "46:7",
+   "stop": {
+    "x": 10,
+    "y": 113
    }
   },
   {
    "from": "46:7",
    "via": "down",
-   "to": "110:3",
+   "to": "110:7",
    "x0": 14,
    "x1": 15,
    "arrive": {
     "x": 14,
-    "y": 53
-   }
+    "y": 123
+   },
+   "through": [
+    78
+   ],
+   "fell": true,
+   "fellFrom": 35
   },
   {
    "from": "46:7",
@@ -591,6 +927,17 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "113:3",
+   "via": "right!",
+   "to": "113:3",
+   "stop": {
+    "x": 24,
+    "y": 59
    }
   },
   {
@@ -600,7 +947,31 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "113:3",
+   "via": "right~",
+   "to": "81:7",
+   "arrive": {
+    "x": 13,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "113:3",
+   "via": "left~",
+   "to": "81:7",
+   "arrive": {
+    "x": 13,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:3",
@@ -611,7 +982,9 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:3",
@@ -622,7 +995,9 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:3",
@@ -633,7 +1008,9 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:3",
@@ -644,7 +1021,8 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "113:3",
@@ -655,7 +1033,9 @@
    "arrive": {
     "x": 14,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:3",
@@ -666,57 +1046,75 @@
    "arrive": {
     "x": 14,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
-   "from": "110:3",
+   "from": "110:7",
    "via": "right",
    "to": "111:7",
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
-   "from": "110:3",
-   "via": "left*",
-   "to": "110:7"
-  },
-  {
-   "from": "110:3",
-   "via": "up",
+   "from": "110:7",
+   "via": "left!",
    "to": "110:7",
-   "x0": 14,
-   "x1": 14,
-   "arrive": {
-    "x": 14,
+   "stop": {
+    "x": 10,
     "y": 123
    }
   },
   {
-   "from": "110:3",
-   "via": "down",
+   "from": "110:7",
+   "via": "right~",
    "to": "110:7",
-   "x0": 14,
-   "x1": 14,
    "arrive": {
     "x": 14,
     "y": 123
-   }
+   },
+   "through": [
+    78
+   ],
+   "fell": true,
+   "fellFrom": 35
   },
   {
-   "from": "110:3",
+   "from": "110:7",
+   "via": "left~",
+   "to": "110:7",
+   "arrive": {
+    "x": 14,
+    "y": 123
+   },
+   "through": [
+    78
+   ],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "110:7",
    "via": "up",
    "to": "110:7",
-   "x0": 15,
+   "x0": 14,
    "x1": 15,
    "arrive": {
-    "x": 15,
+    "x": 14,
     "y": 123
-   }
+   },
+   "through": [
+    78
+   ],
+   "fell": true,
+   "fellFrom": 35
   },
   {
-   "from": "110:3",
+   "from": "110:7",
    "via": "down",
    "to": "111:7",
    "x0": 29,
@@ -724,7 +1122,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -733,7 +1133,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -742,7 +1144,31 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "112:3",
+   "via": "right~",
+   "to": "113:3",
+   "arrive": {
+    "x": 2,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "112:3",
+   "via": "left~",
+   "to": "111:3",
+   "arrive": {
+    "x": 27,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -753,7 +1179,9 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -764,7 +1192,9 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -775,7 +1205,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -786,7 +1218,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:3",
@@ -797,7 +1231,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:7",
@@ -806,7 +1242,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:7",
@@ -815,7 +1253,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "113:7",
+   "via": "right~",
+   "to": "114:7",
+   "arrive": {
+    "x": 2,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "113:7",
+   "via": "left~",
+   "to": "112:7",
+   "arrive": {
+    "x": 27,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:7",
@@ -826,7 +1288,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:7",
@@ -837,7 +1301,9 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "113:7",
@@ -848,7 +1314,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:7",
@@ -857,7 +1325,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:7",
@@ -866,7 +1336,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "111:7",
+   "via": "right~",
+   "to": "112:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "111:7",
+   "via": "left~",
+   "to": "110:7",
+   "arrive": {
+    "x": 24,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:7",
@@ -877,7 +1371,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:7",
@@ -888,38 +1384,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
-  },
-  {
-   "from": "110:7",
-   "via": "right",
-   "to": "111:7",
-   "arrive": {
-    "x": 1,
-    "y": 123
-   }
-  },
-  {
-   "from": "110:7",
-   "via": "up",
-   "to": "110:7",
-   "x0": 14,
-   "x1": 15,
-   "arrive": {
-    "x": 14,
-    "y": 123
-   }
-  },
-  {
-   "from": "110:7",
-   "via": "down",
-   "to": "111:7",
-   "x0": 29,
-   "x1": 29,
-   "arrive": {
-    "x": 1,
-    "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:3",
@@ -928,7 +1395,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:3",
@@ -937,7 +1406,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "111:3",
+   "via": "right~",
+   "to": "112:3",
+   "arrive": {
+    "x": 2,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "111:3",
+   "via": "left~",
+   "to": "110:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:3",
@@ -948,7 +1441,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:3",
@@ -959,7 +1454,8 @@
    "arrive": {
     "x": 11,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "111:3",
@@ -970,7 +1466,8 @@
    "arrive": {
     "x": 11,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "111:3",
@@ -981,7 +1478,8 @@
    "arrive": {
     "x": 11,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "111:3",
@@ -992,7 +1490,8 @@
    "arrive": {
     "x": 11,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "111:3",
@@ -1003,7 +1502,8 @@
    "arrive": {
     "x": 11,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "111:3",
@@ -1014,7 +1514,8 @@
    "arrive": {
     "x": 11,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "111:3",
@@ -1025,7 +1526,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:3",
@@ -1036,7 +1539,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "111:3",
@@ -1047,7 +1552,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "114:7",
@@ -1056,7 +1563,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "114:7",
@@ -1065,7 +1574,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "114:7",
+   "via": "right~",
+   "to": "115:7",
+   "arrive": {
+    "x": 2,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "114:7",
+   "via": "left~",
+   "to": "113:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "114:7",
@@ -1076,7 +1609,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "114:7",
@@ -1087,7 +1622,8 @@
    "arrive": {
     "x": 13,
     "y": 59
-   }
+   },
+   "through": []
   },
   {
    "from": "114:7",
@@ -1098,7 +1634,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:7",
@@ -1107,7 +1645,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:7",
@@ -1116,7 +1656,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "112:7",
+   "via": "right~",
+   "to": "113:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "112:7",
+   "via": "left~",
+   "to": "111:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:7",
@@ -1127,7 +1691,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "112:7",
@@ -1138,6 +1704,17 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "115:7",
+   "via": "right!",
+   "to": "115:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
   },
   {
@@ -1147,7 +1724,29 @@
    "arrive": {
     "x": 28,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "115:7",
+   "via": "right~!",
+   "to": "115:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
+  },
+  {
+   "from": "115:7",
+   "via": "left~",
+   "to": "114:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "115:7",
@@ -1158,7 +1757,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "115:7",
@@ -1169,7 +1770,9 @@
    "arrive": {
     "x": 19,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "115:7",
@@ -1180,7 +1783,9 @@
    "arrive": {
     "x": 19,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "115:7",
@@ -1191,7 +1796,9 @@
    "arrive": {
     "x": 20,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "115:7",
@@ -1202,6 +1809,44 @@
    "arrive": {
     "x": 20,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "114:3",
+   "via": "right!",
+   "to": "114:3",
+   "stop": {
+    "x": 24,
+    "y": 59
+   }
+  },
+  {
+   "from": "114:3",
+   "via": "left!",
+   "to": "114:3",
+   "stop": {
+    "x": 5,
+    "y": 59
+   }
+  },
+  {
+   "from": "114:3",
+   "via": "right~!",
+   "to": "114:3",
+   "stop": {
+    "x": 24,
+    "y": 59
+   }
+  },
+  {
+   "from": "114:3",
+   "via": "left~!",
+   "to": "114:3",
+   "stop": {
+    "x": 5,
+    "y": 59
    }
   },
   {
@@ -1213,7 +1858,8 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "83:7",
@@ -1221,6 +1867,37 @@
    "to": "84:7",
    "arrive": {
     "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "83:7",
+   "via": "left!",
+   "to": "83:7",
+   "stop": {
+    "x": 5,
+    "y": 123
+   }
+  },
+  {
+   "from": "83:7",
+   "via": "right~",
+   "to": "84:7",
+   "arrive": {
+    "x": 2,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "83:7",
+   "via": "left~!",
+   "to": "83:7",
+   "stop": {
+    "x": 5,
     "y": 123
    }
   },
@@ -1233,7 +1910,9 @@
    "arrive": {
     "x": 19,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "83:7",
@@ -1244,6 +1923,17 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "147:7",
+   "via": "right!",
+   "to": "147:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
   },
   {
@@ -1253,7 +1943,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "147:7",
+   "via": "right~",
+   "to": "115:7",
+   "arrive": {
+    "x": 19,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "147:7",
+   "via": "left~",
+   "to": "115:7",
+   "arrive": {
+    "x": 19,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "147:7",
@@ -1264,7 +1978,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "147:7",
@@ -1275,6 +1991,17 @@
    "arrive": {
     "x": 19,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "84:7",
+   "via": "right!",
+   "to": "84:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
   },
   {
@@ -1284,7 +2011,29 @@
    "arrive": {
     "x": 28,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "84:7",
+   "via": "right~!",
+   "to": "84:7",
+   "stop": {
+    "x": 24,
+    "y": 113
    }
+  },
+  {
+   "from": "84:7",
+   "via": "left~",
+   "to": "83:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "84:7",
@@ -1295,7 +2044,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:7",
@@ -1304,7 +2055,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:7",
@@ -1313,7 +2066,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "146:7",
+   "via": "right~",
+   "to": "147:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "146:7",
+   "via": "left~",
+   "to": "145:7",
+   "arrive": {
+    "x": 27,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:7",
@@ -1324,7 +2101,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:7",
@@ -1335,7 +2114,8 @@
    "arrive": {
     "x": 13,
     "y": 59
-   }
+   },
+   "through": []
   },
   {
    "from": "146:7",
@@ -1346,7 +2126,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:7",
@@ -1355,7 +2137,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:7",
@@ -1364,7 +2148,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "145:7",
+   "via": "right~",
+   "to": "146:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "145:7",
+   "via": "left~",
+   "to": "144:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:7",
@@ -1375,7 +2183,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:7",
@@ -1386,6 +2196,17 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "146:3",
+   "via": "right!",
+   "to": "146:3",
+   "stop": {
+    "x": 24,
+    "y": 59
    }
   },
   {
@@ -1395,7 +2216,29 @@
    "arrive": {
     "x": 27,
     "y": 59
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "146:3",
+   "via": "right~!",
+   "to": "146:3",
+   "stop": {
+    "x": 24,
+    "y": 59
    }
+  },
+  {
+   "from": "146:3",
+   "via": "left~",
+   "to": "145:3",
+   "arrive": {
+    "x": 27,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:3",
@@ -1406,7 +2249,9 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:3",
@@ -1417,7 +2262,9 @@
    "arrive": {
     "x": 27,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "146:3",
@@ -1428,7 +2275,8 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": []
   },
   {
    "from": "144:7",
@@ -1437,7 +2285,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "144:7",
@@ -1446,7 +2296,31 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "144:7",
+   "via": "right~",
+   "to": "145:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "144:7",
+   "via": "left~",
+   "to": "143:7",
+   "arrive": {
+    "x": 28,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "144:7",
@@ -1457,7 +2331,9 @@
    "arrive": {
     "x": 28,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "144:7",
@@ -1468,7 +2344,9 @@
    "arrive": {
     "x": 1,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:3",
@@ -1477,6 +2355,37 @@
    "arrive": {
     "x": 2,
     "y": 59
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "145:3",
+   "via": "left!",
+   "to": "145:3",
+   "stop": {
+    "x": 5,
+    "y": 59
+   }
+  },
+  {
+   "from": "145:3",
+   "via": "right~",
+   "to": "146:3",
+   "arrive": {
+    "x": 2,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "145:3",
+   "via": "left~!",
+   "to": "145:3",
+   "stop": {
+    "x": 5,
+    "y": 52
    }
   },
   {
@@ -1488,7 +2397,9 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:3",
@@ -1499,7 +2410,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:3",
@@ -1510,7 +2423,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "145:3",
@@ -1521,7 +2436,9 @@
    "arrive": {
     "x": 2,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "143:7",
@@ -1530,6 +2447,37 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "143:7",
+   "via": "left!",
+   "to": "143:7",
+   "stop": {
+    "x": 3,
+    "y": 123
+   }
+  },
+  {
+   "from": "143:7",
+   "via": "right~",
+   "to": "144:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "143:7",
+   "via": "left~!",
+   "to": "143:7",
+   "stop": {
+    "x": 3,
+    "y": 123
    }
   },
   {
@@ -1541,7 +2489,49 @@
    "arrive": {
     "x": 1,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "177:7",
+   "via": "right!",
+   "to": "177:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
+  },
+  {
+   "from": "177:7",
+   "via": "left!",
+   "to": "177:7",
+   "stop": {
+    "x": 5,
+    "y": 123
+   }
+  },
+  {
+   "from": "177:7",
+   "via": "right~",
+   "to": "145:3",
+   "arrive": {
+    "x": 13,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "177:7",
+   "via": "left~",
+   "to": "145:3",
+   "arrive": {
+    "x": 13,
+    "y": 59
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "177:7",
@@ -1552,7 +2542,9 @@
    "arrive": {
     "x": 13,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "177:7",
@@ -1563,7 +2555,9 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "177:7",
@@ -1574,7 +2568,9 @@
    "arrive": {
     "x": 14,
     "y": 59
-   }
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "177:7",
@@ -1585,7 +2581,49 @@
    "arrive": {
     "x": 14,
     "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "209:7",
+   "via": "right!",
+   "to": "209:7",
+   "stop": {
+    "x": 24,
+    "y": 123
    }
+  },
+  {
+   "from": "209:7",
+   "via": "left!",
+   "to": "209:7",
+   "stop": {
+    "x": 5,
+    "y": 123
+   }
+  },
+  {
+   "from": "209:7",
+   "via": "right~",
+   "to": "177:7",
+   "arrive": {
+    "x": 13,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "209:7",
+   "via": "left~",
+   "to": "177:7",
+   "arrive": {
+    "x": 13,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
   },
   {
    "from": "209:7",
@@ -1596,7 +2634,42 @@
    "arrive": {
     "x": 13,
     "y": 123
-   }
+   },
+   "through": [],
+   "fell": false
   }
+ ],
+ "done": [
+  "14:7",
+  "15:7",
+  "16:7",
+  "48:7",
+  "48:2",
+  "49:7",
+  "47:7",
+  "50:7",
+  "81:7",
+  "46:7",
+  "113:3",
+  "110:7",
+  "112:3",
+  "113:7",
+  "111:7",
+  "111:3",
+  "114:7",
+  "112:7",
+  "115:7",
+  "114:3",
+  "83:7",
+  "147:7",
+  "84:7",
+  "146:7",
+  "145:7",
+  "146:3",
+  "144:7",
+  "145:3",
+  "143:7",
+  "177:7",
+  "209:7"
  ]
 }

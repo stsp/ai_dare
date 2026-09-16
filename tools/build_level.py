@@ -30,6 +30,25 @@ from match_rooms import render_scr                                   # noqa: E40
 TW, TH = 30, 18
 
 
+class _Span(list):
+    """A [x0, x1] view over a list of cell ranges: setting it adds the range
+    to the one it touches (a ride tried from the cell beside another is the
+    same lift), or starts a new one."""
+    def __init__(self, ranges):
+        super().__init__([TW, -1])
+        self.ranges = ranges
+
+    def __setitem__(self, i, v):
+        super().__setitem__(i, v)
+        if i == 1:
+            x0, x1 = self[0], self[1]
+            for r in self.ranges:
+                if r[0] - 2 <= x1 and x0 <= r[1] + 2:
+                    r[0], r[1] = min(r[0], x0), max(r[1], x1)
+                    return
+            self.ranges.append([x0, x1])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("graph", nargs="+",
@@ -49,6 +68,8 @@ def main():
     ap.add_argument("--doors", default="",
                     help="doors known from the walkthrough but not yet surveyed, as "
                          "room:side:parts, e.g. 209:right:2 - drawn shut until surveyed")
+    ap.add_argument("--from-screen", default="",
+                    help="rooms to read off their own screen even where the map seems to match")
     ap.add_argument("--exclude", default="",
                     help="room numbers that are not rooms: the capture sequence, for one")
     ap.add_argument("-o", "--out", default="level.json")
@@ -74,6 +95,7 @@ def main():
     geo = json.load(open(args.geometry))
 
     exclude = {int(x) for x in args.exclude.split(",") if x}
+    from_screen = {int(x) for x in args.from_screen.split(",") if x}
     rooms = {}
     for node in g["nodes"].values():
         n = node["room"]
@@ -81,7 +103,7 @@ def main():
             continue
         m = match.get(n)
         scr = os.path.join(args.screens, f"room_{n}.scr")
-        if m and (m["score"] >= 0.6 or "chain" in m):
+        if m and (m["score"] >= 0.6 or "chain" in m) and int(n) not in from_screen:
             src = geo["rooms"][m["key"]]
             where = m["key"]
         elif os.path.exists(scr):
@@ -116,7 +138,7 @@ def main():
             continue
         scr = os.path.join(args.screens, f"room_{n}.scr")
         m = match.get(int(n))
-        if m and (m["score"] >= 0.6 or "chain" in m):
+        if m and (m["score"] >= 0.6 or "chain" in m) and int(n) not in from_screen:
             src, where = geo["rooms"][m["key"]], m["key"]
         elif os.path.exists(scr):
             img = render_scr(open(scr, "rb").read())[8:8 + 144, 8:8 + 240]
@@ -131,6 +153,29 @@ def main():
         rooms[n] = {"map": where, "sector": src["sector"], "colours": src["colours"],
                     "cells": src["cells"], "platforms": src["platforms"], "shafts": src["shafts"],
                     "holes": src["holes"], "zone": phase + 1, "passed": True}
+
+    # the lift rails are read off each room's own screen: the map's rendering
+    # of them is not reliable in every sector, and a shaft the map missed is
+    # a lift the player cannot see
+    for n, room in rooms.items():
+        scr = os.path.join(args.screens, f"room_{n}.scr")
+        if room["map"] == "screen" or not os.path.exists(scr):
+            continue
+        img = render_scr(open(scr, "rb").read())[8:8 + 144, 8:8 + 240]
+        seen = read_room(ArrayReader(img), 0, 0)
+        if not seen["shafts"]:
+            continue
+        cells = list(room["cells"])
+        for sh in seen["shafts"]:
+            if any(abs(m["x"] - sh["x"]) <= 1 for m in room["shafts"]):
+                continue
+            room["shafts"].append(sh)
+            for j in range(sh["y0"], sh["y1"]):
+                for i in range(sh["x"], sh["x"] + sh["w"]):
+                    if cells[j * TW + i] in "014":
+                        cells[j * TW + i] = "2" if i in (sh["x"], sh["x"] + sh["w"] - 1) else "5"
+        room["shafts"].sort(key=lambda m: m["x"])
+        room["cells"] = "".join(cells)
 
     # a door between sectors: the move into a room that a later survey first
     # reached needs as many parts fitted as that survey had; moves within a
@@ -149,6 +194,10 @@ def main():
     # pit says nothing about its edges; this does. A pit runs from the cell he
     # fell from to the next cell he was seen standing on, or the room's edge -
     # and no further than a jump where the survey saw him jump it.
+    falls = {}
+    prisons = set(args.prisons.split(","))
+    prison_doors = {room_of(e["to"]) for e in g["edges"]
+                    if room_of(e["from"]) in prisons and e["via"] in ("left", "right") and room_of(e["to"]) not in prisons}
     if os.path.exists(args.floors):
         probe = json.load(open(args.floors))
         stood, falls = defaultdict(lambda: defaultdict(set)), defaultdict(lambda: defaultdict(list))
@@ -172,6 +221,10 @@ def main():
                     if abs(y - base) <= 1:
                         stood[room][base].add(x)
         prisons = set(args.prisons.split(","))
+        # the rooms the prisons open into: a walk from one of those into a
+        # prison is a walk, from anywhere else a capture
+        prison_doors = {room_of(e["to"]) for e in g["edges"]
+                        if room_of(e["from"]) in prisons and e["via"] in ("left", "right") and room_of(e["to"]) not in prisons}
         jumped = defaultdict(set)
         for e in g["edges"]:
             # a jump that ended in a prison was a fall to his death, not a crossing
@@ -195,8 +248,8 @@ def main():
             for base, xs in stood[room].items():
                 feet = base + 5                       # the original's y is five above the feet
                 row = round(feet / 8)
-                near = [p["y"] for p in rooms[room]["platforms"] if abs(p["y"] - row) <= 1]
-                row = near[0] if near else row
+                near = [p["y"] for p in rooms[room]["platforms"] if abs(p["y"] * 8 - feet) <= 8]
+                row = min(near, key=lambda y: abs(y * 8 - feet)) if near else row
                 fell_cells = {x for x, _ in falls[room].get(base, [])}
                 cells = set()
                 for x in xs - fell_cells:              # Dan is two cells wide
@@ -240,6 +293,10 @@ def main():
                 if run:
                     pieces.append((run[0], run[-1] + 1))
                 keep = [p for p in rooms[room]["platforms"] if p["y"] != row]
+                # a ledge drawn just above where he walked is the course's own
+                # top line, not a step: he would have stepped up onto it
+                keep = [p for p in keep if not (row - 2 <= p["y"] < row and
+                                                any(x in cells for x in range(p["x0"], p["x1"])))]
                 if row >= TH - 3:                      # a pit cuts the step course as well
                     keep = [p for p in keep if not (p["y"] >= TH - 3 and any(h in range(p["x0"], p["x1"]) for h in hole_cells))]
                 keep += [{"y": row, "x0": a, "x1": b} for a, b in pieces]
@@ -270,24 +327,42 @@ def main():
                       for e in g["edges"])
         if not crossed:
             continue
-        feet = (TH - 2) * 8 - (7 - b) * 16
+        feet = node["y"] + 5
         plats = rooms[room]["platforms"]
         near = [p["y"] for p in plats if abs(p["y"] * 8 - feet) <= 12]
         row = min(near, key=lambda y: abs(y * 8 - feet)) if near else feet // 8
-        rooms[room]["platforms"] = [p for p in plats if p["y"] != row] + [{"y": row, "x0": 0, "x1": TW}]
+        # ... but not across a gap the floor probe saw him fall into: a ledge
+        # he can walk off ends where it ends
+        gap = set()
+        for x, direction in falls.get(room, {}).get(node["y"], []) if os.path.exists(args.floors) else []:
+            gap.update(range(x + 1, TW) if direction == "right" else range(0, x))
+        span = [i for i in range(TW) if i not in gap]
+        if not span:
+            continue
+        rooms[room]["platforms"] = [p for p in plats if p["y"] != row] + [{"y": row, "x0": span[0], "x1": span[-1] + 1}]
         rooms[room]["platforms"].sort(key=lambda p: (p["y"], p["x0"]))
         cells = list(rooms[room]["cells"])
-        for i in range(TW):                     # draw the walkway where the map left a gap
+        for i in span:                          # draw the walkway where the map left a gap
             if cells[row * TW + i] == "0":
                 cells[row * TW + i] = "4"
         rooms[room]["cells"] = "".join(cells)
 
     walks = defaultdict(set)              # (from, kind) -> targets by walking
-    zones = defaultdict(lambda: [TW, -1])  # (from, to, kind) -> [x0, x1]
+    spans = defaultdict(list)               # (from, to, kind, floor, stop) -> [[x0, x1], ...]
+
+    class _Zones(dict):
+        """zones[key] -> a [x0, x1] pair that grows to take in each ride tried;
+        rides tried from cells apart are separate lifts in the same room"""
+        def __getitem__(self, key):
+            return _Span(spans[key])
+    zones = _Zones()
+    broken = set()                          # zone keys of the broken lift's last leg
     for e in g["edges"]:
         a, b, via = room_of(e["from"]), room_of(e["to"]), e["via"].rstrip("*!")
         if a not in rooms or b not in rooms or e["via"].endswith("!"):
             continue
+        if b in prisons and a not in prisons and a not in prison_doors:
+            continue                          # he was captured on that move, not walked there
         arr = e.get("arrive", {})
         jumping = via.endswith("~")
         via = via.rstrip("~")
@@ -310,13 +385,31 @@ def main():
             # it climbs to its stop, breaks, and drops him back - kept)
             # the floor the ride was called from: the original's y for Dan
             # standing there (123 on a room's floor, less on an upper one)
-            floor = g["nodes"][e["from"]]["y"] // 16
-            stop = e.get("arrive", {}).get("y", 123) // 16     # where the ride stopped
+            # the original's y for Dan standing there: 123 on a room's floor,
+            # 59 or 67 on an upper one - his feet are five below
+            floor = g["nodes"][e["from"]]["y"]
+            stop = e.get("arrive", {}).get("y", 123)           # where the ride stopped
             chain = [a] + [str(r) for r in e.get("through", []) if str(r) in rooms] + [b]
+            if e.get("fell"):
+                # the broken lift. The original's ride breaks at the far end of
+                # the shaft in the room it passes (78), and Dan falls from the
+                # top of the room below (110) to its floor - a whole storey.
+                # Called from below, the ride goes up into that room, breaks
+                # just inside it, and he drops back through its floor.
+                stop = e.get("fellFrom", 35)
+                if a == b and len(chain) > 2:
+                    z = zones[(a, chain[1], via, floor, "in")]
+                    z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
+                    z = zones[(chain[1], a, "drop", 7, -1)]
+                    z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
+                    continue
+                broken.add((chain[-2], chain[-1], via, floor if len(chain) == 2 else -1, stop))
             if len(chain) > 2:
+                # the later legs are entered riding, from the room before: no
+                # floor calls them (a floor the lift passes is not a stop)
                 for i in range(len(chain) - 1):
                     last = i == len(chain) - 2
-                    z = zones[(chain[i], chain[i + 1], via, floor if i == 0 else 7, stop if last else -1)]
+                    z = zones[(chain[i], chain[i + 1], via, floor if i == 0 else -1, stop if last else -1)]
                     z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
                 continue
             z = zones[(a, b, via, floor, stop)]
@@ -327,13 +420,32 @@ def main():
         for b in sorted(targets):
             if via == "drop":
                 holes = rooms[a]["holes"] or [[0, TW]]
-                for x0, x1 in holes:
-                    links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1})
+                for x0, x1 in holes:          # holes end exclusive, zones inclusive
+                    links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1 - 1})
             else:
                 links.append({"from": a, "to": b, "kind": via})
             if needs.get((a, b), 0):
                 links[-1]["needs"] = needs[(a, b)]
-    for (a, b, via, floor, stop), (x0, x1) in sorted(zones.items()):
+    flat = [(k, tuple(r)) for k, rs in spans.items() for r in rs]
+    for (a, b, via, floor, stop), (x0, x1) in sorted(flat, key=str):
+        if via == "drop":                     # out of the broken lift's shaft
+            for sh in rooms[a]["shafts"]:     # wherever between the rails he is
+                if sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0:
+                    x0, x1 = min(x0, sh["x"] - 1), max(x1, sh["x"] + sh["w"])
+            links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1})
+            cut = []                          # the shaft is open through that floor
+            for p in rooms[a]["platforms"]:
+                if p["y"] < TH - 3 or p["x1"] <= x0 or p["x0"] > x1:
+                    cut.append(p)
+                    continue
+                if p["x0"] < x0:
+                    cut.append({**p, "x1": x0})
+                if p["x1"] > x1 + 1:
+                    cut.append({**p, "x0": x1 + 1})
+            rooms[a]["platforms"] = cut
+            if not any(h0 <= x0 and x1 <= h1 for h0, h1 in rooms[a]["holes"]):
+                rooms[a]["holes"].append([x0, x1])
+            continue
         # a ride tried at the very edge that merely walked into the next room,
         # or beside a hole that Dan simply fell through
         if (x0 <= 0 or x1 >= TW - 1) and b in walks[(a, "left" if x0 <= 0 else "right")]:
@@ -345,21 +457,23 @@ def main():
         # call recorded from mid-air - Dan caught in the field after a fall -
         # has no floor at that height in the room, and is not a lift a player
         # can take
-        feet = (TH - 2) * 8 - (7 - floor) * 16
-        if not any(abs(p["y"] * 8 - feet) <= 14 and p["x1"] >= x0 - 3 and p["x0"] <= x1 + 4
-                   for p in rooms[a]["platforms"]):
+        feet = -1 if floor < 0 else floor + 5
+        if floor >= 0 and not any(abs(p["y"] * 8 - feet) <= 14 and p["x1"] >= x0 - 3 and p["x0"] <= x1 + 4
+                                  for p in rooms[a]["platforms"]):
             continue
         # ... and the floor the ride stops at, in the room it arrives in: the
         # original passes every other floor on the way
-        stop_feet = -1 if stop < 0 else (TH - 2) * 8 - (7 - stop) * 16   # -1: passes through
-        if stop >= 0 and a == b and abs(stop_feet - feet) < 16:
-            # the broken lift: it breaks at the height another ride in this
-            # shaft stopped at, and Dan drops back to where he called it
-            others = [z[4] for z in zones if z[1] == a and abs(((TH - 2) * 8 - (7 - z[4]) * 16) - feet) >= 16]
-            stop_feet = (TH - 2) * 8 - (7 - others[0]) * 16 if others else 48
+        if stop == "in":                      # breaks just inside the next room
+            stop_feet = TH * 8 - 8 if via == "up" else 16
+        else:
+            stop_feet = -1 if stop < 0 else stop + 5            # -1: passes through
+        # a ride with no rails near it is no lift: a fall the survey took
+        # for one, or a room whose rails it could not see
+        if not any(sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0 for sh in rooms[a]["shafts"]):
+            continue
+        is_broken = stop == "in" or (a, b, via, floor, stop) in broken
         links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet,
-                      "stop": stop_feet, **({"broken": True} if a == b and abs(stop_feet - feet) >= 16 and not any(
-                          abs(p["y"] * 8 - stop_feet) <= 14 for p in rooms[a]["platforms"]) else {})})
+                      "stop": stop_feet, **({"broken": True} if is_broken else {})})
         if a != b and needs.get((a, b), 0):
             links[-1]["needs"] = needs[(a, b)]
 
