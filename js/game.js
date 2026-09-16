@@ -688,7 +688,10 @@ function drawLiftMarks(ctx, key, room) {
 function drawGates(ctx, key, room) {
   const e = EXITS[key];
   const style = sectorStyle(LEVEL, room);
-  const gates = [e.left, e.right, ...e.lifts].filter((l) => l && l.needs);
+  // doors the survey found, and doors the walkthrough places but the survey
+  // has not yet been through (drawn shut, leading nowhere for now)
+  const gates = [e.left, e.right, ...e.lifts].filter((l) => l && l.needs)
+    .concat((LEVEL.doors || []).filter((d) => d.from === key));
   for (const l of gates) {
     const open = isOpen(l);
     if (l.kind === "left" || l.kind === "right") {
