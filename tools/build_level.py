@@ -44,6 +44,8 @@ def main():
                          "takes its geometry from its own screen")
     ap.add_argument("--floors", default="data/emu/floor.json",
                     help="floor probe: where Dan stood and where he fell, walking from each node")
+    ap.add_argument("--prisons", default="50,53",
+                    help="the prison rooms: where a capture puts Dan, not somewhere he walked")
     ap.add_argument("--doors", default="",
                     help="doors known from the walkthrough but not yet surveyed, as "
                          "room:side:parts, e.g. 209:right:2 - drawn shut until surveyed")
@@ -102,6 +104,33 @@ def main():
             # the order the doors open (the survey that first reached the room)
             "zone": 0 if where.startswith("0,") else node["phase"] + 1,
         }
+    # rooms a ride or a fall passed through exist too: they are read from the
+    # screen dumped in passing, and joined by links the shaft does not stop at
+    passed = {}
+    for e in g["edges"]:
+        for r in e.get("through", []):
+            passed.setdefault(str(r), e["phase"])
+    for n, phase in passed.items():
+        if n in rooms or int(n) in exclude:
+            continue
+        scr = os.path.join(args.screens, f"room_{n}.scr")
+        m = match.get(int(n))
+        if m and (m["score"] >= 0.6 or "chain" in m):
+            src, where = geo["rooms"][m["key"]], m["key"]
+        elif os.path.exists(scr):
+            img = render_scr(open(scr, "rb").read())[8:8 + 144, 8:8 + 240]
+            src = read_room(ArrayReader(img), 0, 0)
+            sig = list(colour_signature(src["colours"]))
+            if sig not in geo["sectors"]:
+                geo["sectors"].append(sig)
+            src["sector"] = geo["sectors"].index(sig)
+            where = "screen"
+        else:
+            continue
+        rooms[n] = {"map": where, "sector": src["sector"], "colours": src["colours"],
+                    "cells": src["cells"], "platforms": src["platforms"], "shafts": src["shafts"],
+                    "holes": src["holes"], "zone": phase + 1, "passed": True}
+
     # a door between sectors: the move into a room that a later survey first
     # reached needs as many parts fitted as that survey had; moves within a
     # sector, and back out of it, are open
@@ -136,10 +165,26 @@ def main():
                         break
                     if abs(y - base) <= 1:
                         stood[room][base].add(x)
+        prisons = set(args.prisons.split(","))
         jumped = defaultdict(set)
         for e in g["edges"]:
-            if e["via"] in ("right~", "left~") and room_of(e["from"]) != room_of(e["to"]):
+            # a jump that ended in a prison was a fall to his death, not a crossing
+            if e["via"] in ("right~", "left~") and room_of(e["from"]) != room_of(e["to"]) and room_of(e["to"]) not in prisons:
                 jumped[room_of(e["from"])].add(e["via"][:-1])
+        # a node Dan cannot move from at all is where he lay unconscious after a
+        # fall: that floor is a pit, and a room whose floor nodes are all such
+        # has no floor - falling in is death
+        dead = defaultdict(set)
+        for node, walks in probe.items():
+            room, b = node.split(":")
+            if room in rooms and int(b) >= 7 and all(len({x for x, y in t if x != "room"}) <= 1 and t[-1][0] != "room" for t in walks.values()):
+                dead[room].add(node)
+        for room in dead:
+            floor_nodes = [n for n in probe if n.split(":")[0] == room and int(n.split(":")[1]) >= 7]
+            if all(n in dead[room] for n in floor_nodes):
+                rooms[room]["platforms"] = [p for p in rooms[room]["platforms"] if p["y"] < TH - 3]
+                rooms[room]["holes"] = [[0, TW]]
+                stood[room] = defaultdict(set, {b: xs for b, xs in stood[room].items() if b < 120})
         for room in stood:
             for base, xs in stood[room].items():
                 feet = base + 5                       # the original's y is five above the feet
@@ -176,7 +221,8 @@ def main():
                 # stood on, minus the pit
                 base_cells = set(cells)
                 for p in rooms[room]["platforms"]:
-                    if p["y"] == row:
+                    # a room read off its own screen is not trusted beyond what he stood on
+                    if p["y"] == row and rooms[room]["map"] != "screen":
                         base_cells.update(range(p["x0"], p["x1"]))
                 base_cells -= hole_cells
                 pieces, run = [], []
@@ -260,6 +306,13 @@ def main():
             # standing there (123 on a room's floor, less on an upper one)
             floor = g["nodes"][e["from"]]["y"] // 16
             stop = e.get("arrive", {}).get("y", 123) // 16     # where the ride stopped
+            chain = [a] + [str(r) for r in e.get("through", []) if str(r) in rooms] + [b]
+            if len(chain) > 2:
+                for i in range(len(chain) - 1):
+                    last = i == len(chain) - 2
+                    z = zones[(chain[i], chain[i + 1], via, floor if i == 0 else 7, stop if last else -1)]
+                    z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
+                continue
             z = zones[(a, b, via, floor, stop)]
             z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
 
@@ -292,8 +345,8 @@ def main():
             continue
         # ... and the floor the ride stops at, in the room it arrives in: the
         # original passes every other floor on the way
-        stop_feet = (TH - 2) * 8 - (7 - stop) * 16
-        if a == b and abs(stop_feet - feet) < 16:
+        stop_feet = -1 if stop < 0 else (TH - 2) * 8 - (7 - stop) * 16   # -1: passes through
+        if stop >= 0 and a == b and abs(stop_feet - feet) < 16:
             # the broken lift: it breaks at the height another ride in this
             # shaft stopped at, and Dan drops back to where he called it
             others = [z[4] for z in zones if z[1] == a and abs(((TH - 2) * 8 - (7 - z[4]) * 16) - feet) >= 16]
@@ -348,6 +401,7 @@ def main():
         "rooms": rooms,
         "parts": [{"room": p} for p in parts if p in rooms],
         "doors": doors,
+        "prisons": [p for p in args.prisons.split(",") if p in rooms],
         "slot": args.slot if args.slot in rooms else None,
     }
     with open(args.out, "w") as f:
