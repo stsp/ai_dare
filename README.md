@@ -83,17 +83,18 @@ silently inflated its own reachability figure.
 
 ## Sprites
 
-Dan is drawn from illustrations: the four renders in the repository root
-(two running strides, a kneel and a firing stride, all in profile).
+Dan is drawn from illustrations: the renders in the repository root (two
+running strides, a kneel, a jump and a firing stride, all in profile; the
+left-facing set is not used, since the game mirrors the frames itself).
 `tools/make_sprites.py` cuts each figure off its checkerboard, scales the set
 so a running Dan is 33 cells tall, packs them into `assets/dan.png` at the
 canvas's 3x scale, and writes `js/dan_sheet.js` with each frame's position and
 where Dan's body sits within it, so the hit box is centred on him rather than
 on the rifle. The game draws the frames 1:1, so they keep their line work.
 
-Four poses make a two-frame run cycle, a kneel, a leap (the wide stride) and
-a muzzle flash while firing; there is no standing pose, so a still Dan holds
-the narrower stride. The Treens, the seated figure in the self-destruct room
+Five poses make a two-frame run cycle, a kneel, a jump and a muzzle flash
+while firing; there is no standing pose, so a still Dan holds the narrower
+stride. The Treens, the seated figure in the self-destruct room
 and the pickups are still the project's own single-colour bitmaps in
 `js/sprites.js`.
 
