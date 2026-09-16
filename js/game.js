@@ -346,8 +346,7 @@ function updateDan(dt) {
   //     held rides on through it. That is how the original behaves.
   const exits = EXITS[state.room];
   const cell = Math.floor((dan.x + DAN_W / 2) / 8);
-  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell) &&
-                                                 Math.abs(dan.y + DAN_H - l.feet) <= 14);
+  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell));
   if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
   if (!dan.onLift && dan.onGround && !dan.liftLatch) {
     if (held.down() && liftHere("down")) dan.onLift = { dir: 1, link: liftHere("down") };
@@ -522,7 +521,7 @@ function updateTreens(dt) {
       });
     }
 
-    if (dan.invuln <= 0 && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
+    if (dan.invuln <= 0 && !dan.onLift && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
       hurtDan(18);
       dan.vx = (dan.x < t.x ? -1 : 1) * 90;
       dan.vy = -70;
@@ -547,7 +546,8 @@ function updateLasers(dt) {
         }
       }
     } else if (dan.invuln <= 0 && overlaps(l.x, l.y, 4, 2, dan.x, dan.y, DAN_W, DAN_H) &&
-               !dan.kneeling) {
+               !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
+
       hurtDan(10);
       l.travelled = 1e9;
     }
