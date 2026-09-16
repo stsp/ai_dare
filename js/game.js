@@ -15,10 +15,10 @@ const LEVEL = window.DANDARE_LEVEL;
 const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 
 // --- tuning ---------------------------------------------------------------
-const RUN_SPEED = 62;          // px/s
-const GRAVITY = 420;
-const JUMP_VY = -158;
-const JUMP_VX = 46;            // diagonal hop
+const RUN_SPEED = 72;          // px/s, as measured in the original
+const GRAVITY = 500;
+const JUMP_VY = -100;          // the original's jump: 10 px high, 0.4 s in the air
+const JUMP_VX = 80;            // ... and four cells along
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 const LASER_SPEED = 210;
@@ -194,6 +194,8 @@ const state = {
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
+  alerted: new Set(),      // rooms whose guards have raised the alarm
+  viewerTimer: 0,
   clearedRooms: new Set(),
   deadTreens: new Map(),   // room -> which of its guards have been shot
   burst: 0,              // lift-transfer flash, seconds left
@@ -226,6 +228,10 @@ function enterRoom(key, x, y) {
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
   dan.invuln = Math.max(dan.invuln, 0.8);
   treens = treens.filter((t) => Math.abs(t.x - dan.x) > 28 || Math.abs(t.y - dan.y) > 24);
+  if (treens.some((t) => !t.dead) && !state.alerted.has(key)) {
+    state.alerted.add(key);
+    call(["INTRUDER ALERT !"], 2.5);
+  }
   const zone = room.zone;
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
@@ -236,6 +242,14 @@ function enterRoom(key, x, y) {
     say(["THE SELF DESTRUCT ROOM"], 2.5);
     if (state.carrying) note(["WALK TO THE LEFT", "TO FIT THE PART"], 3);
   }
+}
+
+/** The Mekon on the video link: his face on the screen at the bottom right,
+ *  his words in the box at the top. */
+function call(lines, secs) {
+  say(lines, secs);
+  state.viewer = "mekon";
+  state.viewerTimer = secs;
 }
 
 /** Narration box at the top of the play area; one box, one sentence. */
@@ -256,6 +270,7 @@ function startGame() {
   state.energy = ENERGY_MAX;
   state.score = 0;
   state.sectorSeen = new Set();
+  state.alerted = new Set();
   state.clearedRooms = new Set();
   state.deadTreens = new Map();
   sdsParts = placeParts();
@@ -378,7 +393,13 @@ function updateDan(dt) {
     dan.vx = 0;
     dan.kneeling = false;
     dan.onGround = false;
-    const lift = dan.onLift, dir = lift.dir;
+    const lift = dan.onLift;
+    if (lift.hanging) {
+      if (held.left() || held.right()) { dan.onLift = null; dan.liftLatch = true; dan.face = held.left() ? -1 : 1; }
+      moveBetweenRooms();
+      return;
+    }
+    const dir = lift.dir;
     const hold = dir > 0 ? held.down() : held.up();
     const onward = lift.link && lift.link.to !== state.room && isOpen(lift.link);   // the shaft goes on
     if (hold && onward) { lift.stop = lift.link.stop; lift.stopHere = false; }   // riding through: the next stop is the next link's
@@ -399,9 +420,9 @@ function updateDan(dt) {
       const past = dir > 0 ? lift.stop > lift.startFeet + 16 : lift.stop < lift.startFeet - 16;
       if (reached && past) {
         dan.y = lift.stop - DAN_H;
-        dan.onLift = null; dan.liftLatch = true;
         const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8);
-        if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }
+        if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true; }
+        else { lift.hanging = true; lift.dir = 0; }     // the broken lift: he hangs there until he moves
       }
     }
     if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; }
@@ -592,10 +613,7 @@ function capture() {
   const p = highestPlatform(ROOMS[cell]);
   resetDan(p.x, p.y - DAN_H);
   enterRoom(cell, p.x, p.y - DAN_H);
-  state.viewer = "mekon";
-  say(["DAN IS CAPTURED!"], 3);
-  note(["TEN MINUTES LOST"], 3);
-  setTimeout(() => { state.viewer = "asteroid"; }, 3000);
+  call(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"], 3);
 }
 
 // ------------------------------------------------------------------- pickups
@@ -891,6 +909,7 @@ function frame(now) {
   } else {
     state.timeLeft -= dt * CLOCK_RATE;
     if (state.messageTimer > 0) state.messageTimer -= dt;
+    if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
     if (state.burst > 0) state.burst -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
