@@ -124,6 +124,29 @@ class MapReader:
         return [k for k, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:3]]
 
 
+class ArrayReader(MapReader):
+    """A single room given as a 144x240 RGB array - a screen dumped from the
+    game itself, for a room the map does not show."""
+    def __init__(self, arr):
+        self.a = np.asarray(arr).astype(int)
+        self.cols, self.rows = 1, 1
+        self.ink = self.a.sum(axis=2) > 0
+
+    def _cells(self, r, c):
+        return self.a.reshape(TH, CS, TW, CS, 3).transpose(0, 2, 1, 3, 4)
+
+    def band_colours(self, r, c):
+        band = self.a[RH - CS * 2:RH, :].reshape(-1, 3)
+        counts = {}
+        for name, v in SPECTRUM.items():
+            if name in ("black", "blue", "dblue"):
+                continue
+            n = int(np.all(band == v, axis=-1).sum())
+            if n:
+                counts[name] = n
+        return [k for k, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:3]]
+
+
 def read_room(reader, r, c):
     """Classify one room's 30x18 cells and read the geometry Dan plays on.
 
@@ -381,6 +404,11 @@ def extend_shaft(room, x, w=4):
     room["cells"] = "".join(cells)
 
 
+def colour_signature(colours):
+    merge = {"dcyan": "cyan", "dblue": "blue", "bwhite": "white"}
+    return tuple(sorted({merge.get(x, x) for x in colours[:2]}))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("map", nargs="?")
@@ -394,10 +422,9 @@ def main():
             if reader.is_room(r, c):
                 rooms[f"{r},{c}"] = read_room(reader, r, c)
 
-    merge = {"dcyan": "cyan", "dblue": "blue", "bwhite": "white"}
     sigs, sectors = {}, []
     for key in sorted(rooms):
-        sig = tuple(sorted({merge.get(x, x) for x in rooms[key]["colours"][:2]}))
+        sig = colour_signature(rooms[key]["colours"])
         if sig not in sigs:
             sigs[sig] = len(sectors)
             sectors.append(list(sig))

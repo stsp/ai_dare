@@ -226,11 +226,10 @@ function enterRoom(key, x, y) {
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
   dan.invuln = Math.max(dan.invuln, 0.8);
   treens = treens.filter((t) => Math.abs(t.x - dan.x) > 28 || Math.abs(t.y - dan.y) > 24);
-  const sector = room.sector;
-  if (!state.sectorSeen.has(sector)) {
-    state.sectorSeen.add(sector);
-    const style = sectorStyle(LEVEL, room);
-    say(["DAN IS NOW IN", style.name], 2.5);
+  const zone = room.zone;
+  if (!state.sectorSeen.has(zone)) {
+    state.sectorSeen.add(zone);
+    say([zone ? "DAN IS NOW IN SECTOR " + zone : "DAN IS ON THE SURFACE"], 2.5);
   }
   boss = null;
   if (key === SDS_ROOM) {
@@ -674,6 +673,43 @@ function drawLiftMarks(ctx, key, room) {
   }
 }
 
+/** The doors between sectors: a panel the height of Dan at the exit, shut
+ *  until enough parts of the mechanism are fitted, then only its frame. */
+function drawGates(ctx, key, room) {
+  const e = EXITS[key];
+  const style = sectorStyle(LEVEL, room);
+  const gates = [e.left, e.right, ...e.lifts].filter((l) => l && l.needs);
+  for (const l of gates) {
+    const open = isOpen(l);
+    if (l.kind === "left" || l.kind === "right") {
+      const floor = platformsOf(room).filter((p) => p.y > 40).reduce((a, b) => (b.y > a.y ? b : a), { y: VIEW_H - 16 }).y;
+      const x = l.kind === "right" ? VIEW_W - 16 : 0, y = floor - 40;
+      ctx.fillStyle = style.wall;                       // the frame
+      ctx.fillRect(x, y - 2, 16, 2);
+      ctx.fillRect(x, y, 2, 40);
+      ctx.fillRect(x + 14, y, 2, 40);
+      if (!open) {
+        ctx.fillStyle = style.solid;
+        ctx.fillRect(x + 2, y, 12, 40);
+        ctx.fillStyle = style.band[0];
+        for (let j = 2; j < 40; j += 6) ctx.fillRect(x + 3, y + j, 10, 2);
+        ctx.fillStyle = C.bred;                         // its lock
+        ctx.fillRect(x + 6, y + 18, 4, 4);
+      } else {
+        ctx.fillStyle = C.black;
+        ctx.fillRect(x + 2, y, 12, 40);
+      }
+    } else {
+      const sh = room.shafts.find((s) => l.x1 >= s.x - 3 && l.x0 <= s.x + s.w);
+      if (!sh) continue;
+      const x0 = sh.x * 8, w = sh.w * 8;
+      const y = l.kind === "down" ? VIEW_H - 4 : 0;
+      ctx.fillStyle = open ? style.wall : C.bred;       // a bar across the shaft
+      ctx.fillRect(x0 + 2, y, w - 4, open ? 1 : 3);
+    }
+  }
+}
+
 function danSprite() {
   if (dan.onLift) return "dan_stand";
   if (dan.kneeling) return "dan_kneel";
@@ -716,6 +752,7 @@ function draw() {
   drawRoom(ctx, LEVEL, key, room, state.phase * 12);
 
   drawLiftMarks(ctx, key, room);
+  drawGates(ctx, key, room);
 
   for (const p of pickups) {
     if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),

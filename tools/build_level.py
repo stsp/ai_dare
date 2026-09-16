@@ -20,7 +20,12 @@ is a ride between its floors.
 import argparse
 import json
 import os
+import sys
 from collections import defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from extract_level import ArrayReader, read_room, colour_signature   # noqa: E402
+from match_rooms import render_scr                                   # noqa: E402
 
 TW, TH = 30, 18
 
@@ -34,6 +39,11 @@ def main():
     ap.add_argument("--parts", default="",
                     help="rooms holding the parts, in order, e.g. 83,...")
     ap.add_argument("--slot", default="143", help="the self-destruct room")
+    ap.add_argument("--screens", default="data/emu",
+                    help="where the surveyed screens are; a room the map does not show "
+                         "takes its geometry from its own screen")
+    ap.add_argument("--exclude", default="",
+                    help="room numbers that are not rooms: the capture sequence, for one")
     ap.add_argument("-o", "--out", default="level.json")
     args = ap.parse_args()
 
@@ -56,26 +66,44 @@ def main():
     match = {int(k): v for k, v in json.load(open(args.match)).items()}
     geo = json.load(open(args.geometry))
 
+    exclude = {int(x) for x in args.exclude.split(",") if x}
     rooms = {}
     for node in g["nodes"].values():
         n = node["room"]
-        if n in rooms:
+        if n in rooms or n in exclude:
             continue
         m = match.get(n)
-        if not m:
-            print(f"room {n}: no map match, skipped")
+        scr = os.path.join(args.screens, f"room_{n}.scr")
+        if m and (m["score"] >= 0.6 or "chain" in m):
+            src = geo["rooms"][m["key"]]
+            where = m["key"]
+        elif os.path.exists(scr):
+            # not on the map: read the room off the screen the survey dumped
+            img = render_scr(open(scr, "rb").read())[8:8 + 144, 8:8 + 240]
+            src = read_room(ArrayReader(img), 0, 0)
+            sig = list(colour_signature(src["colours"]))
+            if sig not in geo["sectors"]:
+                geo["sectors"].append(sig)
+            src["sector"] = geo["sectors"].index(sig)
+            where = "screen"
+        else:
+            print(f"room {n}: no map match and no screen, skipped")
             continue
-        src = geo["rooms"][m["key"]]
         rooms[str(n)] = {
-            "map": m["key"], "sector": src["sector"], "colours": src["colours"],
+            "map": where, "sector": src["sector"], "colours": src["colours"],
             "cells": src["cells"], "platforms": src["platforms"],
             "shafts": src["shafts"], "holes": src["holes"],
+            # the game's own numbering: the surface, then sector 1, 2, ... in
+            # the order the doors open (the survey that first reached the room)
+            "zone": 0 if where.startswith("0,") else node["phase"] + 1,
         }
-    # the phase in which each room-to-room move first became possible
+    # a door between sectors: the move into a room that a later survey first
+    # reached needs as many parts fitted as that survey had; moves within a
+    # sector, and back out of it, are open
     needs = {}
     for e in g["edges"]:
         a, b = e["from"].split(":")[0], e["to"].split(":")[0]
-        if a != b:
+        if a != b and a in rooms and b in rooms and rooms[a]["zone"] < rooms[b]["zone"] and e["phase"] > 0:
             needs[(a, b)] = min(needs.get((a, b), 99), e["phase"])
 
     def room_of(node_key):
