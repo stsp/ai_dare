@@ -12,6 +12,42 @@
 const SPR = {};
 function defineSprite(name, rows) { SPR[name] = { w: rows[0].length, h: rows.length, rows }; }
 
+// ------------------------------------------------------- drawn frames (PNG)
+
+/* Dan's frames are illustrations, not bitmaps: assets/dan.png, built by
+   tools/make_sprites.py from the renders in the repository root, packed at
+   the canvas scale so they draw 1:1 with no resampling. js/dan_sheet.js says
+   where each frame sits and where Dan's body is within it, so the hit box is
+   centred on him rather than on the rifle he holds out in front. */
+const SHEETS = {};
+function loadSheet(name, meta) {
+  if (!meta) return;
+  const img = new Image();
+  img.onload = () => { SHEETS[name] = { img, meta }; };
+  img.src = meta.image;
+}
+loadSheet("dan", window.DAN_SHEET);
+
+/** Draw a sheet frame with its feet on the floor of the hit box (bx, by, bw,
+ *  bh) and its body over the box's centre. Returns false while the sheet is
+ *  still loading, so the caller can fall back to a bitmap. */
+function drawSheetFrame(ctx, sheet, frame, bx, by, bw, bh, flip) {
+  const s = SHEETS[sheet];
+  const fr = s && s.meta.frames[frame];
+  if (!fr) return false;
+  const k = s.meta.scale;
+  const w = fr.w / k, h = fr.h / k;
+  const x = bx + bw / 2 - fr.cx, y = by + bh - h;
+  ctx.save();
+  if (flip) {                      // mirror about the hit box's centre line
+    ctx.translate(2 * bx + bw, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(s.img, fr.x, fr.y, fr.w, fr.h, x, y, w, h);
+  ctx.restore();
+  return true;
+}
+
 // ------------------------------------------------------------------ Dan 18x32
 
 defineSprite("dan_stand", [
