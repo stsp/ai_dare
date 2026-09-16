@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--screens", default="data/emu",
                     help="where the surveyed screens are; a room the map does not show "
                          "takes its geometry from its own screen")
+    ap.add_argument("--floors", default="data/emu/floor.json",
+                    help="floor probe: where Dan stood and where he fell, walking from each node")
     ap.add_argument("--doors", default="",
                     help="doors known from the walkthrough but not yet surveyed, as "
                          "room:side:parts, e.g. 209:right:2 - drawn shut until surveyed")
@@ -111,6 +113,95 @@ def main():
 
     def room_of(node_key):
         return node_key.split(":")[0]
+
+    # Floors and pits as Dan found them walking: the cells he stood on at each
+    # height, and the cell the floor dropped from under him. The picture of a
+    # pit says nothing about its edges; this does. A pit runs from the cell he
+    # fell from to the next cell he was seen standing on, or the room's edge -
+    # and no further than a jump where the survey saw him jump it.
+    if os.path.exists(args.floors):
+        probe = json.load(open(args.floors))
+        stood, falls = defaultdict(lambda: defaultdict(set)), defaultdict(lambda: defaultdict(list))
+        for node, walks in probe.items():
+            room, b = node.split(":")
+            if room not in rooms:
+                continue
+            for direction, trace in walks.items():
+                base = trace[0][1]
+                for (x, y) in trace:
+                    if x == "room":
+                        break
+                    if y > base + 2:
+                        falls[room][base].append((x, direction))
+                        break
+                    if abs(y - base) <= 1:
+                        stood[room][base].add(x)
+        jumped = defaultdict(set)
+        for e in g["edges"]:
+            if e["via"] in ("right~", "left~") and room_of(e["from"]) != room_of(e["to"]):
+                jumped[room_of(e["from"])].add(e["via"][:-1])
+        for room in stood:
+            for base, xs in stood[room].items():
+                feet = base + 5                       # the original's y is five above the feet
+                row = round(feet / 8)
+                near = [p["y"] for p in rooms[room]["platforms"] if abs(p["y"] - row) <= 1]
+                row = near[0] if near else row
+                fell_cells = {x for x, _ in falls[room].get(base, [])}
+                cells = set()
+                for x in xs - fell_cells:              # Dan is two cells wide
+                    cells.add(x); cells.add(x + 1)
+                cells -= fell_cells
+                hole_cells = set()
+                for x, direction in falls[room].get(base, []):
+                    if direction == "right":
+                        nxt = min((c for c in cells if c > x), default=TW)
+                        if "right" in jumped[room]:
+                            nxt = min(nxt, x + 4)
+                        hole_cells.update(range(x, nxt))
+                    else:
+                        prv = max((c for c in cells if c < x), default=-1)
+                        if "left" in jumped[room]:
+                            prv = max(prv, x - 4)
+                        hole_cells.update(range(prv + 1, x + 1))
+                # where he jumped a pit and walked on into the next room, the
+                # floor runs from the pit's far edge to that edge of the room
+                for x, direction in falls[room].get(base, []):
+                    if direction == "right" and "right" in jumped[room]:
+                        end = max((h for h in hole_cells if h >= x), default=x) + 1
+                        cells.update(range(end, TW))
+                    if direction == "left" and "left" in jumped[room]:
+                        start = min((h for h in hole_cells if h <= x), default=x)
+                        cells.update(range(0, start))
+                # the floor at this height: what the map showed, plus what he
+                # stood on, minus the pit
+                base_cells = set(cells)
+                for p in rooms[room]["platforms"]:
+                    if p["y"] == row:
+                        base_cells.update(range(p["x0"], p["x1"]))
+                base_cells -= hole_cells
+                pieces, run = [], []
+                for x in range(TW):
+                    if x in base_cells:
+                        run.append(x)
+                    elif run:
+                        pieces.append((run[0], run[-1] + 1)); run = []
+                if run:
+                    pieces.append((run[0], run[-1] + 1))
+                keep = [p for p in rooms[room]["platforms"] if p["y"] != row]
+                if row >= TH - 3:                      # a pit cuts the step course as well
+                    keep = [p for p in keep if not (p["y"] >= TH - 3 and any(h in range(p["x0"], p["x1"]) for h in hole_cells))]
+                keep += [{"y": row, "x0": a, "x1": b} for a, b in pieces]
+                rooms[room]["platforms"] = sorted(keep, key=lambda p: (p["y"], p["x0"]))
+                if row >= TH - 3 and hole_cells:
+                    hs, run = [], []
+                    for x in range(TW):
+                        if x in hole_cells:
+                            run.append(x)
+                        elif run:
+                            hs.append([run[0], run[-1] + 1]); run = []
+                    if run:
+                        hs.append([run[0], run[-1] + 1])
+                    rooms[room]["holes"] = hs
 
     # Upper floors the original walked along. Where Dan walked out of a room
     # at an upper level and arrived in the next at the same level, that
