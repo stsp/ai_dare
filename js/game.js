@@ -640,7 +640,7 @@ function updatePickups() {
     }
   }
   // the socket: walk to the left of the self-destruct room with a part
-  if (key === SDS_ROOM && state.carrying && dan.x <= 8 && dan.onGround) {
+  if (key === SDS_ROOM && state.carrying && dan.x <= 32 && dan.onGround) {
     state.carrying = false;
     state.fitted++;
     state.score += 1000;
