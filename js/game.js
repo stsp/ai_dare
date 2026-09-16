@@ -352,12 +352,13 @@ function updateDan(dt) {
   if (dan.invuln > 0) dan.invuln -= dt;
   if (dan.fireCool > 0) dan.fireCool -= dt;
 
-  // --- grav-lift: stand on the cells the game accepts, just left of the
-  //     rails, and hold up or down. Holding carries Dan on into the next room;
-  //     letting go leaves him hanging in the field; left or right steps off.
+  // --- grav-lift: stand on the marked cells and press up or down. One press
+  //     rides to the next floor, in this room or the next; keeping the key
+  //     held rides on through it. That is how the original behaves.
   const exits = EXITS[state.room];
   const cell = Math.floor((dan.x + DAN_W / 2) / 8);
-  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell));
+  const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell) &&
+                                                 Math.abs(dan.y + DAN_H - l.feet) <= 14);
   if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
   if (!dan.onLift && dan.onGround && !dan.liftLatch) {
     if (held.down() && liftHere("down")) dan.onLift = { dir: 1, link: liftHere("down") };
@@ -372,20 +373,9 @@ function updateDan(dt) {
     dan.onLift.startFeet = dan.y + DAN_H;      // the floor he set off from does not catch him
     if (!dan.onLift.link && sh) {
       const kind = dan.onLift.dir > 0 ? "down" : "up";
-      dan.onLift.link = exits.lifts.find((l) => l.kind === kind && l.x1 >= sh.x - 3 && l.x0 <= sh.x + sh.w) || null;
+      dan.onLift.link = exits.lifts.find((l) => l.kind === kind && l.x1 >= sh.x - 3 && l.x0 <= sh.x + sh.w &&
+                                                l.to !== state.room) || null;
     }
-  }
-  const inField = (px, py) => {
-    const i = Math.floor((px + DAN_W / 2) / 8), j = Math.floor(py / 8);
-    if (j < 0 || j >= RH || i < 0 || i >= RW) return false;
-    const v = room.cells.charCodeAt(j * RW + i) - 48;
-    return v === 2 || v === 5;
-  };
-
-  if (dan.onLift && (held.left() || held.right())) {
-    dan.face = held.left() ? -1 : 1;
-    dan.onLift = null;
-    dan.vy = 0;
   }
 
   if (dan.onLift) {
@@ -393,35 +383,32 @@ function updateDan(dt) {
     dan.vx = 0;
     dan.kneeling = false;
     dan.onGround = false;
-    const dir = held.down() ? 1 : held.up() ? -1 : 0;
-    if (dir !== 0 && dir !== dan.onLift.dir) {      // reversing: pick up that direction's link
-      dan.onLift.dir = dir;
-      const kind = dir > 0 ? "down" : "up";
-      const sh0 = dan.onLift.shaft;
-      dan.onLift.link = exits.lifts.find((l) => l.kind === kind &&
-        (sh0 ? l.x1 >= sh0.x - 3 && l.x0 <= sh0.x + sh0.w : inLiftZone(room, l, cell))) || null;
-    }
-    const sh = dan.onLift.shaft;
+    const lift = dan.onLift, dir = lift.dir;
+    const hold = dir > 0 ? held.down() : held.up();
+    const onward = lift.link && lift.link.to !== state.room;   // the shaft goes on into another room
+    const sh = lift.shaft;
     if (sh) {
       const cx = (sh.x + sh.w / 2) * 8 - DAN_W / 2;
-      dan.x += Math.sign(cx - dan.x) * Math.min(60 * dt, Math.abs(cx - dan.x));
+      dan.x += Math.sign(cx - dan.x) * Math.min(90 * dt, Math.abs(cx - dan.x));
     }
-    if (dir !== 0) {
-      const before = dan.y + DAN_H;
-      dan.y += dir * LIFT_SPEED * dt;
-      if (dir > 0) {                 // riding down: a floor catches him, unless the field cuts through it
-        const link = dan.onLift.link;
-        for (const p of platforms) {
-          const through = link && link.to !== state.room;   // called away: the field has him
-          if (before <= p.y + 1 && dan.y + DAN_H >= p.y && dan.x + DAN_W > p.x0 && dan.x < p.x1 &&
-              p.y > dan.onLift.startFeet + 2 && !(dan.y + DAN_H > VIEW_H) && !through) {
-            dan.y = p.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
-            break;
-          }
-        }
+    const before = dan.y + DAN_H;
+    dan.y += dir * LIFT_SPEED * dt;
+    const feet = dan.y + DAN_H;
+    // a floor beside the shaft is a stop: the ride ends there unless the key
+    // is still held and the shaft carries on into the next room
+    for (const p of platforms) {
+      const at = dir > 0 ? (before <= p.y + 1 && feet >= p.y) : (before >= p.y - 1 && feet <= p.y);
+      const beside = dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8;
+      const past = dir > 0 ? p.y > lift.startFeet + 2 : p.y < lift.startFeet - 2;
+      if (at && beside && past && !(hold && onward) && !(feet > VIEW_H)) {
+        dan.y = p.y - DAN_H; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
+        break;
       }
     }
-    if (dan.onLift && dan.y < 0 && !(dan.onLift.link && dan.onLift.link.kind === "up" && dan.onLift.link.to !== state.room)) dan.y = 0;
+    if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; }
+    if (dan.onLift && dir > 0 && feet > VIEW_H && !onward) {
+      dan.onLift = null; dan.liftLatch = true;               // no floor met: drop to it
+    }
   } else {
     // --- kneel: no turning while down ---
     dan.kneeling = held.down() && dan.onGround;
@@ -445,7 +432,7 @@ function updateDan(dt) {
 
     if (dan.onGround) {
       dan.vx = dir * RUN_SPEED;
-      if (held.up()) {
+      if (held.up() && !dan.liftLatch) {
         dan.vy = JUMP_VY;
         dan.vx = dir * JUMP_VX;   // straight up, or a diagonal hop
         dan.onGround = false;
@@ -492,11 +479,13 @@ function moveBetweenRooms() {
   } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room) {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
     dan.onLift = { dir: 1, link: null };
+    dan.liftLatch = true;
   } else if (dan.y > VIEW_H - DAN_H && !dan.onLift && zone(e.drops)) {
     enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);                   // fell through
   } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room) {
     enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
     dan.onLift = { dir: -1, link: null };
+    dan.liftLatch = true;
   } else {
     // no way out that way: keep Dan on this screen
     if (dan.x < 0) dan.x = 0;
@@ -657,8 +646,8 @@ function drawLiftMarks(ctx, key, room) {
   for (const l of EXITS[key].lifts) {
     const [a, b] = liftSpan(room, l);
     const x0 = a * 8, x1 = (b + 1) * 8;
-    const under = plats.filter((p) => p.x1 > x0 && p.x0 < x1 && p.y > 40);
-    const floor = under.length ? under.reduce((p, q) => (q.y < p.y ? q : p)).y : VIEW_H - 16;
+    const under = plats.filter((p) => p.x1 > x0 && p.x0 < x1 && Math.abs(p.y - l.feet) <= 14);
+    const floor = under.length ? under.reduce((p, q) => (q.y < p.y ? q : p)).y : l.feet;
     const cx = Math.round((x0 + x1) / 2) + (l.kind === "up" ? -4 : 4);
     const y = floor - 3;
     ctx.fillStyle = C.byellow;

@@ -73,10 +73,16 @@ def main():
                 # Dan walked off a hole and fell: a drop, over the room's holes
                 walks[(a, "drop")].add(b)
         else:
-            # a ride tried over a hole in the floor is a fall, not a lift
+            # a ride tried over a hole in the floor is a fall, not a lift; a
+            # "ride" that left Dan on the floor he started from was a jump
             if any(h0 <= e["x0"] <= h1 or h0 <= e["x1"] <= h1 for h0, h1 in rooms[a]["holes"]):
                 continue
-            z = zones[(a, b, via)]
+            if a == b and e["from"].split(":")[1] == e["to"].split(":")[1]:
+                continue
+            # the floor the ride was called from: the original's y for Dan
+            # standing there (123 on a room's floor, less on an upper one)
+            floor = g["nodes"][e["from"]]["y"] // 16
+            z = zones[(a, b, via, floor)]
             z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
 
     links = []
@@ -88,14 +94,17 @@ def main():
                     links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1})
             else:
                 links.append({"from": a, "to": b, "kind": via})
-    for (a, b, via), (x0, x1) in sorted(zones.items()):
+    for (a, b, via, floor), (x0, x1) in sorted(zones.items()):
         # a ride tried at the very edge that merely walked into the next room,
         # or beside a hole that Dan simply fell through
         if (x0 <= 0 or x1 >= TW - 1) and b in walks[(a, "left" if x0 <= 0 else "right")]:
             continue
         if b in walks[(a, "drop")]:
             continue
-        links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1})
+        # feet height, in the recreation's pixels, of the floor it is called
+        # from: the original's floor (y 123) is the room's bottom course
+        links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1,
+                      "feet": (TH - 2) * 8 - (7 - floor) * 16})
 
     # a doorway the game let Dan through is open, whatever the map's frame
     # around it looks like: clear wall cells at the edge, floor to head height
