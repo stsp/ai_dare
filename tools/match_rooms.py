@@ -30,8 +30,9 @@ def render_scr(data):
     pix = np.frombuffer(data[:6144], np.uint8)
     attr = np.frombuffer(data[6144:6912], np.uint8)
     img = np.zeros((192, 256, 3), np.uint8)
-    pal = np.array([(0, 0, 0), (0, 0, 216), (216, 0, 0), (216, 0, 216),
-                    (0, 216, 0), (0, 216, 216), (216, 216, 0), (216, 216, 216)])
+    # the map author's palette, so the extractor reads a dump like a map crop
+    pal = np.array([(0, 0, 0), (0, 0, 216), (199, 1, 0), (216, 1, 216),
+                    (0, 197, 0), (0, 216, 216), (211, 210, 0), (216, 216, 216)])
     for y in range(192):
         addr = ((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2)
         row = np.unpackbits(pix[addr:addr + 32])
@@ -51,7 +52,9 @@ def main():
     ap.add_argument("map")
     ap.add_argument("scr_dir")
     ap.add_argument("--level", default="level.json")
-    ap.add_argument("--graph")
+    ap.add_argument("--graph", nargs="*", default=[],
+                    help="survey graphs; chains are built within one survey, so a door "
+                         "between sectors never binds two map blocks together")
     ap.add_argument("-o", "--out", default="match.json")
     args = ap.parse_args()
     m = np.array(Image.open(args.map).convert("RGB"))
@@ -69,14 +72,17 @@ def main():
 
     # chains: rooms joined by walking right, in order
     chains = []
-    if args.graph:
-        g = json.load(open(args.graph))
+    seen_rooms = set()
+    for gf in args.graph:
+        g = json.load(open(gf))
         right = {}
         for e in g["edges"]:
             if e["via"] == "right":
                 a, b = int(e["from"].split(":")[0]), int(e["to"].split(":")[0])
                 arr = e.get("arrive", {})
-                if a != b and arr.get("x", 0) <= 3:      # arrived at the left edge: a walk, not a fall
+                # arrived at the left edge: a walk, not a fall; and both rooms
+                # new to this survey, so the chain stays within one sector
+                if a != b and arr.get("x", 0) <= 3 and a not in seen_rooms and b not in seen_rooms:
                     right.setdefault(a, b)
         heads = set(right) - set(right.values())
         for h in sorted(heads):
@@ -85,35 +91,39 @@ def main():
                 chain.append(right[chain[-1]]); seen.add(chain[-1])
             if len(chain) > 1:
                 chains.append(chain)
+        seen_rooms |= {v["room"] for v in g["nodes"].values()}
 
-    out, placed = {}, set()
+    # every map room is one game room: chains claim cells first, best fit
+    # first, then the rest take the best cell still free
+    out, placed, used = {}, set(), set()
+    fits = []
     for chain in chains:
         if any(n not in score for n in chain):
             continue
-        best = None
         for k in keys:
             r, c = map(int, k.split(","))
             cells = [f"{r},{c + i}" for i in range(len(chain))]
-            if not all(x in keys for x in cells):
-                continue
-            total = sum(score[n][x] for n, x in zip(chain, cells))
-            if best is None or total > best[0]:
-                best = (total, cells)
-        if best:
-            for n, k in zip(chain, best[1]):
-                out[n] = {"key": k, "score": round(score[n][k], 3), "chain": chain}
-                placed.add(n)
-            print(f"chain {chain} -> {best[1]}  ({best[0] / len(chain):.3f} avg)")
-    for n in sorted(score):
-        ranked = sorted(score[n].items(), key=lambda kv: -kv[1])
-        (k1, s1), (k2, s2) = ranked[0], ranked[1]
-        if n in placed:
-            if out[n]["key"] != k1:
-                print(f"room {n:3} -> {out[n]['key']} by chain (alone it would pick {k1} {s1:.3f})")
+            if all(x in keys for x in cells):
+                fits.append((sum(score[n][x] for n, x in zip(chain, cells)) / len(chain), chain, cells))
+    fits.sort(key=lambda f: -f[0])
+    for avg, chain, cells in fits:
+        if any(n in placed for n in chain) or any(k in used for k in cells):
             continue
+        if avg < 0.6:          # no row of the map holds this corridor: place its rooms singly
+            continue
+        for n, k in zip(chain, cells):
+            out[n] = {"key": k, "score": round(score[n][k], 3), "chain": chain}
+            placed.add(n); used.add(k)
+        print(f"chain {chain} -> {cells}  ({avg:.3f} avg)")
+    singles = sorted((n for n in score if n not in placed), key=lambda n: -max(score[n].values()))
+    for n in singles:
+        ranked = sorted(((v, k) for k, v in score[n].items() if k not in used), reverse=True)
+        (s1, k1), (s2, k2) = ranked[0], ranked[1]
         out[n] = {"key": k1, "score": round(s1, 3), "runner": k2, "margin": round(s1 - s2, 3)}
+        used.add(k1)
         flag = "" if s1 >= 0.6 and s1 - s2 >= 0.06 else "   <-- uncertain"
         print(f"room {n:3} -> {k1:6} {s1:.3f} (next {k2} {s2:.3f}){flag}")
+    out = dict(sorted(out.items()))
     json.dump(out, open(args.out, "w"), indent=1)
 
 
