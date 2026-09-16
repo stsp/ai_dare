@@ -265,7 +265,7 @@ function drawPanel(ctx, state) {
   for (let i = 0; i <= gw; i += 6) ctx.fillRect(gx + i, gy + gh - 3, 1, 3);
 
   drawText(ctx, "SCORE " + state.score, px + 104, py + 4, C.bwhite);
-  drawText(ctx, "KEYS " + state.keys + " OF 5", px + 104, py + 14, C.bcyan);
+  drawText(ctx, "PARTS " + state.fitted + " OF 5" + (state.carrying ? " +1" : ""), px + 104, py + 14, C.bcyan);
 
   // viewer window at the right: the asteroid, or the Mekon when he taunts you
   const vx = SCREEN_W - 44, vy = py + 2, vs = 26;

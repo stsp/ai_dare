@@ -6,8 +6,8 @@
  *
  * The rules follow the original: a two-hour countdown, an energy bar rather
  * than lives (run out and you are captured and dumped in a prison cell, losing
- * ten minutes), five SDS keys - one per colour-coded sector - to carry to the
- * self-destruct room, Treen guards that make a room safe once cleared, and
+ * ten minutes), five parts of the self-destruct mechanism - one per sector -
+ * to carry to its room and fit, each opening the door to the next sector, Treen guards that make a room safe once cleared, and
  * grav-lift shafts between floors.
  */
 
@@ -69,10 +69,12 @@ for (const key of ROOM_IDS) EXITS[key] = { left: null, right: null, drops: [], l
 for (const l of LEVEL.links) {
   const e = EXITS[l.from];
   if (!e) continue;
-  if (l.kind === "left" || l.kind === "right") e[l.kind] = l.to;
+  if (l.kind === "left" || l.kind === "right") e[l.kind] = l;
   else if (l.kind === "drop") e.drops.push(l);
   else e.lifts.push(l);
 }
+/** A door the original only opened once enough parts were fitted. */
+function isOpen(l) { return !!l && !(l.needs > state.fitted); }
 
 /** The cells a lift answers from: the ones the original accepted (a cell or
  *  two left of the rails) widened to the whole shaft, so standing anywhere
@@ -92,8 +94,8 @@ const HOPS = (() => {
   const q = [LEVEL.start];
   while (q.length) {
     const k = q.shift(), e = EXITS[k];
-    const next = [e.left, e.right, ...e.drops.map((x) => x.to), ...e.lifts.map((x) => x.to)];
-    for (const n of next) if (n && !(n in d)) { d[n] = d[k] + 1; q.push(n); }
+    const next = [e.left, e.right, ...e.drops, ...e.lifts].filter(Boolean).map((x) => x.to);
+    for (const n of next) if (!(n in d)) { d[n] = d[k] + 1; q.push(n); }
   }
   return d;
 })();
@@ -107,19 +109,13 @@ function findStart() {
 
 const START = findStart();
 
-/** One SDS key per sector (excluding the surface), in the screen furthest from
- *  the landing point - the original makes you cross each area to find one. */
-function placeKeys() {
-  const far = (x) => HOPS[x.key] ?? -1;
-  const bySector = new Map();
-  for (const item of PLAYABLE) {
-    if (item.room.sector === START.room.sector) continue;
-    const cur = bySector.get(item.room.sector);
-    if (!cur || far(item) > far(cur)) bySector.set(item.room.sector, item);
-  }
-  return [...bySector.values()].slice(0, 5).map((item, i) => {
-    const p = widestPlatform(item.room);
-    return { id: i, key: item.key, x: p.x, y: p.y - 10, taken: false };
+/** The parts of the self-destruct mechanism, where the original keeps them:
+ *  on the floor of the rooms the survey found them in. */
+function placeParts() {
+  return LEVEL.parts.map((p, i) => {
+    const room = ROOMS[p.room];
+    const floor = room.platforms.reduce((a, b) => (b.y > a.y ? b : a));
+    return { id: i, key: p.room, x: (p.x ?? 4) * 8, y: floor.y * 8 - 10, taken: false };
   });
 }
 
@@ -148,12 +144,7 @@ function placePrisons() {
   return out;
 }
 
-/** The self-destruct room: the most central screen on the bottom row. */
-function findSdsRoom() {
-  return PLAYABLE.reduce((a, b) => ((HOPS[b.key] ?? -1) > (HOPS[a.key] ?? -1) ? b : a)).key;
-}
-
-const SDS_ROOM = findSdsRoom();
+const SDS_ROOM = LEVEL.slot;
 const PRISONS = placePrisons();
 
 // ------------------------------------------------------------------ entities
@@ -196,7 +187,8 @@ const state = {
   energy: ENERGY_MAX,
   energyMax: ENERGY_MAX,
   score: 0,
-  keys: 0,
+  fitted: 0,           // parts of the mechanism in their sockets
+  carrying: false,     // Dan has a part on him
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
   msgBottom: null,       // second box, as the original uses for asides
@@ -213,7 +205,7 @@ let boss = null;          // the seated figure in the self-destruct room
 let treens = [];
 let pickups = [];
 let lasers = [];
-let sdsKeys = placeKeys();
+let sdsParts = placeParts();
 
 function currentRoom() { return ROOMS[state.room]; }
 
@@ -242,9 +234,8 @@ function enterRoom(key, x, y) {
   }
   boss = null;
   if (key === SDS_ROOM) {
-    const p = widestPlatform(room);
-    boss = { x: p.x + 40, y: p.y - 28, anim: 0 };
     say(["THE SELF DESTRUCT ROOM"], 2.5);
+    if (state.carrying) note(["WALK TO THE LEFT", "TO FIT THE PART"], 3);
   }
 }
 
@@ -265,11 +256,12 @@ function startGame() {
   state.timeLeft = START_TIME;
   state.energy = ENERGY_MAX;
   state.score = 0;
-  state.keys = 0;
   state.sectorSeen = new Set();
   state.clearedRooms = new Set();
   state.deadTreens = new Map();
-  sdsKeys = placeKeys();
+  sdsParts = placeParts();
+  state.fitted = 0;
+  state.carrying = false;
   const spawn = widestPlatform(START.room);
   resetDan(16, spawn.y - DAN_H);
   enterRoom(START.key, 16, spawn.y - DAN_H);
@@ -388,7 +380,7 @@ function updateDan(dt) {
     dan.onGround = false;
     const lift = dan.onLift, dir = lift.dir;
     const hold = dir > 0 ? held.down() : held.up();
-    const onward = lift.link && lift.link.to !== state.room;   // the shaft goes on into another room
+    const onward = lift.link && lift.link.to !== state.room && isOpen(lift.link);   // the shaft goes on
     const sh = lift.shaft;
     if (sh) {
       const cx = (sh.x + sh.w / 2) * 8 - DAN_W / 2;
@@ -476,17 +468,17 @@ function moveBetweenRooms() {
   const cell = Math.floor((dan.x + DAN_W / 2) / 8);
   const zone = (list) => list.find((l) => cell >= l.x0 && cell <= l.x1);
   const ride = dan.onLift && dan.onLift.link;
-  if (dan.x <= 0 && e.left) {
-    enterRoom(e.left, VIEW_W - DAN_W - 3, dan.y);
-  } else if (dan.x + DAN_W >= VIEW_W && e.right) {
-    enterRoom(e.right, 3, dan.y);
-  } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room) {
+  if (dan.x <= 0 && isOpen(e.left)) {
+    enterRoom(e.left.to, VIEW_W - DAN_W - 3, dan.y);
+  } else if (dan.x + DAN_W >= VIEW_W && isOpen(e.right)) {
+    enterRoom(e.right.to, 3, dan.y);
+  } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
     dan.onLift = { dir: 1, link: null };
     dan.liftLatch = true;
-  } else if (dan.y > VIEW_H - DAN_H && !dan.onLift && zone(e.drops)) {
+  } else if (dan.y > VIEW_H - DAN_H && !dan.onLift && isOpen(zone(e.drops))) {
     enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);                   // fell through
-  } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room) {
+  } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
     dan.onLift = { dir: -1, link: null };
     dan.liftLatch = true;
@@ -500,7 +492,7 @@ function moveBetweenRooms() {
       const floor = under.length ? under.reduce((a, b) => (b.y > a.y ? b : a)) : { y: VIEW_H };
       dan.y = floor.y - DAN_H; dan.vy = 0; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
     }
-    const ridingOut = ride && ride.kind === "up" && ride.to !== state.room;
+    const ridingOut = ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride);
     if (dan.y < 0 && !ridingOut) { dan.y = 0; dan.vy = 0; }
   }
 }
@@ -605,20 +597,32 @@ function updatePickups() {
       note(["ENERGY RESTORED"], 1.5);
     }
   }
-  for (const k of sdsKeys) {
-    if (k.taken || k.key !== key) continue;
+  for (const k of sdsParts) {
+    if (k.taken || k.key !== key || state.carrying) continue;
     if (overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 8, 8)) {
       k.taken = true;
-      state.keys++;
+      state.carrying = true;
       state.score += 500;
       beep(990, 0.2);
-      say(["DAN PICKS UP", "AN SDS KEY"], 2.5);
+      say(["DAN PICKS UP A PART", "OF THE MECHANISM"], 2.5);
     }
   }
-  if (key === SDS_ROOM && state.keys >= sdsKeys.length) {
-    state.mode = "won";
-    state.score += 2000;
-    beep(1320, 0.5, "triangle");
+  // the socket: walk to the left of the self-destruct room with a part
+  if (key === SDS_ROOM && state.carrying && dan.x <= 8 && dan.onGround) {
+    state.carrying = false;
+    state.fitted++;
+    state.score += 1000;
+    beep(1320, 0.4, "triangle");
+    if (state.fitted >= 5) {
+      state.mode = "won";
+      state.score += 2000;
+    } else if (state.fitted >= LEVEL.parts.length) {
+      say(["PART " + state.fitted + " FITTED"], 3);
+      note(["THE SURVEY ENDS HERE", "FOR NOW"], 4);
+    } else {
+      say(["PART " + state.fitted + " FITTED"], 3);
+      note(["A DOOR OPENS TO", "THE NEXT SECTOR"], 4);
+    }
   }
 }
 
@@ -713,7 +717,7 @@ function draw() {
     if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),
                              { main: C.bcyan, shade: C.cyan, light: C.bwhite });
   }
-  for (const k of sdsKeys) {
+  for (const k of sdsParts) {
     if (!k.taken && k.key === key) {
       drawSprite(ctx, "key", Math.round(k.x), Math.round(k.y),
                  { main: C.byellow, shade: C.red, light: C.bwhite });
@@ -803,8 +807,8 @@ function drawTitle() {
   const lines = [
     "THE MEKON'S ASTEROID IS ON",
     "COURSE FOR EARTH. FIND THE",
-    "FIVE SDS KEYS AND CARRY THEM",
-    "TO THE SELF DESTRUCT ROOM.",
+    "FIVE PARTS OF THE MECHANISM",
+    "AND FIT THEM IN ITS ROOM.",
     "",
     "O/P OR ARROWS  MOVE",
     "Q OR UP  JUMP     A OR DOWN  KNEEL",
