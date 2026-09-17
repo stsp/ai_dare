@@ -25,6 +25,7 @@ const LASER_SPEED = 210;
 const LASER_RANGE = 72;        // the laser is short-range
 const CLOCK_RATE = 3;          // game seconds per real second
 const START_TIME = 2 * 3600;
+const ESCAPE_ROOM = "75";       // Digby waits with the Anastasia here once the mechanism is armed
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
@@ -193,6 +194,7 @@ const state = {
   score: 0,
   fitted: 0,           // parts of the mechanism in their sockets
   carrying: false,     // Dan has a part on him
+  armed: false,        // all five parts fitted: the countdown runs
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
   msgBottom: null,       // second box, as the original uses for asides
@@ -664,7 +666,8 @@ function updatePickups() {
     }
   }
   for (const k of sdsParts) {
-    if (k.taken || k.key !== key || state.carrying) continue;
+    // the parts come one at a time: the next is where the last fitted one led
+    if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
     if (overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 8, 8)) {
       k.taken = true;
       state.carrying = true;
@@ -680,8 +683,12 @@ function updatePickups() {
     state.score += 1000;
     beep(1320, 0.4, "triangle");
     if (state.fitted >= 5) {
-      state.mode = "won";
+      // the mechanism is armed: eleven minutes to get back to Digby's ship
+      state.armed = true;
+      state.timeLeft = 11 * 60 - 1;
       state.score += 2000;
+      call(["\"11 MINUTES TO SELF DESTRUCT\""], 4);
+      state.nextTaunt = 6;
     } else if (state.fitted >= LEVEL.parts.length) {
       say(["PART " + state.fitted + " FITTED"], 3);
       note(["THE SURVEY ENDS HERE", "FOR NOW"], 4);
@@ -827,7 +834,7 @@ function draw() {
                              { main: C.bcyan, shade: C.cyan, light: C.bwhite });
   }
   for (const k of sdsParts) {
-    if (!k.taken && k.key === key) {
+    if (!k.taken && k.key === key && k.id === state.fitted) {
       drawSprite(ctx, "key", Math.round(k.x), Math.round(k.y),
                  { main: C.byellow, shade: C.red, light: C.bwhite });
     }
@@ -960,6 +967,7 @@ function frame(now) {
     updateTreens(dt);
     updateLasers(dt);
     updatePickups();
+    if (state.armed && state.room === ESCAPE_ROOM && state.mode === "play") { state.mode = "won"; state.score += 5000; }
   }
 
   draw();
