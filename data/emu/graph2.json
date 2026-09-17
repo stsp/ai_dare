@@ -443,6 +443,18 @@
    "x": 19,
    "y": 104,
    "via": "Q at x=21 from 55:3"
+  },
+  "88:4": {
+   "room": 88,
+   "x": 28,
+   "y": 67,
+   "via": "walk O from 89:4"
+  },
+  "89:6": {
+   "room": 89,
+   "x": 4,
+   "y": 103,
+   "via": "Q at x=2 from 89:4"
   }
  },
  "edges": [
@@ -7826,6 +7838,651 @@
     "y": 59
    },
    "through": []
+  },
+  {
+   "from": "88:3",
+   "via": "right~",
+   "to": "89:4",
+   "arrive": {
+    "x": 1,
+    "y": 67
+   },
+   "through": [],
+   "fell": false,
+   "jumpedAt": 23
+  },
+  {
+   "from": "120:4",
+   "via": "right",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "120:4",
+   "via": "left",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "120:4",
+   "via": "right~",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "120:4",
+   "via": "left~",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "120:4",
+   "via": "up",
+   "to": "53:7",
+   "x0": 23,
+   "x1": 23,
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "120:4",
+   "via": "down",
+   "to": "53:7",
+   "x0": 23,
+   "x1": 23,
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "89:4",
+   "via": "right",
+   "to": "121:7",
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:4",
+   "via": "left",
+   "to": "88:4",
+   "arrive": {
+    "x": 28,
+    "y": 67
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "89:4",
+   "via": "right~",
+   "to": "121:3",
+   "arrive": {
+    "x": 16,
+    "y": 59
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:4",
+   "via": "left~",
+   "to": "88:4",
+   "arrive": {
+    "x": 28,
+    "y": 67
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "89:4",
+   "via": "down",
+   "to": "88:4",
+   "x0": 0,
+   "x1": 0,
+   "arrive": {
+    "x": 28,
+    "y": 67
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "89:4",
+   "via": "up",
+   "to": "89:6",
+   "x0": 2,
+   "x1": 2,
+   "arrive": {
+    "x": 4,
+    "y": 103
+   },
+   "through": []
+  },
+  {
+   "from": "89:4",
+   "via": "down",
+   "to": "121:7",
+   "x0": 2,
+   "x1": 2,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:4",
+   "via": "up",
+   "to": "121:7",
+   "x0": 3,
+   "x1": 3,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:4",
+   "via": "down",
+   "to": "121:7",
+   "x0": 3,
+   "x1": 3,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:4",
+   "via": "up",
+   "to": "121:7",
+   "x0": 4,
+   "x1": 4,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:4",
+   "via": "down",
+   "to": "121:7",
+   "x0": 4,
+   "x1": 4,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "87:7",
+   "via": "right~",
+   "to": "88:7",
+   "arrive": {
+    "x": 0,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "87:7",
+   "via": "left~",
+   "to": "86:7",
+   "arrive": {
+    "x": 27,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "88:7",
+   "via": "up",
+   "to": "120:4",
+   "x0": 21,
+   "x1": 21,
+   "arrive": {
+    "x": 23,
+    "y": 67
+   },
+   "through": []
+  },
+  {
+   "from": "88:5",
+   "via": "right~*",
+   "to": "88:7",
+   "jumpedAt": 12
+  },
+  {
+   "from": "88:5",
+   "via": "left~*",
+   "to": "88:7",
+   "jumpedAt": 12
+  },
+  {
+   "from": "88:5",
+   "via": "left~",
+   "to": "87:7",
+   "arrive": {
+    "x": 27,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "88:5",
+   "via": "up",
+   "to": "120:2",
+   "x0": 21,
+   "x1": 21,
+   "arrive": {
+    "x": 23,
+    "y": 35
+   },
+   "through": []
+  },
+  {
+   "from": "121:7",
+   "via": "right",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:7",
+   "via": "left",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:7",
+   "via": "right~",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:7",
+   "via": "left~",
+   "to": "53:7",
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:7",
+   "via": "up",
+   "to": "53:7",
+   "x0": 4,
+   "x1": 4,
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:7",
+   "via": "down",
+   "to": "53:7",
+   "x0": 4,
+   "x1": 4,
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "88:4",
+   "via": "right",
+   "to": "89:4",
+   "arrive": {
+    "x": 1,
+    "y": 67
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "88:4",
+   "via": "left",
+   "to": "120:4",
+   "arrive": {
+    "x": 25,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "left~*",
+   "to": "88:3",
+   "jumpedAt": 25
+  },
+  {
+   "from": "88:4",
+   "via": "right~",
+   "to": "89:4",
+   "arrive": {
+    "x": 1,
+    "y": 67
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "88:4",
+   "via": "left~",
+   "to": "120:4",
+   "arrive": {
+    "x": 23,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "up",
+   "to": "120:4",
+   "x0": 25,
+   "x1": 25,
+   "arrive": {
+    "x": 25,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "down",
+   "to": "120:4",
+   "x0": 25,
+   "x1": 25,
+   "arrive": {
+    "x": 25,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "up",
+   "to": "120:4",
+   "x0": 26,
+   "x1": 26,
+   "arrive": {
+    "x": 25,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "down",
+   "to": "120:4",
+   "x0": 26,
+   "x1": 26,
+   "arrive": {
+    "x": 25,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "up",
+   "to": "88:7",
+   "x0": 27,
+   "x1": 27,
+   "arrive": {
+    "x": 25,
+    "y": 112
+   },
+   "through": []
+  },
+  {
+   "from": "88:4",
+   "via": "down",
+   "to": "120:4",
+   "x0": 27,
+   "x1": 27,
+   "arrive": {
+    "x": 25,
+    "y": 67
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "88:4",
+   "via": "down",
+   "to": "89:4",
+   "x0": 29,
+   "x1": 29,
+   "arrive": {
+    "x": 1,
+    "y": 67
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:3",
+   "via": "up",
+   "to": "53:7",
+   "x0": 16,
+   "x1": 16,
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "121:3",
+   "via": "down",
+   "to": "53:7",
+   "x0": 16,
+   "x1": 16,
+   "arrive": {
+    "x": 6,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "89:6",
+   "via": "right",
+   "to": "121:7",
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:6",
+   "via": "left",
+   "to": "121:7",
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:6",
+   "via": "right~",
+   "to": "121:7",
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:6",
+   "via": "left~",
+   "to": "121:7",
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:6",
+   "via": "up",
+   "to": "121:7",
+   "x0": 4,
+   "x1": 4,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "89:6",
+   "via": "down",
+   "to": "121:7",
+   "x0": 4,
+   "x1": 4,
+   "arrive": {
+    "x": 4,
+    "y": 123
+   },
+   "through": [],
+   "fell": true,
+   "fellFrom": 35
+  },
+  {
+   "from": "86:7",
+   "via": "right~",
+   "to": "87:7",
+   "arrive": {
+    "x": 1,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "86:7",
+   "via": "left~",
+   "to": "85:7",
+   "arrive": {
+    "x": 29,
+    "y": 123
+   },
+   "through": [],
+   "fell": false
+  },
+  {
+   "from": "120:2",
+   "via": "right~*",
+   "to": "121:4",
+   "jumpedAt": 23
+  },
+  {
+   "from": "120:2",
+   "via": "left~*",
+   "to": "120:4",
+   "jumpedAt": 23
   }
  ],
  "done": [
@@ -7896,11 +8553,13 @@
   "86:7",
   "87:7",
   "88:3",
+  "88:4",
   "88:5",
   "88:6",
   "88:7",
   "89:4",
   "89:5",
+  "89:6",
   "89:7",
   "89:8"
  ]
