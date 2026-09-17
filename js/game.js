@@ -18,7 +18,7 @@ const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 const RUN_SPEED = 72;          // px/s, as measured in the original
 const GRAVITY = 500;
 const JUMP_VY = -100;          // the original's jump: 10 px high, 0.4 s in the air
-const JUMP_VX = 120;            // ... and four or five cells along
+const JUMP_VX = 140;            // ... and four or five cells along
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 const LASER_SPEED = 210;
@@ -533,8 +533,10 @@ function moveBetweenRooms() {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
     dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true };
     dan.liftLatch = true;
-  } else if (dan.y > VIEW_H - DAN_H && !dan.onLift && isOpen(zone(e.drops))) {
-    enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);                   // fell through
+  } else if (dan.y + DAN_H > 134 && !dan.onLift && isOpen(zone(e.drops))) {
+    // fell through a hole in the floor: the original switches rooms as soon
+    // as he drops below the floor course, before his run carries him past it
+    enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);
   } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
     dan.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true };

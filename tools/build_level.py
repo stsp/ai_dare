@@ -477,7 +477,7 @@ def main():
             stop_feet = -1 if stop < 0 else stop + 5            # -1: passes through
         # a ride with no rails near it is no lift: a fall the survey took
         # for one, or a room whose rails it could not see
-        if not any(sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0 for sh in rooms[a]["shafts"]):
+        if a == b and not any(sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0 for sh in rooms[a]["shafts"]):
             continue
         is_broken = stop == "in" or (a, b, via, floor, stop) in broken
         links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet,
