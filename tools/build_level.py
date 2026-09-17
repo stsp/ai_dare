@@ -385,13 +385,20 @@ def main():
         if via in ("right", "left"):
             if a == b:
                 continue
-            edge_entry = arr.get("x", 0) <= 3 if via == "right" else arr.get("x", 29) >= 26
+            slack = 5 if jumping else 3                  # a jump lands a cell or two in
+            edge_entry = arr.get("x", 0) <= slack if via == "right" else arr.get("x", 29) >= 29 - slack
+            if e.get("through"):
+                continue                                  # passed another room on the way: a ride, not a doorway
+            if e.get("fell"):
+                edge_entry = False                        # he fell into that room: a drop, whatever cell he landed in
             if edge_entry and arr.get("y", 123) < g["nodes"][e["from"]]["y"] - 20:
                 # arrived higher than he set off: the walk took a lift on the
                 # way (a hop over something in the way calls one) - not a doorway
                 continue
             if edge_entry:
-                walks[(a, via)].add(b)
+                # the doorway is at the height he arrived: a room's left and
+                # right exits can lead to different rooms from different floors
+                walks[(a, via)].add((b, arr.get("y", 123) + 5))
             elif not jumping:
                 # Dan walked off a hole and fell: a drop, over the room's holes
                 walks[(a, "drop")].add(b)
@@ -441,17 +448,26 @@ def main():
     for (a, via), targets in list(walks.items()):
         back = {"left": "right", "right": "left"}.get(via)
         if back:
-            for b in targets:
-                walks[(b, back)].add(a)
+            for t in targets:
+                b, feet = t if isinstance(t, tuple) else (t, None)
+                if not any((x[0] if isinstance(x, tuple) else x) == a for x in walks[(b, back)]):
+                    walks[(b, back)].add((a, feet))
     links = []
-    for (a, via), targets in sorted(walks.items()):
-        for b in sorted(targets):
+    for (a, via), targets in sorted(walks.items(), key=str):
+        seen_walk = set()
+        for t in sorted(targets, key=str):
+            b, feet = t if isinstance(t, tuple) else (t, None)
             if via == "drop":
                 holes = rooms[a]["holes"] or [[0, TW]]
                 for x0, x1 in holes:          # holes end exclusive, zones inclusive
                     links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1 - 1})
             else:
-                links.append({"from": a, "to": b, "kind": via})
+                # one link per doorway height (rounded to a course)
+                key = (b, None if feet is None else round(feet / 8))
+                if key in seen_walk:
+                    continue
+                seen_walk.add(key)
+                links.append({"from": a, "to": b, "kind": via, **({"feet": feet} if feet is not None else {})})
             if needs.get((a, b), 0):
                 links[-1]["needs"] = needs[(a, b)]
     flat = [(k, tuple(r)) for k, rs in spans.items() for r in rs]
@@ -476,7 +492,8 @@ def main():
             continue
         # a ride tried at the very edge that merely walked into the next room,
         # or beside a hole that Dan simply fell through
-        if (x0 <= 0 or x1 >= TW - 1) and b in walks[(a, "left" if x0 <= 0 else "right")]:
+        if (x0 <= 0 or x1 >= TW - 1) and any((t[0] if isinstance(t, tuple) else t) == b
+                                              for t in walks[(a, "left" if x0 <= 0 else "right")]):
             continue
         if b in walks[(a, "drop")]:
             continue
