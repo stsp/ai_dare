@@ -395,6 +395,29 @@ def main():
                 continue                      # the probe has this one
             kept.append(q)
         rooms[room]["platforms"] = sorted(kept, key=lambda p: (p["y"], p["x0"]))
+    # the floor's top line, read a course above where Dan's feet rest on it,
+    # is the floor (he stands at y 123 on every room's floor)
+    for room in rooms:
+        for p in rooms[room]["platforms"]:
+            if p["y"] == TH - 3 and not p.get("probed"):
+                p["y"] = TH - 2
+        rooms[room]["platforms"].sort(key=lambda p: (p["y"], p["x0"]))
+    # where a lift set Dan down and nothing is drawn under him, he stood on
+    # the lift's car at its stop: a landing there
+    for e in g["edges"]:
+        if e["via"] not in ("up", "down") or "x0" not in e or e.get("fell") or e.get("through"):
+            continue
+        arr = e.get("arrive")
+        b = room_of(e["to"])
+        if not arr or b not in rooms or arr["y"] >= 115 or not e["x0"] - 1 <= arr["x"] <= e["x1"] + 1:
+            continue                          # (a lift carries him straight up or down: x unchanged)
+        row = round((arr["y"] + 5) / 8)
+        x0, x1 = max(0, min(e["x0"], arr["x"]) - 1), min(TW, max(e["x1"], arr["x"]) + 3)
+        if any(h0 < x1 and h1 > x0 for h0, h1 in rooms[b]["holes"]):
+            continue                          # a stop inside the shaft over a pit: the car only
+        if not any(abs(p["y"] - row) <= 1 and p["x0"] < x1 and p["x1"] > x0 for p in rooms[b]["platforms"]):
+            rooms[b]["platforms"].append({"y": row, "x0": x0, "x1": x1, "landing": True})
+            rooms[b]["platforms"].sort(key=lambda p: (p["y"], p["x0"]))
     _dbg("probed")
     # Upper floors the original walked along. Where Dan walked out of a room
     # at an upper level and arrived in the next at the same level, that
