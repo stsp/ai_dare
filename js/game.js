@@ -298,6 +298,7 @@ function startGame() {
   sdsParts = placeParts();
   state.fitted = 0;
   state.carrying = false;
+  state.armed = false;
   const spawn = widestPlatform(START.room);
   resetDan(16, spawn.y - DAN_H);
   enterRoom(START.key, 16, spawn.y - DAN_H);
