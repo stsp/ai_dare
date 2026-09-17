@@ -415,6 +415,14 @@ def main():
             z = zones[(a, b, via, floor, stop)]
             z[0], z[1] = min(z[0], e["x0"]), max(z[1], e["x1"])
 
+    # a doorway the original let Dan through one way is open the other way
+    # too: the survey may have failed to walk back (a guard in the way, a
+    # gap it did not jump) where a player would
+    for (a, via), targets in list(walks.items()):
+        back = {"left": "right", "right": "left"}.get(via)
+        if back:
+            for b in targets:
+                walks[(b, back)].add(a)
     links = []
     for (a, via), targets in sorted(walks.items()):
         for b in sorted(targets):
