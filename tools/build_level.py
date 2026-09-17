@@ -285,7 +285,7 @@ def main():
                     # the picture's ledge he stood on - drawn up to two rows above
                     # where his feet are - gives its extent; a room read off its
                     # own screen is not trusted beyond what he stood on
-                    if row - 2 <= p["y"] <= row and rooms[room]["map"] != "screen" and \
+                    if not p.get("probed") and row - 2 <= p["y"] <= row and rooms[room]["map"] != "screen" and \
                             any(c in cells for c in range(p["x0"] - 1, p["x1"] + 1)):
                         base_cells.update(range(p["x0"], p["x1"]))
                 base_cells -= hole_cells
@@ -300,11 +300,11 @@ def main():
                 # the picture's version of this ledge - drawn up to two rows above
                 # his feet, or the course's own top line - gives way to the game's
                 keep = [p for p in rooms[room]["platforms"]
-                        if not (row - 2 <= p["y"] <= row + 1 and
+                        if p.get("probed") or not (row - 2 <= p["y"] <= row + 1 and
                                 any(x in base_cells or x in cells for x in range(p["x0"], p["x1"])))]
                 if row >= TH - 3:                      # a pit cuts the step course as well
                     keep = [p for p in keep if not (p["y"] >= TH - 3 and any(h in range(p["x0"], p["x1"]) for h in hole_cells))]
-                keep += [{"y": row, "x0": a, "x1": b} for a, b in pieces]
+                keep += [{"y": row, "x0": a, "x1": b, "probed": True} for a, b in pieces]
                 rooms[room]["platforms"] = sorted(keep, key=lambda p: (p["y"], p["x0"]))
                 if row >= TH - 3 and hole_cells:
                     hs, run = [], []
@@ -355,6 +355,14 @@ def main():
                 cells[row * TW + i] = "4"
         rooms[room]["cells"] = "".join(cells)
 
+    def beside(a, b, via):
+        """Is room b next to room a on the map, the way a walk `via` leads? Rooms
+        the map does not place are taken on trust."""
+        pa, pb = rooms[a].get("map"), rooms[b].get("map")
+        if pa == "screen" or pb == "screen" or not pa or not pb:
+            return True
+        (ra, ca), (rb, cb) = (map(int, pa.split(","))), (map(int, pb.split(",")))
+        return ra == rb and cb - ca == (1 if via == "right" else -1)
     walks = defaultdict(set)              # (from, kind) -> targets by walking
     spans = defaultdict(list)               # (from, to, kind, floor, stop) -> [[x0, x1], ...]
 
@@ -378,6 +386,10 @@ def main():
             if a == b:
                 continue
             edge_entry = arr.get("x", 0) <= 3 if via == "right" else arr.get("x", 29) >= 26
+            if edge_entry and arr.get("y", 123) < g["nodes"][e["from"]]["y"] - 20:
+                # arrived higher than he set off: the walk took a lift on the
+                # way (a hop over something in the way calls one) - not a doorway
+                continue
             if edge_entry:
                 walks[(a, via)].add(b)
             elif not jumping:
