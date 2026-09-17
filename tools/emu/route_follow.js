@@ -23,26 +23,56 @@ const fitted0 = +(process.argv[3] || 0);
     const lift = (dir) => { keys[K[dir]] = true; for (let i = 0; i < 6; i++) tick(); clear(); for (let i = 0; i < 600; i++) { tick(); if (i > 20 && dan.onGround && !dan.onLift) break; } settle(); };
     const snapshot = () => JSON.stringify({ room: state.room, x: dan.x, y: dan.y, fitted: state.fitted, carrying: state.carrying, taken: sdsParts.map((p) => p.taken) });
     const restore = (s) => { const o = JSON.parse(s); enterRoom(o.room, o.x, o.y); dan.vx = 0; dan.vy = 0; dan.onLift = null; state.fitted = o.fitted; state.carrying = o.carrying; sdsParts.forEach((p, i) => p.taken = o.taken[i]); state.mode = 'play'; settle(); };
-    // try one move to reach `to`; returns true on arrival
+    const PRISONS = ['50', '53', '241', '192'];
+    // the moves out of a room, as closures that perform one and return true on reaching `l.to`
+    const movesFor = (from) => {
+      const moves = [];
+      for (const l of LEVEL.links.filter((l) => l.from === from)) {
+        const to = l.to;
+        if (l.kind === 'right' || l.kind === 'left') moves.push({ l, go: () => walkJumping(l.kind, to, from, 3) });
+        if (l.kind === 'drop') moves.push({ l, go: () => { goto(Math.max(l.x0 - 2, 0)); const r = walk('right', to); if (r.room === to) return true; if (state.room === from) { goto(Math.min(l.x1 + 2, 29)); const r2 = walk('left', to); return r2.room === to; } return false; } });
+        if (l.kind === 'up' || l.kind === 'down') moves.push({ l, go: () => { for (const c of [l.x0, l.x1, Math.round((l.x0 + l.x1) / 2)]) { goto(c); lift(l.kind); if (state.room === to) return true; if (state.room !== from) return false; } return false; } });
+      }
+      return moves;
+    };
+    // walk `dir` to `to`; at each gap, retry with a running jump from a few cells before it (up to `gaps` gaps)
+    const walkJumping = (dir, to, from, gaps) => {
+      const s0 = snapshot(); const r = walk(dir, to);
+      if (r.room === to) return true;
+      if (r.fellAt == null || gaps <= 0) return false;
+      for (const lead of [1, 2, 3, 0]) {
+        restore(s0); jumpFrom(dir === 'right' ? r.fellAt - lead : r.fellAt + lead, dir);
+        if (state.room === to) return true;
+        if (state.room !== from) continue;
+        if (walkJumping(dir, to, from, gaps - 1)) return true;
+      }
+      return false;
+    };
+    const stateKey = () => `${state.room}:${Math.round((dan.y + DAN_H) / 8)}:${Math.floor(dan.x / 40)}`;
+    // reach `to` by one move, else by a short detour (back a room for a lift, up a level first)
     const tryMove = (to) => {
       const from = state.room;
-      const links = LEVEL.links.filter((l) => l.from === from && l.to === to);
-      const attempts = [];
-      for (const l of links) {
-        if (l.kind === 'right' || l.kind === 'left') attempts.push(() => { const s0 = snapshot(); const r = walk(l.kind, to); if (r.room === to) return true; if (r.fellAt != null) { for (const lead of [1, 2, 3, 0]) { restore(s0); jumpFrom(l.kind === 'right' ? r.fellAt - lead : r.fellAt + lead, l.kind); if (state.room === to) return true; if (state.room !== from) continue; const r2 = walk(l.kind, to); if (r2.room === to) return true; } } return false; });
-        if (l.kind === 'drop') attempts.push(() => { goto(Math.max(l.x0 - 2, 0)); const r = walk('right', to); if (r.room === to) return true; if (state.room === from) { goto(Math.min(l.x1 + 2, 29)); const r2 = walk('left', to); return r2.room === to; } return false; });
-        if (l.kind === 'up' || l.kind === 'down') attempts.push(() => { for (const c of [l.x0, l.x1, Math.round((l.x0 + l.x1) / 2)]) { goto(c); lift(l.kind); if (state.room === to) return true; if (state.room !== from) return false; } return false; });
+      const s0 = snapshot();
+      for (const m of movesFor(from).filter((m) => m.l.to === to)) { if (m.go() && state.room === to) return true; restore(s0); }
+      const seen = new Set([stateKey()]);
+      let frontier = [{ s: s0, d: 0 }];
+      let budget = 400;
+      while (frontier.length && budget > 0) {
+        const cur = frontier.shift();
+        if (cur.d >= 4) continue;
+        const room = JSON.parse(cur.s).room;
+        for (const m of movesFor(room)) {
+          if (--budget <= 0) break;
+          restore(cur.s);
+          m.go();
+          if (state.mode !== 'play') continue;
+          if (state.room === to) { if (window.TRACE) log.push('   via detour depth ' + (cur.d + 1)); return true; }
+          if (PRISONS.includes(state.room)) continue;
+          const k = stateKey();
+          if (!seen.has(k)) { seen.add(k); frontier.push({ s: snapshot(), d: cur.d + 1 }); }
+        }
       }
-      const run = (list) => { for (const a of list) { const s = snapshot(); if (a()) return true; if (window.TRACE) log.push('   attempt failed at ' + st()); restore(s); } return false; };
-      if (run(attempts)) return true;
-      // change level first: ride each of this room's own lifts, then try again
-      const own = LEVEL.links.filter((l) => l.from === from && l.to === from && (l.kind === 'up' || l.kind === 'down'));
-      for (const l2 of own) {
-        const s = snapshot();
-        goto(l2.x0); lift(l2.kind);
-        if (state.room === from && Math.abs(dan.y + DAN_H - (l2.stop >= 0 ? l2.stop : 0)) <= 20 && run(attempts)) return true;
-        restore(s);
-      }
+      restore(s0);
       return false;
     };
     // place Dan in the first room
@@ -55,7 +85,12 @@ const fitted0 = +(process.argv[3] || 0);
       const part = sdsParts.find((p) => p.key === from && !p.taken && p.id === state.fitted);
       if (part) { goto(Math.round(part.x / 8)); jumpFrom(Math.round(part.x / 8) + 1, 'left'); }
       if (from === SDS_ROOM && state.carrying) { goto(2); for (let k = 0; k < 60; k++) tick(); }
-      const got = tryMove(to);
+      // captured on purpose: the walkthrough let the guards take Dan to the cells
+      if (PRISONS.includes(to) && !LEVEL.links.some((l) => l.from === from && l.to === to)) {
+        const r = ROOMS[to]; const p = widestPlatform(r); resetDan(p.x, p.y - DAN_H); enterRoom(to, p.x, p.y - DAN_H); settle();
+        log.push(`ok ${from} -> ${to}: captured (by design)`); ok++; continue;
+      }
+      const got = state.room === to || tryMove(to);
       log.push(`${got ? 'ok ' : 'XX '}${from} -> ${to}: ${st()}${state.carrying ? ' carrying' : ''} fitted=${state.fitted}${state.mode !== 'play' ? ' MODE ' + state.mode : ''}`);
       if (!got) { // give up on this hop: teleport on so the rest can be checked
         const r = ROOMS[to]; if (!r) { log.push(`   no room ${to} in level`); break; }
