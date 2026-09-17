@@ -1,8 +1,8 @@
 // Shared emulator driver: boot the page, expose peek/poke-by-snapshot, keys.
 const { chromium } = require('playwright-core');
 const fs = require('fs');
-const OUT = (process.env.DANDARE_WORK || './work') + '/';
-const POKES = { 47714: 201, 44413: 201 };   // Virgin release: infinite energy, no wall guns
+const OUT = '/tmp/claude-0/-home-user-dandare/f7bf143d-9228-50d5-9e85-e4004f770064/scratchpad/';
+const POKES = { 47714: 201, 44413: 201, 43526: 0 };   // Virgin release: infinite energy, no wall guns, infinite ammo
 async function boot(opts = {}) {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 600, height: 500 } });
