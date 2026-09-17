@@ -210,9 +210,17 @@ def main():
             if room not in rooms:
                 continue
             for direction, trace in walks.items():
-                base = trace[0][1]
-                # a node caught in mid-fall is no floor: he has to have walked
-                # at least a cell at this height before anything counts
+                # a node caught in mid-fall is no floor: where he landed is -
+                # the first height he held for three samples - and he has to
+                # have walked at least a cell at it before anything counts
+                pts = [(x, y) for x, y in trace if x != "room"]
+
+                def walked_at(i):             # held this height and moved along it
+                    run = [pts[j] for j in range(i, len(pts)) if abs(pts[j][1] - pts[i][1]) <= 1]
+                    return len(run) >= 3 and len({x for x, _ in run}) >= 2
+                land = next((i for i in range(len(pts) - 2) if walked_at(i)), 0)
+                base = pts[land][1] if pts else trace[0][1]
+                trace = trace[land:]
                 walked = {x for x, y in trace if x != "room" and abs(y - base) <= 1}
                 if len(walked) < 4:
                     continue
@@ -230,10 +238,28 @@ def main():
         prison_doors = {room_of(e["to"]) for e in g["edges"]
                         if room_of(e["from"]) in prisons and e["via"] in ("left", "right") and room_of(e["to"]) not in prisons}
         jumped = defaultdict(set)
+        crossed = defaultdict(lambda: defaultdict(set))   # room -> y -> {(x, direction)}
+        for e in g["edges"]:
+            # a walk out of the room at floor level, arriving at the doorway of
+            # the next at the same height: the floor ran from where he stood
+            # to that edge
+            if e["via"] in ("right", "left") and room_of(e["from"]) != room_of(e["to"]) and \
+                    not e.get("fell") and not e.get("through") and room_of(e["to"]) not in prisons:
+                n, arr = g["nodes"][e["from"]], e.get("arrive", {})
+                at_door = arr.get("x", 15) <= 3 if e["via"] == "right" else arr.get("x", 15) >= 26
+                if at_door and abs(arr.get("y", n["y"]) - n["y"]) <= 8:
+                    crossed[str(n["room"])][n["y"]].add((n["x"], e["via"]))
         for e in g["edges"]:
             # a jump that ended in a prison was a fall to his death, not a crossing
-            if e["via"] in ("right~", "left~") and room_of(e["from"]) != room_of(e["to"]) and room_of(e["to"]) not in prisons:
-                jumped[room_of(e["from"])].add(e["via"][:-1])
+            if e["via"] in ("right~", "left~") and room_of(e["from"]) != room_of(e["to"]) and room_of(e["to"]) not in prisons \
+                    and not e.get("fell") and not e.get("through") \
+                    and abs(e.get("arrive", {}).get("y", 123) - g["nodes"][e["from"]]["y"]) <= 4:   # ... at the same level
+                jumped[(room_of(e["from"]), g["nodes"][e["from"]]["y"])].add(e["via"][:-1])
+
+        def jumped_at(room, base, direction):
+            """Did a jump `direction` out of `room` from about this height reach the
+            next room? (nodes on one gallery sit within a course of each other)"""
+            return any(direction in ds for (r, y), ds in jumped.items() if r == room and abs(y - base) <= 8)
         # a node Dan cannot move from at all is where he lay unconscious after a
         # fall: that floor is a pit, and a room whose floor nodes are all such
         # has no floor - falling in is death
@@ -254,6 +280,8 @@ def main():
                 rooms[room]["platforms"] = [p for p in rooms[room]["platforms"] if p["y"] < TH - 3]
                 rooms[room]["holes"] = [[0, TW]]
                 stood[room] = defaultdict(set, {b: xs for b, xs in stood[room].items() if b < 120})
+        if os.environ.get("DUMP_PRE"):
+            json.dump({r: rooms[r]["platforms"] for r in rooms}, open(os.environ["DUMP_PRE"], "w"))
         for room in stood:
             for base, xs in stood[room].items():
                 feet = base + 5                       # the original's y is five above the feet
@@ -267,23 +295,28 @@ def main():
                 for x, direction in falls[room].get(base, []):
                     if direction == "right":
                         nxt = min((c for c in cells if c > x), default=TW)
-                        if "right" in jumped[room]:
+                        if jumped_at(room, base, "right"):
                             nxt = min(nxt, x + 4)
                         hole_cells.update(range(x, nxt))
                     else:
                         prv = max((c for c in cells if c < x), default=-1)
-                        if "left" in jumped[room]:
+                        if jumped_at(room, base, "left"):
                             prv = max(prv, x - 4)
                         hole_cells.update(range(prv + 1, x + 1))
                 # where he jumped a pit and walked on into the next room, the
                 # floor runs from the pit's far edge to that edge of the room
                 for x, direction in falls[room].get(base, []):
-                    if direction == "right" and "right" in jumped[room]:
+                    if direction == "right" and jumped_at(room, base, "right"):
                         end = max((h for h in hole_cells if h >= x), default=x) + 1
                         cells.update(range(end, TW))
-                    if direction == "left" and "left" in jumped[room]:
+                    if direction == "left" and jumped_at(room, base, "left"):
                         start = min((h for h in hole_cells if h <= x), default=x)
                         cells.update(range(0, start))
+                for x, direction in crossed[room].get(base, ()):
+                    if direction == "right" and not any(x < fx for fx, _ in falls[room].get(base, [])):
+                        cells.update(range(x, TW))
+                    if direction == "left" and not any(fx < x for fx, _ in falls[room].get(base, [])):
+                        cells.update(range(0, x + 2))
                 # the floor at this height: what the map showed, plus what he
                 # stood on, minus the pit
                 base_cells = set(cells)
@@ -313,7 +346,7 @@ def main():
                     keep = [p for p in keep if not (p["y"] >= TH - 3 and any(h in range(p["x0"], p["x1"]) for h in hole_cells))]
                 keep += [{"y": row, "x0": a, "x1": b, "probed": True} for a, b in pieces]
                 rooms[room]["platforms"] = sorted(keep, key=lambda p: (p["y"], p["x0"]))
-                if row >= TH - 3 and hole_cells:
+                if row >= TH - 3:
                     hs, run = [], []
                     for x in range(TW):
                         if x in hole_cells:
@@ -322,8 +355,47 @@ def main():
                             hs.append([run[0], run[-1] + 1]); run = []
                     if run:
                         hs.append([run[0], run[-1] + 1])
-                    rooms[room]["holes"] = hs
+                    # the picture's holes stand where he did not walk
+                    hs += [h for h in rooms[room]["holes"] if not any(c in base_cells for c in range(h[0], h[1]))
+                           and not any(c in hole_cells for c in range(h[0], h[1]))]
+                    rooms[room]["holes"] = sorted(hs)
 
+    def _dbg(stage):
+        r = os.environ.get("DEBUG_ROOM")
+        if r and r in rooms:
+            print(stage, [(p["y"], p["x0"], p["x1"], "p" if p.get("probed") else "") for p in rooms[r]["platforms"]], rooms[r]["holes"], file=sys.stderr)
+    # a ledge the picture shows but Dan never stood on: the drawing's top
+    # line lies two courses above where his feet rest on it in a room read
+    # off its screen, one in a room cut from the map (measured against
+    # every ledge he did stand on) - put it where he would stand
+    ride_feet = defaultdict(list)             # room -> [(feet, x0, x1)] where a lift ride began or ended
+    for e in g["edges"]:
+        if e["via"] in ("up", "down") and "x0" in e:
+            n = g["nodes"][e["from"]]
+            ride_feet[str(n["room"])].append((n["y"] + 5, e["x0"], e["x1"]))
+            arr = e.get("arrive")
+            if arr and not e.get("fell") and not e.get("through"):
+                ride_feet[room_of(e["to"])].append((arr["y"] + 5, e["x0"], e["x1"]))
+    for room in rooms:
+        off = 2 if rooms[room]["map"] == "screen" else 1
+        plats = rooms[room]["platforms"]
+        probed_ps = [p for p in plats if p.get("probed")]
+        kept = []
+        for p in plats:
+            if p.get("probed") or p["y"] >= TH - 3:
+                kept.append(p)
+                continue
+            if any(abs(f - p["y"] * 8) <= 4 and x0 <= p["x1"] + 1 and x1 >= p["x0"] - 2 for f, x0, x1 in ride_feet[room]):
+                kept.append(p)                    # a lift's landing: drawn where he stands
+                continue
+            if p["x1"] - p["x0"] <= 5 and any(x0 <= p["x1"] + 1 and x1 >= p["x0"] - 2 for f, x0, x1 in ride_feet[room]):
+                continue                          # the lift's car, drawn at rest in its shaft: no ledge
+            q = dict(p, y=p["y"] + off)
+            if any(abs(q["y"] - pp["y"]) <= 1 and pp["x0"] < q["x1"] and pp["x1"] > q["x0"] for pp in probed_ps):
+                continue                      # the probe has this one
+            kept.append(q)
+        rooms[room]["platforms"] = sorted(kept, key=lambda p: (p["y"], p["x0"]))
+    _dbg("probed")
     # Upper floors the original walked along. Where Dan walked out of a room
     # at an upper level and arrived in the next at the same level, that
     # walkway runs the room's full width, whatever gaps the map shows in it
@@ -362,6 +434,7 @@ def main():
                 cells[row * TW + i] = "4"
         rooms[room]["cells"] = "".join(cells)
 
+    _dbg("walkway")
     def beside(a, b, via):
         """Is room b next to room a on the map, the way a walk `via` leads? Rooms
         the map does not place are taken on trust."""
@@ -396,7 +469,23 @@ def main():
             slack = 5 if jumping else 3                  # a jump lands a cell or two in
             edge_entry = arr.get("x", 0) <= slack if via == "right" else arr.get("x", 29) >= 29 - slack
             if e.get("through"):
-                continue                                  # passed another room on the way: a ride, not a doorway
+                # walked into the next room and fell straight through its
+                # floor at the doorway into the one below: a doorway, and a
+                # hole at the entry cells of the room passed
+                first = str(e["through"][0])
+                nxt = str(e["through"][1]) if len(e["through"]) > 1 else b
+                if first in rooms and not jumping:
+                    walks[(a, via)].add((first, g["nodes"][e["from"]]["y"] + 5))
+                    support[(a, via, first)] = support.get((a, via, first), 0) + 1
+                    if nxt in rooms and nxt not in prisons:
+                        walks[(first, "drop")].add(nxt)
+                        x0, x1 = (0, 2) if via == "right" else (TW - 2, TW)
+                        if not any(h0 <= x0 and x1 <= h1 for h0, h1 in rooms[first]["holes"]):
+                            rooms[first]["holes"].append([x0, x1])
+                            rooms[first]["platforms"] = [q for q in rooms[first]["platforms"] if q["y"] < TH - 3 or q["x1"] <= x0 or q["x0"] >= x1] + \
+                                [dict(q, x1=x0) for q in rooms[first]["platforms"] if q["y"] >= TH - 3 and q["x0"] < x0 < q["x1"]] + \
+                                [dict(q, x0=x1) for q in rooms[first]["platforms"] if q["y"] >= TH - 3 and q["x0"] < x1 < q["x1"]]
+                continue
             if e.get("fell"):
                 edge_entry = False                        # he fell into that room: a drop, whatever cell he landed in
             if edge_entry and arr.get("y", 123) < g["nodes"][e["from"]]["y"] - 20:
@@ -415,8 +504,9 @@ def main():
         else:
             # a ride tried over a hole in the floor is a fall, not a lift; a
             # "ride" that left Dan on the floor he started from was a jump
-            if any(h0 <= e["x0"] <= h1 or h0 <= e["x1"] <= h1 for h0, h1 in rooms[a]["holes"]):
-                continue
+            if g["nodes"][e["from"]]["y"] >= 100 and \
+                    any(h0 <= e["x0"] <= h1 or h0 <= e["x1"] <= h1 for h0, h1 in rooms[a]["holes"]):
+                continue                          # (from a gallery above the pit it is a lift)
             # (a ride that ends on the floor it started from is the broken lift:
             # it climbs to its stop, breaks, and drops him back - kept)
             # the floor the ride was called from: the original's y for Dan
@@ -426,6 +516,8 @@ def main():
             floor = g["nodes"][e["from"]]["y"]
             stop = e.get("arrive", {}).get("y", 123)           # where the ride stopped
             chain = [a] + [str(r) for r in e.get("through", []) if str(r) in rooms] + [b]
+            if e.get("fell") and len(chain) == 2 and stop >= 120 and b in walks[(a, "drop")] and floor < 100:
+                continue                          # a hop off a gallery into the room below: a fall, not a ride
             if e.get("fell"):
                 # the broken lift. The original's ride breaks at the far end of
                 # the shaft in the room it passes (78), and Dan falls from the
@@ -461,6 +553,7 @@ def main():
                 b, feet = t if isinstance(t, tuple) else (t, None)
                 if not any((x[0] if isinstance(x, tuple) else x) == a for x in walks[(b, back)]):
                     walks[(b, back)].add((a, feet))
+    _dbg("prelinks")
     links = []
     for (a, via), targets in sorted(walks.items(), key=str):
         seen_walk = set()
@@ -505,8 +598,15 @@ def main():
         if (x0 <= 0 or x1 >= TW - 1) and any((t[0] if isinstance(t, tuple) else t) == b
                                               for t in walks[(a, "left" if x0 <= 0 else "right")]):
             continue
-        if b in walks[(a, "drop")]:
+        if b in walks[(a, "drop")] and floor >= 100:
             continue
+        # the key pressed calls the lift; where it carries him is the lift's
+        # doing: from a gallery down into the room his floor drops into, the
+        # ride is down whichever key called it, and up out of it is up
+        if b in walks[(a, "drop")]:
+            via = "down"
+        elif a in walks[(b, "drop")]:
+            via = "up"
         # feet height, in the recreation's pixels, of the floor it is called
         # from: the original's floor (y 123) is the room's bottom course. A
         # call recorded from mid-air - Dan caught in the field after a fall -
