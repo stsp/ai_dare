@@ -96,6 +96,10 @@ def main():
 
     exclude = {int(x) for x in args.exclude.split(",") if x}
     from_screen = {int(x) for x in args.from_screen.split(",") if x}
+    # a room belongs to the first survey that saw any part of it
+    room_phase = {}
+    for node in g["nodes"].values():
+        room_phase[node["room"]] = min(room_phase.get(node["room"], 99), node["phase"])
     rooms = {}
     for node in g["nodes"].values():
         n = node["room"]
@@ -125,7 +129,7 @@ def main():
             # the game's own numbering: the surface and the rooms below it are
             # sector 1, each door opens the next (the survey that first reached
             # the room)
-            "zone": node["phase"] + 1,
+            "zone": room_phase[node["room"]] + 1,
         }
     # rooms a ride or a fall passed through exist too: they are read from the
     # screen dumped in passing, and joined by links the shaft does not stop at
@@ -328,8 +332,8 @@ def main():
                       for e in g["edges"])
         if not crossed:
             continue
-        # where the floor probe walked this height, its floor stands as probed
-        if os.path.exists(args.floors) and any(abs(b - node["y"]) <= 4 for b in stood.get(room, {})):
+        # where the floor probe walked the room, its floors stand as probed
+        if os.path.exists(args.floors) and stood.get(room):
             continue
         feet = node["y"] + 5
         plats = rooms[room]["platforms"]
