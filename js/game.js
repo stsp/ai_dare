@@ -488,7 +488,7 @@ function updateDan(dt) {
     if (dan.onGround) {
       const feet = dan.y + DAN_H;
       for (const p of platforms) {
-        if (dan.x + DAN_W > p.x0 && dan.x < p.x1 && feet > p.y && feet - p.y <= 9) dan.y = p.y - DAN_H;
+        if (dan.x + DAN_W > p.x0 && dan.x < p.x1 && feet > p.y && feet - p.y <= 17) dan.y = p.y - DAN_H;   // a kerb of two courses is walked up
       }
     }
     let catchers = platforms;

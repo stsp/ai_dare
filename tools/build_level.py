@@ -247,9 +247,7 @@ def main():
         for room in stood:
             for base, xs in stood[room].items():
                 feet = base + 5                       # the original's y is five above the feet
-                row = round(feet / 8)
-                near = [p["y"] for p in rooms[room]["platforms"] if abs(p["y"] * 8 - feet) <= 8]
-                row = min(near, key=lambda y: abs(y * 8 - feet)) if near else row
+                row = round(feet / 8)                 # the row he stood at: the game's, not the picture's
                 fell_cells = {x for x, _ in falls[room].get(base, [])}
                 cells = set()
                 for x in xs - fell_cells:              # Dan is two cells wide
@@ -280,8 +278,11 @@ def main():
                 # stood on, minus the pit
                 base_cells = set(cells)
                 for p in rooms[room]["platforms"]:
-                    # a room read off its own screen is not trusted beyond what he stood on
-                    if p["y"] == row and rooms[room]["map"] != "screen":
+                    # the picture's ledge he stood on - drawn up to two rows above
+                    # where his feet are - gives its extent; a room read off its
+                    # own screen is not trusted beyond what he stood on
+                    if row - 2 <= p["y"] <= row and rooms[room]["map"] != "screen" and \
+                            any(c in cells for c in range(p["x0"] - 1, p["x1"] + 1)):
                         base_cells.update(range(p["x0"], p["x1"]))
                 base_cells -= hole_cells
                 pieces, run = [], []
@@ -292,11 +293,11 @@ def main():
                         pieces.append((run[0], run[-1] + 1)); run = []
                 if run:
                     pieces.append((run[0], run[-1] + 1))
-                keep = [p for p in rooms[room]["platforms"] if p["y"] != row]
-                # a ledge drawn just above where he walked is the course's own
-                # top line, not a step: he would have stepped up onto it
-                keep = [p for p in keep if not (row - 2 <= p["y"] < row and
-                                                any(x in cells for x in range(p["x0"], p["x1"])))]
+                # the picture's version of this ledge - drawn up to two rows above
+                # his feet, or the course's own top line - gives way to the game's
+                keep = [p for p in rooms[room]["platforms"]
+                        if not (row - 2 <= p["y"] <= row + 1 and
+                                any(x in base_cells or x in cells for x in range(p["x0"], p["x1"])))]
                 if row >= TH - 3:                      # a pit cuts the step course as well
                     keep = [p for p in keep if not (p["y"] >= TH - 3 and any(h in range(p["x0"], p["x1"]) for h in hole_cells))]
                 keep += [{"y": row, "x0": a, "x1": b} for a, b in pieces]
@@ -327,10 +328,12 @@ def main():
                       for e in g["edges"])
         if not crossed:
             continue
+        # where the floor probe walked this height, its floor stands as probed
+        if os.path.exists(args.floors) and any(abs(b - node["y"]) <= 4 for b in stood.get(room, {})):
+            continue
         feet = node["y"] + 5
         plats = rooms[room]["platforms"]
-        near = [p["y"] for p in plats if abs(p["y"] * 8 - feet) <= 12]
-        row = min(near, key=lambda y: abs(y * 8 - feet)) if near else feet // 8
+        row = round(feet / 8)
         # ... but not across a gap the floor probe saw him fall into: a ledge
         # he can walk off ends where it ends
         gap = set()
@@ -339,7 +342,8 @@ def main():
         span = [i for i in range(TW) if i not in gap]
         if not span:
             continue
-        rooms[room]["platforms"] = [p for p in plats if p["y"] != row] + [{"y": row, "x0": span[0], "x1": span[-1] + 1}]
+        rooms[room]["platforms"] = [p for p in plats if not (row - 2 <= p["y"] <= row + 1 and p["x0"] <= span[-1] and p["x1"] > span[0])] + \
+                                   [{"y": row, "x0": span[0], "x1": span[-1] + 1}]
         rooms[room]["platforms"].sort(key=lambda p: (p["y"], p["x0"]))
         cells = list(rooms[room]["cells"])
         for i in span:                          # draw the walkway where the map left a gap
