@@ -30,3 +30,26 @@ cells), found by watching which bytes follow the keys.
 `tools/match_rooms.py` then says which room of the map each screen is, and
 `tools/build_level.py` assembles the level from the graph and the map's
 geometry.
+
+## The rest of the harness
+
+All scripts take the working directory from `DANDARE_WORK` (default: the
+current directory) and the browser from `CHROME`; the game is expected on
+`http://127.0.0.1:8801/` (the repository root served as is) and the
+emulator page on `http://127.0.0.1:8802/`.
+
+* `emu_floor.js DIR...` - the floor probe: walks Dan across every room of a
+  survey and records where he stood and where he fell (`FLOOR_OUT`).
+* `emu_film2.js SNAP CELL SCRIPT EVERY NAME` - drives Dan from a snapshot by
+  a key script and logs room/x/y; `emu_grabroom2.js` walks him into the next
+  room and dumps its screen; `emu_lifttrace.js` records a lift ride frame by
+  frame. `scr2png.py IN.scr OUT.png` renders a dumped screen.
+* `merge_graphs.py OUT g1 g2 ...` merges surveys (nodes first-wins).
+* `run_fsnaps.sh START END INTERVAL DIR` plays the published RZX walkthrough
+  in Fuse under Xvfb, saving a snapshot every INTERVAL seconds;
+  `z80tojson.py` turns a Fuse snapshot into the harness's format and
+  `fsnaps_report.py DIR` lists room/x/y along the recording.
+* `check_lifts.js`, `route2.js`, `route_follow.js SEQ.json FITTED`, and
+  `trace.js ROOM X Y KEY FRAMES` replay what was recorded in the original
+  against the game's own engine in a headless browser: every lift ride, the
+  sector-2 loop, the whole recorded route, and a single walk.

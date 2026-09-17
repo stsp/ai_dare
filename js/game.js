@@ -81,7 +81,7 @@ function isOpen(l) { return !!l && !(l.needs > state.fitted); }
 function exitAt(list, feet) {
   if (!list.length) return null;
   const at = list.filter((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);
-  const pool = at.length ? at : list;
+  const pool = (at.length ? at : list).slice().sort((p, q) => (q.n || 0) - (p.n || 0));   // the best-attested first
   return pool.find((l) => l.feet != null && Math.abs(l.feet - feet) <= 14) || pool[0];
 }
 
@@ -236,6 +236,9 @@ function resetDan(x, y) {
 
 function enterRoom(key, x, y) {
   state.room = key;
+  // the original ends the game the moment Dan steps into the launch bay -
+  // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
+  if (key === ESCAPE_ROOM && state.mode === "play") { state.mode = "won"; state.score += 5000; }
   const room = currentRoom();
   treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   pickups = makePickups(key, room);
@@ -898,7 +901,7 @@ function draw() {
 
   drawPanel(ctx, state);
 
-  if (state.mode === "won") banner("MISSION COMPLETE", "THE ASTEROID IS DESTROYED");
+  if (state.mode === "won") banner("DAN AND DIGBY MAKE A GETAWAY!", "THE ASTEROID IS DESTROYED");
   if (state.mode === "lost") banner("OUT OF TIME", "THE ASTEROID HITS EARTH");
 }
 
@@ -978,7 +981,6 @@ function frame(now) {
     updateTreens(dt);
     updateLasers(dt);
     updatePickups();
-    if (state.armed && state.room === ESCAPE_ROOM && state.mode === "play") { state.mode = "won"; state.score += 5000; }
   }
 
   draw();
