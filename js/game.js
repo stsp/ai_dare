@@ -66,16 +66,24 @@ function wallsOf(key) {
    tools/build_level.py). Walking off an edge, falling through a hole, and
    riding a lift from the cells the game accepts - nothing here is guessed. */
 const EXITS = {};
-for (const key of ROOM_IDS) EXITS[key] = { left: null, right: null, drops: [], lifts: [] };
+for (const key of ROOM_IDS) EXITS[key] = { lefts: [], rights: [], drops: [], lifts: [] };
 for (const l of LEVEL.links) {
   const e = EXITS[l.from];
   if (!e) continue;
-  if (l.kind === "left" || l.kind === "right") e[l.kind] = l;
+  if (l.kind === "left" || l.kind === "right") e[l.kind + "s"].push(l);
   else if (l.kind === "drop") e.drops.push(l);
   else e.lifts.push(l);
 }
 /** A door the original only opened once enough parts were fitted. */
 function isOpen(l) { return !!l && !(l.needs > state.fitted); }
+/** The doorway on this side at the height Dan is walking: a room's left or
+ *  right edge can lead to different rooms from different floors. */
+function exitAt(list, feet) {
+  if (!list.length) return null;
+  const at = list.filter((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);
+  const pool = at.length ? at : list;
+  return pool.find((l) => l.feet != null && Math.abs(l.feet - feet) <= 14) || pool[0];
+}
 
 /** The cells a lift answers from: the ones the original accepted (a cell or
  *  two left of the rails) widened to the whole shaft, so standing anywhere
@@ -95,7 +103,7 @@ const HOPS = (() => {
   const q = [LEVEL.start];
   while (q.length) {
     const k = q.shift(), e = EXITS[k];
-    const next = [e.left, e.right, ...e.drops, ...e.lifts].filter(Boolean).map((x) => x.to);
+    const next = [...e.lefts, ...e.rights, ...e.drops, ...e.lifts].filter(Boolean).map((x) => x.to);
     for (const n of next) if (!(n in d)) { d[n] = d[k] + 1; q.push(n); }
   }
   return d;
@@ -528,10 +536,12 @@ function moveBetweenRooms() {
   const c0 = Math.floor(dan.x / 8), c1 = Math.floor((dan.x + DAN_W - 1) / 8);   // the cells under his feet
   const zone = (list) => list.find((l) => c1 >= l.x0 && c0 <= l.x1);
   const ride = dan.onLift && dan.onLift.link;
-  if (dan.x <= 0 && isOpen(e.left)) {
-    enterRoom(e.left.to, VIEW_W - DAN_W - 3, dan.y);
-  } else if (dan.x + DAN_W >= VIEW_W && isOpen(e.right)) {
-    enterRoom(e.right.to, 3, dan.y);
+  const feet = dan.y + DAN_H;
+  const left = exitAt(e.lefts, feet), right = exitAt(e.rights, feet);
+  if (dan.x <= 0 && isOpen(left)) {
+    enterRoom(left.to, VIEW_W - DAN_W - 3, dan.y);
+  } else if (dan.x + DAN_W >= VIEW_W && isOpen(right)) {
+    enterRoom(right.to, 3, dan.y);
   } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
     dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true };
@@ -752,7 +762,7 @@ function drawGates(ctx, key, room) {
   const style = sectorStyle(LEVEL, room);
   // doors the survey found, and doors the walkthrough places but the survey
   // has not yet been through (drawn shut, leading nowhere for now)
-  const gates = [e.left, e.right, ...e.lifts].filter((l) => l && l.needs)
+  const gates = [...e.lefts, ...e.rights, ...e.lifts].filter((l) => l && l.needs)
     .concat((LEVEL.doors || []).filter((d) => d.from === key));
   for (const l of gates) {
     const open = isOpen(l);
