@@ -241,10 +241,16 @@ def main():
         for node, walks in probe.items():
             room, b = node.split(":")
             if room in rooms and int(b) >= 7 and all(len({x for x, y in t if x != "room"}) <= 1 and t[-1][0] != "room" for t in walks.values()):
-                dead[room].add(node)
+                # ... and the survey found no way out of it but capture (a
+                # guard in the way pins Dan just as well as a pit, for a while);
+                # a room he never left at all is the end of the game, not a pit
+                outs = [e for e in g["edges"] if e["from"] == node and not e["via"].endswith("!")]
+                if outs and all(room_of(e["to"]) in prisons or room_of(e["to"]) == room for e in outs):
+                    dead[room].add(node)
         for room in dead:
             floor_nodes = [n for n in probe if n.split(":")[0] == room and int(n.split(":")[1]) >= 7]
             if all(n in dead[room] for n in floor_nodes):
+                print("pit room", room, sorted(dead[room]), file=sys.stderr)
                 rooms[room]["platforms"] = [p for p in rooms[room]["platforms"] if p["y"] < TH - 3]
                 rooms[room]["holes"] = [[0, TW]]
                 stood[room] = defaultdict(set, {b: xs for b, xs in stood[room].items() if b < 120})
@@ -285,7 +291,8 @@ def main():
                     # the picture's ledge he stood on - drawn up to two rows above
                     # where his feet are - gives its extent; a room read off its
                     # own screen is not trusted beyond what he stood on
-                    if not p.get("probed") and row - 2 <= p["y"] <= row and rooms[room]["map"] != "screen" and \
+                    if not p.get("probed") and row - 2 <= p["y"] <= row and \
+                            (rooms[room]["map"] != "screen" or row >= TH - 3) and \
                             any(c in cells for c in range(p["x0"] - 1, p["x1"] + 1)):
                         base_cells.update(range(p["x0"], p["x1"]))
                 base_cells -= hole_cells
@@ -364,6 +371,7 @@ def main():
         (ra, ca), (rb, cb) = (map(int, pa.split(","))), (map(int, pb.split(",")))
         return ra == rb and cb - ca == (1 if via == "right" else -1)
     walks = defaultdict(set)              # (from, kind) -> targets by walking
+    support = {}                          # (from, kind, to) -> how many walks the survey saw
     spans = defaultdict(list)               # (from, to, kind, floor, stop) -> [[x0, x1], ...]
 
     class _Zones(dict):
@@ -399,6 +407,7 @@ def main():
                 # the doorway is at the height he arrived: a room's left and
                 # right exits can lead to different rooms from different floors
                 walks[(a, via)].add((b, arr.get("y", 123) + 5))
+                support[(a, via, b)] = support.get((a, via, b), 0) + 1
             elif not jumping:
                 # Dan walked off a hole and fell: a drop, over the room's holes
                 walks[(a, "drop")].add(b)
@@ -467,7 +476,8 @@ def main():
                 if key in seen_walk:
                     continue
                 seen_walk.add(key)
-                links.append({"from": a, "to": b, "kind": via, **({"feet": feet} if feet is not None else {})})
+                links.append({"from": a, "to": b, "kind": via, **({"feet": feet} if feet is not None else {}),
+                              "n": support.get((a, via, b), 0)})
             if needs.get((a, b), 0):
                 links[-1]["needs"] = needs[(a, b)]
     flat = [(k, tuple(r)) for k, rs in spans.items() for r in rs]
@@ -534,6 +544,21 @@ def main():
                 if cells[j * TW + i] == "4":
                     cells[j * TW + i] = "1"
         rooms[l["from"]]["cells"] = "".join(cells)
+
+    # where the floor probe saw Dan stand, the game let him stand: whatever the
+    # picture shows at body height there - a grille, a machine - is not a wall
+    for room, bases in (stood.items() if os.path.exists(args.floors) else []):
+        if room not in rooms:
+            continue
+        cells = list(rooms[room]["cells"])
+        for base, xs in bases.items():
+            row = round((base + 5) / 8)
+            for x in xs:
+                for j in range(max(0, row - 4), row):
+                    for i in (x, x + 1):
+                        if i < TW and cells[j * TW + i] == "4":
+                            cells[j * TW + i] = "1"
+        rooms[room]["cells"] = "".join(cells)
 
     start = str(g["nodes"][next(iter(g["nodes"]))]["room"])
     # the self-destruct mechanism is fitted by walking to the left of its room
