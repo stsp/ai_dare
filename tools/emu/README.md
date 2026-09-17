@@ -53,3 +53,7 @@ emulator page on `http://127.0.0.1:8802/`.
   `trace.js ROOM X Y KEY FRAMES` replay what was recorded in the original
   against the game's own engine in a headless browser: every lift ride, the
   sector-2 loop, the whole recorded route, and a single walk.
+* `hoptest.js ROOM 'walk right;goto 21;lift up;jump left'` runs primitive
+  moves in the engine from a room and prints where each left Dan.
+  `route_seq.json` is the walkthrough's room sequence; a `null` marks a
+  break between recordings.

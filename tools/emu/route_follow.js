@@ -10,7 +10,7 @@ const fitted0 = +(process.argv[3] || 0);
   await page.goto('http://127.0.0.1:8801/index.html'); await page.waitForTimeout(600);
   await page.click('#screen'); await page.waitForTimeout(200);
   const out = await page.evaluate(([seq, fitted0]) => {
-    startGame(); state.fitted = fitted0; state.timeLeft = 99999; window.TRACE = seq.length <= 3;
+    startGame(); state.fitted = fitted0; state.timeLeft = 99999; window.TRACE = seq.length <= 4;
     const log = [];
     const K = { right: 'ArrowRight', left: 'ArrowLeft', up: 'ArrowUp', down: 'ArrowDown' };
     const clear = () => { for (const k in keys) keys[k] = false; };
@@ -30,22 +30,43 @@ const fitted0 = +(process.argv[3] || 0);
       for (const l of LEVEL.links.filter((l) => l.from === from)) {
         const to = l.to;
         if (l.kind === 'right' || l.kind === 'left') moves.push({ l, go: () => walkJumping(l.kind, to, from, 3) });
-        if (l.kind === 'drop') moves.push({ l, go: () => { goto(Math.max(l.x0 - 2, 0)); const r = walk('right', to); if (r.room === to) return true; if (state.room === from) { goto(Math.min(l.x1 + 2, 29)); const r2 = walk('left', to); return r2.room === to; } return false; } });
-        if (l.kind === 'up' || l.kind === 'down') moves.push({ l, go: () => { for (const c of [l.x0, l.x1, Math.round((l.x0 + l.x1) / 2)]) { goto(c); lift(l.kind); if (state.room === to) return true; if (state.room !== from) return false; } return false; } });
+        if (l.kind === 'drop') moves.push({ l, go: () => { gotoJumping(Math.max(l.x0 - 2, 0)); const r = walk('right', to); if (r.room === to) return true; if (state.room === from) { goto(Math.min(l.x1 + 2, 29)); const r2 = walk('left', to); return r2.room === to; } return false; } });
+        if (l.kind === 'up' || l.kind === 'down') moves.push({ l, go: () => { if (l.feet != null && l.feet >= 0 && Math.abs(dan.y + DAN_H - l.feet) > 14) return false; for (const c of [l.x0, l.x1, Math.round((l.x0 + l.x1) / 2)]) { if (!gotoJumping(c)) continue; lift(l.kind); if (state.room === to) return true; if (state.room !== from) return false; } return false; } });
       }
       return moves;
+    };
+    // walk to a cell on the level Dan is on, jumping the gaps in it (up to two)
+    const gotoJumping = (cell, gaps = 2) => {
+      const s0 = snapshot(); const feet0 = dan.y + DAN_H; const r0 = state.room;
+      let fellAt = null;
+      const tx = cell * 8;
+      for (let i = 0; i < 600 && Math.abs(dan.x - tx) > 2; i++) { keys[K[dan.x < tx ? 'right' : 'left']] = true; tick(); if (!dan.onGround && !dan.onLift) { fellAt = Math.round(dan.x / 8); break; } }
+      clear();
+      if (fellAt == null) { for (let i = 0; i < 6; i++) tick(); return true; }
+      if (gaps <= 0) { settle(); return false; }
+      const dir = fellAt < cell ? 'right' : 'left';
+      for (const lead of [1, 2, 3]) {
+        restore(s0);
+        jumpFrom(dir === 'right' ? fellAt - lead : fellAt + lead, dir);
+        if (state.room !== r0 || Math.abs(dan.y + DAN_H - feet0) > 8) continue;
+        if (gotoJumping(cell, gaps - 1)) return true;
+      }
+      restore(s0); return false;
     };
     // walk `dir` to `to`; at each gap, retry with a running jump from a few cells before it (up to `gaps` gaps)
     const walkJumping = (dir, to, from, gaps) => {
       const s0 = snapshot(); const r = walk(dir, to);
-      if (r.room === to) return true;
-      if (r.fellAt == null || gaps <= 0) return false;
-      for (const lead of [1, 2, 3, 0]) {
-        restore(s0); jumpFrom(dir === 'right' ? r.fellAt - lead : r.fellAt + lead, dir);
-        if (state.room === to) return true;
-        if (state.room !== from) continue;
-        if (walkJumping(dir, to, from, gaps - 1)) return true;
+      if (r.room === to && r.fellAt == null) return true;
+      if (r.fellAt != null && gaps > 0) {
+        // fell on the way: a gap to jump - keep the level he set off on
+        for (const lead of [1, 2, 3, 0]) {
+          restore(s0); jumpFrom(dir === 'right' ? r.fellAt - lead : r.fellAt + lead, dir);
+          if (state.room === to) return true;
+          if (state.room !== from) continue;
+          if (walkJumping(dir, to, from, gaps - 1)) return true;
+        }
       }
+      if (r.room === to) { restore(s0); walk(dir, to); return true; }   // got there anyway, a level down
       return false;
     };
     const stateKey = () => `${state.room}:${Math.round((dan.y + DAN_H) / 8)}:${Math.floor(dan.x / 40)}`;
@@ -56,7 +77,7 @@ const fitted0 = +(process.argv[3] || 0);
       for (const m of movesFor(from).filter((m) => m.l.to === to)) { if (m.go() && state.room === to) return true; restore(s0); }
       const seen = new Set([stateKey()]);
       let frontier = [{ s: s0, d: 0 }];
-      let budget = 400;
+      let budget = 1500;
       while (frontier.length && budget > 0) {
         const cur = frontier.shift();
         if (cur.d >= 4) continue;
@@ -65,6 +86,7 @@ const fitted0 = +(process.argv[3] || 0);
           if (--budget <= 0) break;
           restore(cur.s);
           m.go();
+          if (window.TRACE) log.push(`   bfs d${cur.d} ${room} ${m.l.kind}->${m.l.to}@${m.l.feet ?? ''} => ${st()}`);
           if (state.mode !== 'play') continue;
           if (state.room === to) { if (window.TRACE) log.push('   via detour depth ' + (cur.d + 1)); return true; }
           if (PRISONS.includes(state.room)) continue;
@@ -79,6 +101,7 @@ const fitted0 = +(process.argv[3] || 0);
     const r0 = ROOMS[String(seq[0])]; const sp = widestPlatform(r0); resetDan(sp.x, sp.y - DAN_H); enterRoom(String(seq[0]), sp.x, sp.y - DAN_H); dan.invuln = 1e9; settle();
     let ok = 0;
     for (let i = 1; i < seq.length; i++) {
+      if (seq[i] == null) { const r = ROOMS[String(seq[i + 1])]; const p = widestPlatform(r); resetDan(p.x, p.y - DAN_H); enterRoom(String(seq[i + 1]), p.x, p.y - DAN_H); settle(); i++; continue; }
       const to = String(seq[i]); const from = state.room;
       if (from === to) continue;
       // in a part room, sweep to the part first
@@ -97,7 +120,7 @@ const fitted0 = +(process.argv[3] || 0);
         const p = widestPlatform(r); resetDan(p.x, p.y - DAN_H); enterRoom(to, p.x, p.y - DAN_H); settle(); state.mode = 'play';
       } else ok++;
     }
-    log.push(`hops ok ${ok} of ${seq.length - 1}`);
+    log.push(`hops ok ${ok} of ${seq.filter((r, i) => i > 0 && r != null && seq[i - 1] != null).length}`);
     return log;
   }, [seq, fitted0]);
   console.log(out.join('\n'));
