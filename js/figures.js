@@ -217,6 +217,10 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   const lean = run ? 1.6 : kneel ? 1 : 0;              // forward lean of the trunk
   const top = hip - (kneel ? 10 : 13);                 // shoulder line: crouched on one knee
 
+  // the body is drawn a little narrower than it was designed, to sit under
+  // the rendered head's proportions
+  ctx.save();
+  ctx.scale(0.8, 1);
   const leg = (dx, swing, back) => {
     const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
     const boot = back ? DAN_FIG.bootShade : DAN_FIG.boot;
@@ -282,10 +286,19 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   figShape(ctx, DAN_FIG.tunic, (c) => { c.moveTo(-4 + lean, top + 1); c.lineTo(-1 + lean, top + 1); c.lineTo(3 + lean, top + 5.5); c.lineTo(0.5 + lean, top + 7); });
   figEllipse(ctx, DAN_FIG.skin, 2.8 + lean, gy + 0.8, 1.5, 1.2, 0.5);
   figEllipse(ctx, DAN_FIG.skin, 7 + lean, gy + 0.9, 1.5, 1.2, 0.5);
-  // head: a small, squarish head on a short neck, face turned to the front
-  const hx = lean * 1.3, hy = top - 1;
+  ctx.restore();
+  // head: the rendered one (assets/dan_head.png, cut from the run frame) on
+  // a short neck; drawn by hand only until it has loaded
+  const hx = lean * 1.0, hy = top - 1;
   ctx.fillStyle = DAN_FIG.skinShade;
   ctx.fillRect(hx - 1.2, hy - 1.2, 2.4, 2);          // neck
+  const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
+  if (hs) {
+    const k = hs.meta.scale, w = hs.meta.w / k, h = hs.meta.h / k;
+    ctx.drawImage(hs.img, hx - hs.meta.cx, hy + 0.8 - h, w, h);
+    ctx.restore();
+    return;
+  }
   figShape(ctx, DAN_FIG.skin, (c) => {
     c.moveTo(hx - 2.6, hy - 5.5); c.lineTo(hx - 2.6, hy - 2.2); c.quadraticCurveTo(hx - 2.5, hy - 0.8, hx - 0.6, hy - 0.8);
     c.lineTo(hx + 1.6, hy - 0.8); c.quadraticCurveTo(hx + 3.2, hy - 1.2, hx + 3.2, hy - 3); c.lineTo(hx + 3.2, hy - 5.5);
