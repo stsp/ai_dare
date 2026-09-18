@@ -90,13 +90,16 @@ function updateIntro(dt) {
   if (tapped.Enter) { startGame(); state.score += intro.score; return; }
 
   if (intro.phase === 2) {
-    // Dan flies the ship: up and down, and fire
+    // Dan flies the ship: up, down, forward and back, and fire
     if (held.up()) s.y -= 70 * dt;
     if (held.down()) s.y += 70 * dt;
+    if (held.left()) s.x -= 90 * dt;
+    if (held.right()) s.x += 90 * dt;
     s.y = Math.max(20, Math.min(VIEW_H - 40, s.y));
+    s.x = Math.max(4, Math.min(VIEW_W - 60, s.x));
     if (held.fire() && (intro.cool = (intro.cool || 0) - dt) <= 0) {
       intro.cool = 0.25;
-      intro.shots.push({ x: s.x + 30, y: s.y + 4 });
+      intro.shots.push({ x: s.x + 42, y: s.y + 5 });
       beep(1500, 0.04, "square");
     }
     for (const sh of intro.shots) sh.x += 260 * dt;
@@ -115,7 +118,7 @@ function updateIntro(dt) {
           beep(200, 0.15, "sawtooth");
         }
       }
-      if (!f.dead && Math.abs(f.x - (s.x + 14)) < 14 && Math.abs(f.y - (s.y + 4)) < 8) { f.dead = true; state.energy = Math.max(10, state.energy - 10); beep(120, 0.2, "sawtooth"); }
+      if (!f.dead && Math.abs(f.x - (s.x + 22)) < 20 && Math.abs(f.y - (s.y + 5)) < 8) { f.dead = true; state.energy = Math.max(10, state.energy - 10); beep(120, 0.2, "sawtooth"); }
     }
     intro.foes = intro.foes.filter((f) => !f.dead && f.x > -12);
     for (const b of intro.bursts) { b.x += b.vx * dt; b.y += b.vy * dt; b.t -= dt; }
@@ -129,23 +132,59 @@ function updateIntro(dt) {
 }
 
 /** Anastasia, in profile: a cyan hull, the cabin, and the drive flame. */
+/** The Anastasia, nose to the right: a long tube with a rounded nose, a
+ *  canopy and a row of portholes along the top, a finned engine block at the
+ *  tail and a flaring exhaust. About 42 by 12, its hit point at (x + 14, y + 4). */
 function drawShip(ctx, x, y, t) {
-  ctx.fillStyle = C.cyan;
-  ctx.fillRect(x + 8, y + 2, 22, 5);
-  ctx.fillRect(x + 6, y + 4, 26, 3);
-  ctx.fillStyle = C.bcyan;
-  ctx.fillRect(x + 12, y, 8, 3);                 // cabin
-  ctx.fillRect(x + 30, y + 3, 4, 3);             // nose
-  ctx.fillStyle = C.bwhite;
-  ctx.fillRect(x + 14, y + 1, 2, 1); ctx.fillRect(x + 17, y + 1, 2, 1);   // windows
-  ctx.fillRect(x + 22, y + 3, 6, 1);
-  ctx.fillStyle = C.white;
-  ctx.fillRect(x + 8, y + 7, 12, 1);             // underside
   const flick = Math.floor(t * 20) % 2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.lineJoin = "round";
+  // exhaust: a red flare with a yellow core, pulsing
   ctx.fillStyle = C.bred;
-  ctx.fillRect(x - 2 - flick * 3, y + 3, 10 + flick * 3, 3);
+  ctx.beginPath();
+  ctx.moveTo(4, 1.5); ctx.lineTo(-5 - flick * 3, 2); ctx.lineTo(-2, 4.5); ctx.lineTo(-7 - flick * 2, 5.5);
+  ctx.lineTo(-2, 6.5); ctx.lineTo(-5 - flick * 3, 9); ctx.lineTo(4, 9.5);
+  ctx.closePath(); ctx.fill();
   ctx.fillStyle = C.byellow;
-  ctx.fillRect(x + 2 - flick * 2, y + 4, 6, 1);
+  ctx.beginPath();
+  ctx.moveTo(4, 3); ctx.lineTo(-1 - flick * 2, 4); ctx.lineTo(0, 5.5); ctx.lineTo(-1 - flick * 2, 7); ctx.lineTo(4, 8);
+  ctx.closePath(); ctx.fill();
+  // tail block: the engine housing with fins above and below
+  ctx.fillStyle = C.cyan;
+  ctx.fillRect(4, 1, 8, 9);
+  ctx.fillStyle = C.bcyan;
+  ctx.beginPath(); ctx.moveTo(6, 1); ctx.lineTo(9, -3); ctx.lineTo(12, 1); ctx.closePath(); ctx.fill();   // dorsal fin
+  ctx.beginPath(); ctx.moveTo(6, 10); ctx.lineTo(9, 13); ctx.lineTo(12, 10); ctx.closePath(); ctx.fill(); // ventral fin
+  ctx.fillStyle = C.black;
+  ctx.fillRect(5, 3, 1, 5); ctx.fillRect(7, 3, 1, 5);                    // the nozzle's ribs
+  ctx.fillStyle = C.bwhite;
+  ctx.fillRect(9, 2, 1, 7);                                              // a bright rim
+  // fuselage: a tube tapering into a rounded nose
+  ctx.fillStyle = C.cyan;
+  ctx.beginPath();
+  ctx.moveTo(12, 2);
+  ctx.lineTo(32, 2);
+  ctx.quadraticCurveTo(42, 2, 42, 5.5);
+  ctx.quadraticCurveTo(42, 9, 32, 9);
+  ctx.lineTo(12, 9);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.bcyan;                                               // lit upper flank
+  ctx.beginPath();
+  ctx.moveTo(12, 2); ctx.lineTo(32, 2); ctx.quadraticCurveTo(40, 2, 41, 4.5); ctx.lineTo(12, 4.5);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.white;                                               // keel line
+  ctx.fillRect(13, 7.6, 22, 0.8);
+  // canopy behind the nose, and a row of portholes
+  ctx.fillStyle = C.bwhite;
+  ctx.beginPath(); ctx.moveTo(30, 2); ctx.lineTo(33, 0); ctx.lineTo(37, 0); ctx.lineTo(39, 2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.black;
+  ctx.fillRect(33, 0.8, 1.5, 1.2); ctx.fillRect(35.5, 0.8, 1.5, 1.2);
+  ctx.fillStyle = C.black;
+  for (let i = 0; i < 4; i++) ctx.fillRect(15 + i * 4, 3, 2, 1.6);
+  ctx.fillStyle = C.bwhite;
+  for (let i = 0; i < 4; i++) ctx.fillRect(15 + i * 4, 3, 0.8, 0.8);
+  ctx.restore();
 }
 
 /** The asteroid's surface rolling under the ship: a course of plating with
