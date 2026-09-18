@@ -56,7 +56,8 @@ def main():
     ap.add_argument("--match", required=True)
     ap.add_argument("--geometry", default="level_map.json")
     ap.add_argument("--parts", default="",
-                    help="rooms holding the parts, in order, e.g. 83,...")
+                    help="rooms holding the parts, in order, each as room[:cell] where the "
+                         "original keeps it on the floor, e.g. 83:4,148:7,...")
     ap.add_argument("--slot", default="143", help="the self-destruct room")
     ap.add_argument("--screens", default="data/emu",
                     help="where the surveyed screens are; a room the map does not show "
@@ -792,7 +793,11 @@ def main():
         room, cell, row = args.boss.split(":")
         if room in rooms:
             boss = {"room": room, "x": int(cell) * 8, "feet": int(row) * 8}
-    parts = [p for p in args.parts.split(",") if p]
+    parts = []
+    for spec in filter(None, args.parts.split(",")):
+        room, _, cell = spec.partition(":")
+        if room in rooms:
+            parts.append({"room": room, "x": int(cell)} if cell else {"room": room})
     level = {
         "source": geo.get("source"),
         "room": geo["room"],
@@ -801,7 +806,7 @@ def main():
         "explored": len(rooms),
         "links": links,
         "rooms": rooms,
-        "parts": [{"room": p} for p in parts if p in rooms],
+        "parts": parts,
         "doors": doors,
         "prisons": [p for p in args.prisons.split(",") if p in rooms],
         "slot": args.slot if args.slot in rooms else None,

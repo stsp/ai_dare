@@ -712,7 +712,7 @@ function updatePickups() {
       state.carrying = true;
       state.score += 500;
       beep(990, 0.2);
-      say(["DAN PICKS UP A PART", "OF THE MECHANISM"], 2.5);
+      say(["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"], 2.5);
     }
   }
   // the socket: walk to the left of the self-destruct room with a part

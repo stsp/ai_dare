@@ -93,8 +93,8 @@ python3 tools/validate_level.py MAP.png level_map.json 1,5  # draw a room's geom
 python3 tools/match_rooms.py MAP.png data/emu --graph data/emu/graph.json --level level_map.json -o data/emu/match.json
 python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/graph3.json \
     data/emu/graph4.json data/emu/graph5.json data/emu/graph6.json --match data/emu/match.json \
-    --geometry level_map.json --parts 83,148,255,56,50 --slot 143 --from-screen 117 \
-    --prisons 50,53,241,192 --gate 185:186:2 --label 4:186:185,217 --boss 63:22:16 \
+    --geometry level_map.json --parts 83:4,148:7,185:26,255:24,56:13 --slot 143 --from-screen 117 \
+    --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 \
     -o level.json                                            # -> level.json + js/level.js
 python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
 ```
@@ -102,7 +102,9 @@ python3 tools/make_sprites.py                               # renders in ./ -> a
 ## Other departures
 
 * Guards, pickups and key placement are procedural, from a seeded hash of each
-  room; the parts of the mechanism are not yet where the original keeps them.
+  room. The five parts of the mechanism lie where the original keeps them
+  (rooms 83, 148, 185, 255 and 56, one per sector) and the sector doors open
+  after one, two, three and four parts, as the walkthrough shows.
 * The clock runs at 3× real time, so a two-hour mission is about forty minutes.
 
 Dan Dare is someone else's property; this is a personal recreation of a

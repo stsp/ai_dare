@@ -4,7 +4,7 @@ const fs = require('fs');
 const seq = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));   // [room, room, ...]
 const fitted0 = +(process.argv[3] || 0);
 (async () => {
-  const browser = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const page = await browser.newPage({ viewport: { width: 800, height: 620 } });
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto('http://127.0.0.1:8801/index.html'); await page.waitForTimeout(600);
@@ -116,7 +116,13 @@ const fitted0 = +(process.argv[3] || 0);
       if (from === to) continue;
       // in a part room, sweep to the part first
       const part = sdsParts.find((p) => p.key === from && !p.taken && p.id === state.fitted);
-      if (part) { goto(Math.round(part.x / 8)); jumpFrom(Math.round(part.x / 8) + 1, 'left'); }
+      if (part) {
+        // the part may lie on another floor: jump from the edge of this one towards it, as in 185
+        const c = Math.round(part.x / 8), feet = dan.y + DAN_H, cx = dan.x / 8;
+        const plat = ROOMS[from].platforms.find((p) => Math.abs(p.y * 8 - feet) < 2 && cx >= p.x0 - 1 && cx <= p.x1 + 1);
+        if (plat && c > plat.x1) jumpFrom(plat.x1 - 1, 'right'); else if (plat && c < plat.x0) jumpFrom(plat.x0 + 1, 'left');
+        goto(c); jumpFrom(c + 1, 'left');
+      }
       if (from === SDS_ROOM && state.carrying) { goto(2); for (let k = 0; k < 60; k++) tick(); }
       // captured on purpose: the walkthrough let the guards take Dan to the cells
       if (PRISONS.includes(to) && !LEVEL.links.some((l) => l.from === from && l.to === to)) {
