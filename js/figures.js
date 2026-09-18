@@ -190,3 +190,123 @@ function drawMekonSeated(ctx, bx, by, bw, bh, t) {
   drawMekonHead(ctx, 3, 0, 18, t);
   ctx.restore();
 }
+
+/* Dan himself, drawn the same way: a pilot in an olive uniform and peaked
+   cap, rifle out before him. `pose` is "stand", "run", "jump", "kneel" or
+   "fire"; `phase` runs the stride (0..1) and the muzzle flash. The box is
+   Dan's hit box, feet at its bottom, as with the rendered frames. */
+const DAN_FIG = {
+  skin: "#f1c9a0", skinShade: "#c99468", hair: "#3b2a1a",
+  cap: "#4e6b2f", capShade: "#33481f", peak: "#151515",
+  tunic: "#5a7a35", tunicShade: "#3c5322", tunicLight: "#8cae5c",
+  trouser: "#526d31", trouserShade: "#354820",
+  boot: "#1a1a1a", bootShade: "#000000", belt: "#2b2b2b", buckle: "#d9b24a",
+  gun: "#4b515c", gunShade: "#2a2e36", gunLight: "#9aa3b2", glow: "#7ff5ff", flash: "#fff2a0",
+};
+
+function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
+  ctx.save();
+  ctx.translate(bx + bw / 2, by + bh);
+  if (flip) ctx.scale(-1, 1);
+  const run = pose === "run", kneel = pose === "kneel", jump = pose === "jump";
+  const stride = run ? Math.sin(phase * Math.PI * 2) : 0;
+  const bob = run ? Math.abs(Math.cos(phase * Math.PI * 2)) * 0.8 : 0;
+  // how far the trunk sits above the ground in each pose
+  const hip = kneel ? -8 : jump ? -14 : -12 + bob;
+  const lean = run ? 1.6 : kneel ? 1 : 0;              // forward lean of the trunk
+  const top = hip - 13;                                // shoulder line
+
+  const leg = (dx, swing, back) => {
+    const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
+    const boot = back ? DAN_FIG.bootShade : DAN_FIG.boot;
+    if (kneel) {                                       // one knee down, the other foot planted
+      if (back) {
+        figShape(ctx, cloth, (c) => { c.moveTo(-3.5, hip); c.lineTo(0.5, hip); c.lineTo(-1, -1.5); c.lineTo(-6, -1.5); });
+        figShape(ctx, boot, (c) => { c.moveTo(-9.5, 0); c.lineTo(-6, -2.2); c.lineTo(-1.5, -2.2); c.lineTo(-1.5, 0); });
+      } else {
+        figShape(ctx, cloth, (c) => { c.moveTo(-1, hip); c.lineTo(3, hip); c.lineTo(7.5, -6); c.lineTo(5.5, -2); c.lineTo(2.5, -2); c.lineTo(2.5, -6); });
+        figShape(ctx, boot, (c) => { c.moveTo(2, -2.4); c.lineTo(6.5, -2.4); c.lineTo(7.5, 0); c.lineTo(1.6, 0); });
+      }
+      return;
+    }
+    if (jump) {                                        // knees tucked up under him
+      const kx = dx + 3, ky = hip + 4;
+      figShape(ctx, cloth, (c) => { c.moveTo(dx - 2, hip); c.lineTo(dx + 2, hip); c.lineTo(kx + 2.5, ky); c.lineTo(kx - 1, ky + 3.5); c.lineTo(kx - 3.5, ky + 1); });
+      figShape(ctx, boot, (c) => { c.moveTo(kx - 3.6, ky + 0.8); c.lineTo(kx - 0.6, ky + 3.6); c.lineTo(kx - 3, ky + 5); c.lineTo(kx - 6, ky + 2.4); });
+      return;
+    }
+    const kneeX = dx + swing * 2.5, footX = dx + swing * 5;
+    const lift = Math.max(0, swing) * 1.6;             // the leading foot comes off the ground
+    figShape(ctx, cloth, (c) => {
+      c.moveTo(dx - 2.2, hip); c.lineTo(dx + 2.2, hip);
+      c.lineTo(kneeX + 1.9, -6 - lift); c.lineTo(footX + 1.5, -2 - lift);
+      c.lineTo(footX - 1.5, -2 - lift); c.lineTo(kneeX - 1.9, -6 - lift);
+    });
+    figShape(ctx, boot, (c) => { c.moveTo(footX - 1.8, -2.4 - lift); c.lineTo(footX + 2.4, -2.4 - lift); c.lineTo(footX + 3, -lift); c.lineTo(footX - 2, -lift); });
+  };
+  leg(-1.5, -stride, true);
+  // tunic: broad shoulders, a belt at the waist, leaning into the run
+  figShape(ctx, DAN_FIG.tunic, (c) => {
+    c.moveTo(-4.4 + lean, top); c.lineTo(4.4 + lean, top);
+    c.lineTo(3.8, hip); c.lineTo(-3.8, hip);
+  });
+  ctx.fillStyle = DAN_FIG.tunicShade;
+  ctx.fillRect(-3.6, hip - 2.6, 7.2, 1.3);           // belt
+  ctx.fillStyle = DAN_FIG.buckle;
+  ctx.fillRect(-0.7, hip - 2.8, 1.4, 1.7);
+  ctx.fillStyle = DAN_FIG.tunicLight;
+  ctx.fillRect(-3.2 + lean, top + 1.2, 1.6, 0.8);     // shoulder flash
+  ctx.fillRect(1.8 + lean, top + 1.2, 1.6, 0.8);
+  leg(1.5, stride, false);
+  // far arm reaching to the rifle's stock
+  figShape(ctx, DAN_FIG.tunicShade, (c) => { c.moveTo(1 + lean, top + 1); c.lineTo(4 + lean, top + 1); c.lineTo(7.5 + lean, top + 6.5); c.lineTo(5 + lean, top + 7.5); });
+  // the rifle: a long body with a magazine below and a glowing muzzle
+  const gy = top + 6;
+  figShape(ctx, DAN_FIG.gunShade, (c) => {
+    c.moveTo(-3 + lean, gy); c.lineTo(12 + lean, gy); c.lineTo(12 + lean, gy + 1.5);
+    c.lineTo(4.5 + lean, gy + 1.5); c.lineTo(4.5 + lean, gy + 3.2); c.lineTo(2 + lean, gy + 3.2);
+    c.lineTo(2 + lean, gy + 1.5); c.lineTo(-1 + lean, gy + 1.5); c.lineTo(-3 + lean, gy + 3);
+  }, 0.5);
+  ctx.fillStyle = DAN_FIG.gunLight;
+  ctx.fillRect(-2 + lean, gy + 0.3, 13, 0.6);
+  ctx.fillStyle = DAN_FIG.glow;
+  ctx.fillRect(11 + lean, gy + 0.2, 1.4, 1.2);
+  if (pose === "fire") {                              // the shot leaving the muzzle
+    ctx.fillStyle = DAN_FIG.flash;
+    ctx.beginPath();
+    ctx.moveTo(12.5 + lean, gy + 0.8); ctx.lineTo(16 + lean, gy - 1.5); ctx.lineTo(15 + lean, gy + 0.8); ctx.lineTo(16 + lean, gy + 3);
+    ctx.closePath(); ctx.fill();
+  }
+  // near arm and both hands on the rifle
+  figShape(ctx, DAN_FIG.tunic, (c) => { c.moveTo(-4 + lean, top + 1); c.lineTo(-1 + lean, top + 1); c.lineTo(3 + lean, top + 5.5); c.lineTo(0.5 + lean, top + 7); });
+  figEllipse(ctx, DAN_FIG.skin, 2.8 + lean, gy + 0.8, 1.5, 1.2, 0.5);
+  figEllipse(ctx, DAN_FIG.skin, 7 + lean, gy + 0.9, 1.5, 1.2, 0.5);
+  // head: a small, squarish head on a short neck, face turned to the front
+  const hx = lean * 1.3, hy = top - 1;
+  ctx.fillStyle = DAN_FIG.skinShade;
+  ctx.fillRect(hx - 1.2, hy - 1.2, 2.4, 2);          // neck
+  figShape(ctx, DAN_FIG.skin, (c) => {
+    c.moveTo(hx - 2.6, hy - 5.5); c.lineTo(hx - 2.6, hy - 2.2); c.quadraticCurveTo(hx - 2.5, hy - 0.8, hx - 0.6, hy - 0.8);
+    c.lineTo(hx + 1.6, hy - 0.8); c.quadraticCurveTo(hx + 3.2, hy - 1.2, hx + 3.2, hy - 3); c.lineTo(hx + 3.2, hy - 5.5);
+  }, 0.5);
+  ctx.fillStyle = DAN_FIG.hair;
+  ctx.fillRect(hx - 2.6, hy - 5.6, 1.4, 1.8);         // sideburn
+  ctx.fillStyle = DAN_FIG.skinShade;
+  ctx.fillRect(hx + 1.2, hy - 4.2, 1.6, 0.5);         // brow
+  ctx.fillRect(hx + 2.4, hy - 3.6, 0.9, 1.3);         // nose
+  ctx.fillRect(hx + 0.6, hy - 1.9, 1.8, 0.5);         // mouth
+  ctx.fillStyle = DAN_FIG.hair;
+  ctx.fillRect(hx + 1.4, hy - 3.7, 0.9, 0.8);         // eye
+  figShape(ctx, DAN_FIG.cap, (c) => {                 // crown, high at the front
+    c.moveTo(hx - 3.2, hy - 5.4); c.quadraticCurveTo(hx - 3.6, hy - 8.8, hx + 0.6, hy - 9.2);
+    c.quadraticCurveTo(hx + 4.4, hy - 9.2, hx + 3.6, hy - 5.6);
+  }, 0.5);
+  ctx.fillStyle = DAN_FIG.capShade;
+  ctx.fillRect(hx - 3.2, hy - 6.2, 6.8, 0.9);         // band
+  ctx.fillStyle = DAN_FIG.buckle;
+  ctx.fillRect(hx + 0.3, hy - 7.9, 1.2, 1.2);         // badge
+  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak, forward over the eyes
+    c.moveTo(hx + 0.5, hy - 5.8); c.lineTo(hx + 6.2, hy - 5.3); c.quadraticCurveTo(hx + 6.4, hy - 4.5, hx + 5.4, hy - 4.5); c.lineTo(hx + 0.5, hy - 4.8);
+  }, 0.4);
+  ctx.restore();
+}
