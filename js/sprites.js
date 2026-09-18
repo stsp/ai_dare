@@ -5,9 +5,8 @@
    Dan is 18x32: a uniformed pilot in a peaked cap, rifle held forward, matching the proportions and
    poses of the original's figure: upright stand, a four-phase run with the
    arms counter-swinging, a tucked jump, and a low kneel for firing under fire.
-   The Treens are guards with Dan's own silhouette - rifle forward, as the game
-   draws them - told apart by a rounded helmet and their colour. The boss is a
-   great-headed figure seated on a floating bowl, an original design. */
+   The Treens and the Mekon are illustrations drawn with paths, in
+   js/figures.js. */
 
 const SPR = {};
 function defineSprite(name, rows) { SPR[name] = { w: rows[0].length, h: rows.length, rows }; }
@@ -293,109 +292,6 @@ defineSprite("dan_kneel", [
   ".XXXXXXX.....XXXX.",
   ".ooooooo.....oooo.",
   "..................",
-]);
-
-// --------------------------------------------------------------- Treen 20x32
-
-defineSprite("treen_stand", [
-  ".......XXXX.......",
-  ".....XXXXXXXX.....",
-  "....XXXXXXXXXX....",
-  "....XXXXXXXXXX....",
-  "....XXooooXXXX....",
-  ".....XXXXXXXX.....",
-  "......XXX.XXXX....",
-  "......XXXXXXXX....",
-  ".......XXXXXX.....",
-  "........XXXX......",
-  ".....XXXXXXXXX....",
-  "....XXXXXXXXXXX...",
-  "....XXXXXXXXXXXX..",
-  "....XXXXX.XXXXXXX.",
-  "....XXXXX..XXXXXXX",
-  "....XXXXX..XXooooo",
-  "....XXXXX.XXXXooo.",
-  "....XXXXXXXXXX....",
-  "....XXXooXXXXX....",
-  ".....XXXXXXXXX....",
-  ".....XXXXXXXXX....",
-  ".....XXXX.XXXX....",
-  ".....XXXX.XXXX....",
-  ".....XXXX.XXXX....",
-  ".....XXX...XXX....",
-  ".....XXX...XXX....",
-  ".....XXX...XXX....",
-  ".....XXX...XXX....",
-  ".....XXX...XXX....",
-  "....XXXX...XXXX...",
-  "...XXXXX...XXXXX..",
-  "...ooooo...ooooo..",
-]);
-
-defineSprite("treen_walk", [
-  ".......XXXX.......",
-  ".....XXXXXXXX.....",
-  "....XXXXXXXXXX....",
-  "....XXXXXXXXXX....",
-  "....XXooooXXXX....",
-  ".....XXXXXXXX.....",
-  "......XXX.XXXX....",
-  "......XXXXXXXX....",
-  ".......XXXXXX.....",
-  "........XXXX......",
-  ".....XXXXXXXXX....",
-  "....XXXXXXXXXXX...",
-  "....XXXXXXXXXXXX..",
-  "....XXXXX.XXXXXXX.",
-  "....XXXXX..XXXXXXX",
-  "....XXXXX..XXooooo",
-  "....XXXXX.XXXXooo.",
-  "....XXXXXXXXXX....",
-  "....XXXooXXXXX....",
-  ".....XXXXXXXXX....",
-  ".....XXXXXXXXX....",
-  "....XXXXXX.XXXX...",
-  "...XXXXX....XXXX..",
-  "..XXXX.......XXXX.",
-  ".XXXX.........XXX.",
-  ".XXX...........XXX",
-  "XXX............XXX",
-  "XXX.............XX",
-  "XX..............XX",
-  "XX...............X",
-  "XX................",
-  "oo................",
-]);
-
-defineSprite("boss", [
-  "........XXXXXXXX........",
-  "......XXXXXXXXXXXX......",
-  ".....XXXXXXXXXXXXXX.....",
-  "....XXXXXXXXXXXXXXXX....",
-  "....XXXXXXXXXXXXXXXX....",
-  "....XXXooXXXXXXooXXX....",
-  "....XXXooXXXXXXooXXX....",
-  ".....XXXXXXXXXXXXXX.....",
-  ".....XXXXXXXXXXXXXX.....",
-  "......XXXXXXXXXXXX......",
-  ".......XXXXXXXXXX.......",
-  "........XXXXXXXX........",
-  "..........XXXX..........",
-  ".........XXXXXX.........",
-  "........XXXXXXXX........",
-  ".......XX.XXXX.XX.......",
-  ".......XX.XXXX.XX.......",
-  ".......XX.XXXX.XX.......",
-  "........X.XXXX.X........",
-  "..........XXXX..........",
-  "......XXXXXXXXXXXX......",
-  ".....XXXXXXXXXXXXXX.....",
-  ".....XXooooooooooXX.....",
-  "......XXXXXXXXXXXX......",
-  ".......XXXXXXXXXX.......",
-  "........XXXXXXXX........",
-  "..........XXXX..........",
-  ".........oooooo.........",
 ]);
 
 // -------------------------------------------------------------------- objects
