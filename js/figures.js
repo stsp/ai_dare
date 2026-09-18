@@ -42,92 +42,92 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip) {
   ctx.save();
   ctx.translate(bx + bw / 2, by + bh);         // origin between his feet
   if (flip) ctx.scale(-1, 1);
-  const stride = Math.sin(phase * Math.PI * 2);   // -1..1: legs and arms swing
+  const stride = Math.sin(phase * Math.PI * 2);   // -1..1: the legs swing
   const bob = Math.abs(stride) * 0.6;
+  const hip = -12 + bob, top = -25 + bob;         // the hips and the shoulder line
 
-  // legs: two tapered columns from the hips, boots at the ground
+  // seen from the side, like Dan: legs one behind the other, boots toe forward
   const leg = (dx, swing, back) => {
-    const hipX = dx, kneeX = dx + swing * 3, footX = dx + swing * 5;
+    const kneeX = dx + swing * 2.4, footX = dx + swing * 4.8;
+    const lift = Math.max(0, swing) * 1.6;
     figShape(ctx, back ? FIG.clothShade : FIG.cloth, (c) => {
-      c.moveTo(hipX - 2.2, -12 + bob);
-      c.lineTo(hipX + 2.2, -12 + bob);
-      c.lineTo(kneeX + 1.8, -6);
-      c.lineTo(footX + 1.6, -2);
-      c.lineTo(footX - 1.6, -2);
-      c.lineTo(kneeX - 1.8, -6);
+      c.moveTo(dx - 1.7, hip); c.lineTo(dx + 1.7, hip);
+      c.lineTo(kneeX + 1.5, hip + 6); c.lineTo(footX + 1.1, -2.2 - lift);
+      c.lineTo(footX - 1.1, -2.2 - lift); c.lineTo(kneeX - 1.5, hip + 6);
     });
     figShape(ctx, back ? FIG.bootShade : FIG.boot, (c) => {
-      c.moveTo(footX - 1.8, -2.4);
-      c.lineTo(footX + 2.6, -2.4);
-      c.lineTo(footX + 3.2, 0);
-      c.lineTo(footX - 2, 0);
-    });
+      c.moveTo(footX - 1.4, -2.4 - lift); c.lineTo(footX + 1.2, -2.4 - lift); c.lineTo(footX + 3.4, -0.8 - lift);
+      c.lineTo(footX + 3.2, -lift); c.lineTo(footX - 1.6, -lift);
+    }, 0.45);
   };
-  leg(-1.5, -stride, true);
-  // torso: a long tunic, shoulders wider than the hips, a belt
+  leg(-0.4, -stride, true);
+  // torso in profile: a straight back, the chest forward, one rounded shoulder
   figShape(ctx, FIG.cloth, (c) => {
-    c.moveTo(-4.2, -24 + bob);
-    c.lineTo(4.2, -24 + bob);
-    c.lineTo(3.6, -12 + bob);
-    c.lineTo(-3.6, -12 + bob);
+    c.moveTo(-1.9, hip);
+    c.lineTo(-2.2, top + 1.5);
+    c.quadraticCurveTo(-2.1, top - 0.3, 0.2, top - 0.3);
+    c.quadraticCurveTo(2.7, top - 0.3, 2.8, top + 2.5);
+    c.quadraticCurveTo(3.1, top + 6, 2.2, hip);
   });
   ctx.fillStyle = FIG.clothShade;
-  ctx.fillRect(-3.6, -14.5 + bob, 7.2, 1.4);       // belt
+  ctx.fillRect(-1.9, hip - 2.5, 4.1, 1.3);         // belt
   ctx.fillStyle = FIG.metal;
-  ctx.fillRect(-0.8, -14.7 + bob, 1.6, 1.8);       // buckle
+  ctx.fillRect(1.2, hip - 2.7, 1, 1.7);            // buckle
   ctx.fillStyle = FIG.skinLight;
-  ctx.fillRect(-1, -22 + bob, 2, 1);               // collar flash
-  leg(1.5, stride, false);
-  // the far arm, behind the rifle
+  ctx.fillRect(-0.6, top + 0.8, 1.6, 0.7);         // shoulder flash
+  leg(0.4, stride, false);
+  // the far arm, behind the near one, to the rifle's fore-end
+  const sx = 0.4, sy = top + 1.6, gy = top + 6;
   figShape(ctx, FIG.clothShade, (c) => {
-    c.moveTo(1, -23 + bob); c.lineTo(4, -23 + bob); c.lineTo(7.5, -17 + bob); c.lineTo(5, -16 + bob);
+    c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 9, gy - 0.2);
+    c.lineTo(sx + 9, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
   });
   // rifle, held out level in front
   figShape(ctx, FIG.metalShade, (c) => {
-    c.moveTo(-2, -17.5 + bob); c.lineTo(11, -17.5 + bob); c.lineTo(11, -16 + bob);
-    c.lineTo(4, -16 + bob); c.lineTo(4, -14.6 + bob); c.lineTo(1.5, -14.6 + bob); c.lineTo(1.5, -16 + bob); c.lineTo(-2, -16 + bob);
+    c.moveTo(-2.5, gy); c.lineTo(13, gy); c.lineTo(13, gy + 1.5);
+    c.lineTo(5, gy + 1.5); c.lineTo(5, gy + 3.2); c.lineTo(2.5, gy + 3.2); c.lineTo(2.5, gy + 1.5); c.lineTo(-1, gy + 1.5); c.lineTo(-2.5, gy + 3);
   }, 0.5);
   ctx.fillStyle = FIG.metal;
-  ctx.fillRect(-1.5, -17.1 + bob, 11, 0.6);
+  ctx.fillRect(-1.5, gy + 0.3, 14, 0.6);
   ctx.fillStyle = FIG.glow;
-  ctx.fillRect(10.2, -17.4 + bob, 1.2, 1.2);       // the muzzle's charge
-  // near arm and hands on the rifle
+  ctx.fillRect(12.2, gy + 0.2, 1.4, 1.2);          // the muzzle's charge
+  // the near arm, down to the elbow and forward to the grip, both hands on the rifle
   figShape(ctx, FIG.cloth, (c) => {
-    c.moveTo(-4, -23 + bob); c.lineTo(-1, -23 + bob); c.lineTo(3, -18 + bob); c.lineTo(0.5, -16.5 + bob);
+    c.moveTo(sx - 1.4, sy); c.lineTo(sx + 1, sy - 0.4); c.lineTo(sx + 3.4, gy - 0.2); c.lineTo(sx + 5, gy);
+    c.lineTo(sx + 5, gy + 1.8); c.lineTo(sx + 2.6, gy + 1.8); c.lineTo(sx + 0.2, sy + 2.6);
   });
-  figEllipse(ctx, FIG.skin, 2.5, -16.8 + bob, 1.5, 1.2, 0.5);
-  figEllipse(ctx, FIG.skin, 6.5, -16.6 + bob, 1.5, 1.2, 0.5);
-  // neck and head: a long jaw, heavy brow, the helmet's dome above
+  figEllipse(ctx, FIG.skin, sx + 5.2, gy + 0.9, 1.6, 1.2, 0.5);
+  figEllipse(ctx, FIG.skin, sx + 9.4, gy + 0.7, 1.5, 1.1, 0.5);
+  // head in profile: a long snout of a jaw, a heavy brow over one red eye
+  const hx = 0.4, hy = top - 1;
   ctx.fillStyle = FIG.skinShade;
-  ctx.fillRect(-1.4, -25.5 + bob, 2.8, 2);
+  ctx.fillRect(hx - 1.2, hy - 1.2, 2.4, 2);        // neck
   figShape(ctx, FIG.skin, (c) => {
-    c.moveTo(-3.4, -30 + bob);
-    c.quadraticCurveTo(-3.6, -25 + bob, -1.5, -24.5 + bob);
-    c.lineTo(2.5, -24.5 + bob);
-    c.quadraticCurveTo(4.4, -25 + bob, 4.2, -28 + bob);
-    c.lineTo(4, -30 + bob);
+    c.moveTo(hx - 2.8, hy - 6); c.lineTo(hx - 2.8, hy - 2); c.quadraticCurveTo(hx - 2.6, hy - 0.4, hx - 0.6, hy - 0.4);
+    c.lineTo(hx + 3.6, hy - 0.6);                   // the jaw juts forward
+    c.quadraticCurveTo(hx + 4.6, hy - 1.2, hx + 4.4, hy - 2.6);
+    c.lineTo(hx + 3.4, hy - 3.8); c.lineTo(hx + 3.2, hy - 6);
   });
   ctx.fillStyle = FIG.skinShade;
-  ctx.fillRect(-2.6, -26.6 + bob, 6, 0.7);         // the slit of a mouth
+  ctx.fillRect(hx + 0.2, hy - 1.7, 3.4, 0.5);      // the slit of the mouth
+  ctx.fillRect(hx + 1, hy - 4.4, 2.6, 0.6);        // brow
   ctx.fillStyle = FIG.eye;
-  ctx.fillRect(1.6, -29 + bob, 1.6, 1);             // eye
+  ctx.fillRect(hx + 1.6, hy - 3.7, 1.4, 0.9);      // eye
   ctx.fillStyle = FIG.eyeDark;
-  ctx.fillRect(2.6, -29 + bob, 0.6, 1);
-  ctx.fillStyle = FIG.skinShade;
-  ctx.fillRect(0.8, -29.9 + bob, 3.2, 0.7);         // brow
-  // a knitted hat pulled down over the brows, its brim rolled up
+  ctx.fillRect(hx + 2.5, hy - 3.7, 0.5, 0.9);
+  // a knitted hat pulled down over the brow, its brim rolled up
   figShape(ctx, FIG.helmet, (c) => {
-    c.moveTo(-4.2, -29.2 + bob);
-    c.quadraticCurveTo(-4.2, -34.2 + bob, 0.2, -34.4 + bob);
-    c.quadraticCurveTo(4.6, -34.2 + bob, 4.6, -29.2 + bob);
+    c.moveTo(hx - 3.2, hy - 5.4);
+    c.quadraticCurveTo(hx - 3.2, hy - 10, hx + 0.4, hy - 10.2);
+    c.quadraticCurveTo(hx + 4, hy - 10, hx + 3.8, hy - 5.4);
   }, 0.5);
-  ctx.fillStyle = FIG.helmetShade;                  // ribbing
-  for (let i = -3; i <= 3; i += 1.5) ctx.fillRect(i, -33.4 + bob, 0.5, 3.6);
-  figShape(ctx, FIG.helmetShade, (c) => {            // the rolled brim
-    c.moveTo(-4.6, -30.6 + bob); c.lineTo(5, -30.6 + bob); c.lineTo(5, -28.4 + bob); c.lineTo(-4.6, -28.4 + bob);
+  ctx.fillStyle = FIG.helmetShade;                 // ribbing
+  for (let i = -2.2; i <= 2.6; i += 1.2) ctx.fillRect(hx + i, hy - 9.4, 0.45, 3.4);
+  figShape(ctx, FIG.helmetShade, (c) => {          // the rolled brim
+    c.moveTo(hx - 3.5, hy - 6.6); c.lineTo(hx + 4.2, hy - 6.6); c.lineTo(hx + 4.2, hy - 4.6); c.lineTo(hx - 3.5, hy - 4.6);
   }, 0.5);
   ctx.fillStyle = FIG.helmetLight;
-  ctx.fillRect(-3.6, -30.2 + bob, 8, 0.5);
+  ctx.fillRect(hx - 2.6, hy - 6.2, 6.2, 0.5);
   ctx.restore();
 }
 
