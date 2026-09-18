@@ -29,7 +29,7 @@ const ESCAPE_ROOM = "75";       // Digby waits with the Anastasia here once the 
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
-const DAN_W = 10, DAN_H = 32, DAN_KNEEL_H = 22;  // sprites are 18x32; kneel keeps the top 10 rows clear
+const DAN_W = 10, DAN_H = 32, DAN_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
 const TREEN_W = 10, TREEN_H = 32;
 
 // --------------------------------------------------------------- level utils
@@ -798,25 +798,14 @@ function drawGates(ctx, key, room) {
   }
 }
 
-function danSprite() {
-  if (dan.onLift) return "dan_stand";
-  if (dan.kneeling) return "dan_kneel";
-  if (!dan.onGround) return "dan_jump";
-  if (Math.abs(dan.vx) > 1) {
-    return ["dan_run1", "dan_run2", "dan_run3", "dan_run4"][Math.floor(dan.anim) % 4];
-  }
-  return "dan_stand";
-}
-
-/** Which drawn frame shows Dan now. The sheet has five poses - two strides,
- *  a kneel, a jump and a firing stride - so the run is a two-frame cycle and
- *  firing shows the muzzle flash for a moment. */
+/** Which pose Dan is in now: kneeling, the moment after a shot, in the air,
+ *  striding (the figure runs a four-phase cycle off `dan.anim`) or standing. */
 function danFrame() {
   if (dan.kneeling) return "kneel";
   if (dan.fireCool > 0.16 && dan.onGround) return "fire";
   if (!dan.onGround && !dan.onLift) return "jump";
-  if (Math.abs(dan.vx) > 1 && dan.onGround) return Math.floor(dan.anim) % 2 ? "run1" : "run2";
-  return "run2";
+  if (Math.abs(dan.vx) > 1 && dan.onGround) return "run";
+  return "stand";
 }
 
 function draw() {
@@ -868,10 +857,8 @@ function draw() {
   }
   if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
     const dx = Math.round(dan.x), dy = Math.round(dan.y);
-    if (!drawSheetFrame(ctx, "dan", danFrame(), dx, dy, DAN_W, DAN_H, dan.face < 0)) {
-      drawSprite(ctx, danSprite(), dx - 4, dy,
-                 { main: C.bcyan, shade: C.cyan, light: C.bwhite }, dan.face < 0);
-    }
+    const pose = danFrame();
+    drawDanFigure(ctx, dx, dy, DAN_W, DAN_H, pose === "run" ? "run" : pose, (dan.anim / 2) % 1, dan.face < 0);
   }
 
   if (state.burst > 0) {
