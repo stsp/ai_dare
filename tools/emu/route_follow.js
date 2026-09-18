@@ -19,7 +19,7 @@ const fitted0 = +(process.argv[3] || 0);
     const settle = () => { for (let i = 0; i < 400; i++) { tick(); if (dan.onGround && !dan.onLift && i > 10) break; } };
     const goto = (cell) => { const tx = cell * 8; for (let i = 0; i < 600 && Math.abs(dan.x - tx) > 2; i++) { keys[K[dan.x < tx ? 'right' : 'left']] = true; tick(); if (!dan.onGround && !dan.onLift) { clear(); settle(); } } clear(); for (let i = 0; i < 6; i++) tick(); };
     const walk = (dir, target) => { if (window.TRACE) log.push('   walk ' + dir + ' from ' + st()); const r0 = state.room; let lastX = dan.x, still = 0, fellAt = null; for (let i = 0; i < 900; i++) { keys[K[dir]] = true; tick(); if (state.room !== r0) { clear(); settle(); return { room: state.room, fellAt }; } if (fellAt == null && !dan.onGround && !dan.onLift) fellAt = Math.round(dan.x / 8); if (Math.abs(dan.x - lastX) < 0.5) { if (++still > 60) break; } else still = 0; lastX = dan.x; if (state.mode !== 'play') break; } clear(); return { room: state.room, fellAt, stuck: true }; };
-    const jumpFrom = (cell, dir) => { if (window.TRACE) log.push('   jump from ' + cell + ' ' + dir + ' at ' + st()); goto(cell); keys[K[dir]] = true; for (let i = 0; i < 8; i++) tick(); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 90; i++) { tick(); if (i > 12 && dan.onGround) break; } clear(); settle(); };
+    const jumpFrom = (cell, dir) => { if (window.TRACE) log.push('   jump from ' + cell + ' ' + dir + ' at ' + st()); goto(cell); if (window.TRACE) log.push('     at ' + st() + ' latch=' + dan.liftLatch + ' g=' + dan.onGround); keys[K[dir]] = true; for (let i = 0; i < 8; i++) tick(); if (window.TRACE) log.push('     run ' + st() + ' x=' + dan.x.toFixed(1)); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 90; i++) { tick(); if (i > 12 && dan.onGround) break; } clear(); settle(); if (window.TRACE) log.push('     landed ' + st()); };
     const lift = (dir) => { keys[K[dir]] = true; for (let i = 0; i < 6; i++) tick(); clear(); for (let i = 0; i < 600; i++) { tick(); if (i > 20 && dan.onGround && !dan.onLift) break; } settle(); };
     const snapshot = () => JSON.stringify({ room: state.room, x: dan.x, y: dan.y, fitted: state.fitted, carrying: state.carrying, taken: sdsParts.map((p) => p.taken) });
     const restore = (s) => { const o = JSON.parse(s); enterRoom(o.room, o.x, o.y); dan.vx = 0; dan.vy = 0; dan.onLift = null; state.fitted = o.fitted; state.carrying = o.carrying; sdsParts.forEach((p, i) => p.taken = o.taken[i]); state.mode = 'play'; settle(); };
@@ -29,7 +29,7 @@ const fitted0 = +(process.argv[3] || 0);
       const moves = [];
       for (const l of LEVEL.links.filter((l) => l.from === from)) {
         const to = l.to;
-        if (l.kind === 'right' || l.kind === 'left') moves.push({ l, go: () => walkJumping(l.kind, to, from, 3) });
+        if (l.kind === 'right' || l.kind === 'left') moves.push({ l, go: () => walkJumping(l.kind, to, from, 3, l.feet) });
         if (l.kind === 'drop') moves.push({ l, go: () => { gotoJumping(Math.max(l.x0 - 2, 0)); const r = walk('right', to); if (r.room === to) return true; if (state.room === from) { goto(Math.min(l.x1 + 2, 29)); const r2 = walk('left', to); return r2.room === to; } return false; } });
         if (l.kind === 'up' || l.kind === 'down') moves.push({ l, go: () => { if (l.feet != null && l.feet >= 0 && Math.abs(dan.y + DAN_H - l.feet) > 14) return false; for (const c of [l.x0, l.x1, Math.round((l.x0 + l.x1) / 2)]) { if (!gotoJumping(c)) continue; lift(l.kind); if (state.room === to) return true; if (state.room !== from) return false; } return false; } });
       }
@@ -54,19 +54,29 @@ const fitted0 = +(process.argv[3] || 0);
       restore(s0); return false;
     };
     // walk `dir` to `to`; at each gap, retry with a running jump from a few cells before it (up to `gaps` gaps)
-    const walkJumping = (dir, to, from, gaps) => {
+    let offLevel = null;                                   // reached the room, but a level off: kept as a last resort
+    const walkJumpingInner = (dir, to, from, gaps, wantFeet) => {
+      const good = () => state.room === to && (wantFeet == null || Math.abs(dan.y + DAN_H - wantFeet) <= 14);
       const s0 = snapshot(); const r = walk(dir, to);
-      if (r.room === to && r.fellAt == null) return true;
+      if (window.TRACE) log.push('     walked ' + dir + ' -> ' + st() + ' fellAt=' + r.fellAt + ' gaps=' + gaps);
+      if (good() && r.fellAt == null) return true;
+      if (state.room === to) offLevel = offLevel || snapshot();
       if (r.fellAt != null && gaps > 0) {
         // fell on the way: a gap to jump - keep the level he set off on
         for (const lead of [1, 2, 3, 0]) {
           restore(s0); jumpFrom(dir === 'right' ? r.fellAt - lead : r.fellAt + lead, dir);
-          if (state.room === to) return true;
+          if (good()) return true;
+          if (state.room === to) { offLevel = offLevel || snapshot(); continue; }
           if (state.room !== from) continue;
-          if (walkJumping(dir, to, from, gaps - 1)) return true;
+          if (walkJumpingInner(dir, to, from, gaps - 1, wantFeet)) return true;
         }
       }
-      if (r.room === to) { restore(s0); walk(dir, to); return true; }   // got there anyway, a level down
+      return false;
+    };
+    const walkJumping = (dir, to, from, gaps, wantFeet) => {
+      offLevel = null;
+      if (walkJumpingInner(dir, to, from, gaps, wantFeet)) return true;
+      if (offLevel) { restore(offLevel); return true; }
       return false;
     };
     const stateKey = () => `${state.room}:${Math.round((dan.y + DAN_H) / 8)}:${Math.floor(dan.x / 40)}`;

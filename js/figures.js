@@ -5,14 +5,14 @@
    these are original designs, not the game's bitmaps.
 
    The Treens are the Mekon's soldiers: tall green reptile-men in dark
-   uniform, a domed helmet and a rifle held out before them. The Mekon is a
+   uniform, a knitted hat pulled low and a rifle held out before them. The Mekon is a
    tiny green body under a vast domed skull, riding a floating dish. */
 
 const FIG = {
   line: "#111111",
   skin: "#63b552", skinShade: "#3f8a33", skinLight: "#9fe08a",
   cloth: "#3a4b70", clothShade: "#25324c",
-  helmet: "#4d8fb0", helmetShade: "#2e6180", helmetLight: "#a9d8ef",
+  helmet: "#2f3540", helmetShade: "#1b1f27", helmetLight: "#5d6675",   // the guards' knitted hats
   boot: "#1a1a1a", bootShade: "#000000",
   metal: "#8b93a1", metalShade: "#4f5661", glow: "#7ff5ff",
   eye: "#ff4040", eyeDark: "#7a0000",
@@ -115,18 +115,19 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip) {
   ctx.fillRect(2.6, -29 + bob, 0.6, 1);
   ctx.fillStyle = FIG.skinShade;
   ctx.fillRect(0.8, -29.9 + bob, 3.2, 0.7);         // brow
+  // a knitted hat pulled down over the brows, its brim rolled up
   figShape(ctx, FIG.helmet, (c) => {
-    c.moveTo(-4.4, -29.5 + bob);
-    c.quadraticCurveTo(-4.6, -34.5 + bob, 0, -34.5 + bob);
-    c.quadraticCurveTo(4.8, -34.5 + bob, 4.8, -29.5 + bob);
-    c.lineTo(5.4, -29.5 + bob);
-    c.lineTo(5.4, -28.6 + bob);
-    c.lineTo(-4.4, -28.6 + bob);
-  });
+    c.moveTo(-4.2, -29.2 + bob);
+    c.quadraticCurveTo(-4.2, -34.2 + bob, 0.2, -34.4 + bob);
+    c.quadraticCurveTo(4.6, -34.2 + bob, 4.6, -29.2 + bob);
+  }, 0.5);
+  ctx.fillStyle = FIG.helmetShade;                  // ribbing
+  for (let i = -3; i <= 3; i += 1.5) ctx.fillRect(i, -33.4 + bob, 0.5, 3.6);
+  figShape(ctx, FIG.helmetShade, (c) => {            // the rolled brim
+    c.moveTo(-4.6, -30.6 + bob); c.lineTo(5, -30.6 + bob); c.lineTo(5, -28.4 + bob); c.lineTo(-4.6, -28.4 + bob);
+  }, 0.5);
   ctx.fillStyle = FIG.helmetLight;
-  ctx.fillRect(-2.2, -33 + bob, 2.6, 0.8);
-  ctx.fillStyle = FIG.helmetShade;
-  ctx.fillRect(-4.4, -29.6 + bob, 9.8, 0.8);
+  ctx.fillRect(-3.6, -30.2 + bob, 8, 0.5);
   ctx.restore();
 }
 
@@ -297,16 +298,24 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.fillRect(hx + 0.6, hy - 1.9, 1.8, 0.5);         // mouth
   ctx.fillStyle = DAN_FIG.hair;
   ctx.fillRect(hx + 1.4, hy - 3.7, 0.9, 0.8);         // eye
-  figShape(ctx, DAN_FIG.cap, (c) => {                 // crown, high at the front
-    c.moveTo(hx - 3.2, hy - 5.4); c.quadraticCurveTo(hx - 3.6, hy - 8.8, hx + 0.6, hy - 9.2);
-    c.quadraticCurveTo(hx + 4.4, hy - 9.2, hx + 3.6, hy - 5.6);
+  // a service cap: a wide flat crown over a stiff band, the black peak
+  // out over the eyes, a badge on the band
+  figShape(ctx, DAN_FIG.capShade, (c) => {            // the band, round the head
+    c.moveTo(hx - 3.6, hy - 5.2); c.lineTo(hx + 3.9, hy - 5.2); c.lineTo(hx + 3.9, hy - 7); c.lineTo(hx - 3.6, hy - 7);
   }, 0.5);
-  ctx.fillStyle = DAN_FIG.capShade;
-  ctx.fillRect(hx - 3.2, hy - 6.2, 6.8, 0.9);         // band
+  figShape(ctx, DAN_FIG.cap, (c) => {                 // the crown, wider than the band, tilted up at the front
+    c.moveTo(hx - 4.6, hy - 6.8);
+    c.quadraticCurveTo(hx - 5.2, hy - 9.4, hx - 1.5, hy - 10);
+    c.lineTo(hx + 3.2, hy - 10.6);
+    c.quadraticCurveTo(hx + 5.6, hy - 10.4, hx + 5, hy - 6.8);
+  }, 0.5);
+  ctx.fillStyle = DAN_FIG.tunicLight;
+  ctx.fillRect(hx - 3.2, hy - 9.2, 1.8, 0.6);         // a little light on the crown
   ctx.fillStyle = DAN_FIG.buckle;
-  ctx.fillRect(hx + 0.3, hy - 7.9, 1.2, 1.2);         // badge
-  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak, forward over the eyes
-    c.moveTo(hx + 0.5, hy - 5.8); c.lineTo(hx + 6.2, hy - 5.3); c.quadraticCurveTo(hx + 6.4, hy - 4.5, hx + 5.4, hy - 4.5); c.lineTo(hx + 0.5, hy - 4.8);
-  }, 0.4);
+  ctx.fillRect(hx + 0.2, hy - 6.7, 1.4, 1.2);         // badge on the band
+  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak: forward and a touch down
+    c.moveTo(hx + 0.8, hy - 5.3); c.lineTo(hx + 7.4, hy - 4.6);
+    c.quadraticCurveTo(hx + 7.6, hy - 3.6, hx + 6.4, hy - 3.6); c.lineTo(hx + 0.8, hy - 4.4);
+  }, 0.45);
   ctx.restore();
 }

@@ -656,6 +656,11 @@ def main():
         # for one, or a room whose rails it could not see
         if a == b and not any(sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0 for sh in rooms[a]["shafts"]):
             continue
+        # ... and a ride within the room ends on a floor: one that left Dan in
+        # mid-air was a hop off a ledge the survey took for a ride
+        if a == b and stop_feet >= 0 and not any(abs(p["y"] * 8 - stop_feet) <= 8 and p["x1"] >= x0 - 1 and p["x0"] <= x1 + 2
+                                                 for p in rooms[a]["platforms"]):
+            continue
         # the broken lift: the ride that breaks just inside the next room, or
         # the leg of a ride that fell on through a room (a hop off a gallery
         # that landed in the room below is no lift breaking)
