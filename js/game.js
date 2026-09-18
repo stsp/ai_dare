@@ -31,7 +31,7 @@ const CAPTURE_PENALTY = 600;   // ten minutes
 
 const DAN_W = 10, DAN_H = 32, DAN_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
 const TREEN_W = 10, TREEN_H = 32;
-const TREEN_FALL = 0.7;          // seconds a shot guard takes to topple
+const TREEN_DEATH = 0.2;         // seconds a shot guard stands with his arms up before he is gone, the room flashing
 
 // --------------------------------------------------------------- level utils
 
@@ -215,6 +215,7 @@ const state = {
   clearedRooms: new Set(),
   deadTreens: new Map(),   // room -> which of its guards have been shot
   burst: 0,              // lift-transfer flash, seconds left
+  flash: 0,              // the room's colours cycling after a guard is shot, seconds left
   phase: 0,
 };
 
@@ -591,7 +592,7 @@ function moveBetweenRooms() {
 
 function updateTreens(dt) {
   for (const t of treens) {
-    if (t.dying > 0) t.dying -= dt;              // toppling after the shot that got him
+    if (t.dying > 0) t.dying -= dt;              // his last moment after the shot that got him
     if (t.dead) continue;
     if (t.fire > 0) t.fire -= dt;
     t.anim += dt * 5;
@@ -629,7 +630,8 @@ function updateLasers(dt) {
       for (const t of treens) {
         if (!t.dead && overlaps(l.x, l.y, 4, 2, t.x, t.y, TREEN_W, TREEN_H)) {
           t.dead = true;
-          t.dying = TREEN_FALL;
+          t.dying = TREEN_DEATH;
+          state.flash = TREEN_DEATH;                 // the original flashes the whole room
           if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
           state.deadTreens.get(state.room).add(t.id);
           l.travelled = 1e9;
@@ -884,7 +886,7 @@ function draw() {
   for (const t of treens) {
     if (t.dead && !(t.dying > 0)) continue;
     drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
-                    { fire: t.fire > 0, dying: t.dead ? 1 - Math.max(0, t.dying) / TREEN_FALL : 0 });
+                    { fire: t.fire > 0, armsUp: t.dead });
   }
   for (const l of lasers) {
     ctx.fillStyle = l.friendly ? C.bwhite : C.bred;
@@ -896,6 +898,13 @@ function draw() {
     drawDanFigure(ctx, dx, dy, DAN_W, DAN_H, pose === "run" ? "run" : pose, (dan.anim / 2) % 1, dan.face < 0);
   }
 
+  if (state.flash > 0) {
+    // a guard shot: the original cycles the whole room's colours for a moment
+    ctx.fillStyle = [C.bmagenta, C.bred, C.bblue, C.bgreen][Math.floor(state.flash * 20) % 4];
+    ctx.globalAlpha = 0.4;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.globalAlpha = 1;
+  }
   if (state.burst > 0) {
     const cx = dan.x + DAN_W / 2, cy = dan.y + DAN_H / 2;
     const t = 1 - state.burst / 0.35;
@@ -992,6 +1001,7 @@ function frame(now) {
     if (state.viewerStatic > 0) state.viewerStatic -= dt;
     if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
+    if (state.flash > 0) state.flash -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       state.mode = "lost";

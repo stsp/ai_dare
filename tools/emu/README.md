@@ -60,3 +60,6 @@ emulator page on `http://127.0.0.1:8802/`.
 * `mksnap.js SNAP CELL SCRIPT OUT.json` plays a key script from a snapshot
   and saves the machine state after it - a seed for a survey of somewhere
   the walkthrough never stood (the surface beyond the first pit).
+* `emu_death.js SNAP CELL P|O NAME` walks Dan to a cell, faces him, and
+  fires in bursts while dumping the screen every two frames - how a guard
+  really dies (arms up, the room's colours cycling, gone in ten frames).

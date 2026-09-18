@@ -43,12 +43,7 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   ctx.translate(bx + bw / 2, by + bh);         // origin between his feet
   if (flip) ctx.scale(-1, 1);
   act = act || {};
-  if (act.dying > 0) {                         // shot: he topples over backwards and lies still
-    const fall = Math.min(1, act.dying);
-    ctx.translate(0, -3.5 * fall);
-    ctx.rotate(-Math.PI / 2 * fall);
-    phase = 0;
-  }
+  if (act.armsUp) phase = 0;                   // shot: he stops dead, arms flung up, and is gone
   if (act.fire) ctx.translate(-0.6, 0);        // the recoil
   const stride = Math.sin(phase * Math.PI * 2);   // -1..1: the legs swing
   const bob = Math.abs(stride) * 0.6;
@@ -86,6 +81,12 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   leg(0.4, stride, false);
   // the far arm, behind the near one, to the rifle's fore-end
   const sx = 0.4, sy = top + 1.6, gy = top + 6;
+  if (act.armsUp) {                            // both arms thrown up over his head, the rifle let go
+    figShape(ctx, FIG.clothShade, (c) => { c.moveTo(sx + 0.2, sy - 0.4); c.lineTo(sx + 2.4, sy - 0.2); c.lineTo(sx + 7.2, sy - 11.6); c.lineTo(sx + 5.4, sy - 12.4); });
+    figEllipse(ctx, FIG.skin, sx + 6.8, sy - 13.2, 1.4, 1.2, 0.5);
+    figShape(ctx, FIG.cloth, (c) => { c.moveTo(sx - 1.8, sy + 0.2); c.lineTo(sx + 0.4, sy - 0.4); c.lineTo(sx - 4.2, sy - 11.8); c.lineTo(sx - 6, sy - 11); });
+    figEllipse(ctx, FIG.skin, sx - 5.6, sy - 12.6, 1.4, 1.2, 0.5);
+  } else {
   figShape(ctx, FIG.clothShade, (c) => {
     c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 9, gy - 0.2);
     c.lineTo(sx + 9, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
@@ -112,6 +113,7 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   });
   figEllipse(ctx, FIG.skin, sx + 5.2, gy + 0.9, 1.6, 1.2, 0.5);
   figEllipse(ctx, FIG.skin, sx + 9.4, gy + 0.7, 1.5, 1.1, 0.5);
+  }
   // head in profile: a long snout of a jaw, a heavy brow over one red eye
   const hx = 0.4, hy = top - 1;
   ctx.fillStyle = FIG.skinShade;
