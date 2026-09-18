@@ -295,7 +295,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
   if (hs) {
     const k = hs.meta.scale, w = hs.meta.w / k, h = hs.meta.h / k;
-    ctx.drawImage(hs.img, hx - hs.meta.cx, hy + 0.8 - h, w, h);
+    ctx.drawImage(hs.img, hx - hs.meta.cx + 1.8, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
     ctx.restore();
     return;
   }
