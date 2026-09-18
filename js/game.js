@@ -452,6 +452,7 @@ function updateDan(dt) {
         const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8);
         dan.onLift = null; dan.liftLatch = true;
         if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }   // else the broken lift: he falls
+        else if (lift.broken || (lift.link && lift.link.broken)) say(["OUT OF ORDER"], 3);
       }
     }
     // the field ends at the top of the shaft with no stop there: as in the
@@ -547,16 +548,19 @@ function moveBetweenRooms() {
     enterRoom(right.to, 3, dan.y);
   } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
-    dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true };
+    dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
     dan.liftLatch = true;
+    // the one lift that is out of order: the original says so as he rides into its room
+    if (ride.broken || EXITS[ride.to].lifts.some((l) => l.broken && l.feet < 0)) say(["OUT OF ORDER"], 3);
   } else if (dan.y + DAN_H > 134 && !dan.onLift && isOpen(zone(e.drops))) {
     // fell through a hole in the floor: the original switches rooms as soon
     // as he drops below the floor course, before his run carries him past it
     enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);
   } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
-    dan.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true };
+    dan.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
     dan.liftLatch = true;
+    if (ride.broken) say(["OUT OF ORDER"], 3);
   } else {
     // no way out that way: keep Dan on this screen
     if (dan.x < 0) dan.x = 0;
