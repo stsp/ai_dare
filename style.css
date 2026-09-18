@@ -22,8 +22,6 @@ html, body {
   image-rendering: crisp-edges;
   background: #000;
   border: 6px solid #00d8d8;
-  max-width: 96vw;
-  height: auto;
 }
 
 #help {

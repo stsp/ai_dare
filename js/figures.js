@@ -220,7 +220,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   // the body is drawn a little narrower than it was designed, to sit under
   // the rendered head's proportions
   ctx.save();
-  ctx.scale(0.8, 1);
+  ctx.scale(0.68, 1);
   const leg = (dx, swing, back) => {
     const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
     const boot = back ? DAN_FIG.bootShade : DAN_FIG.boot;
@@ -267,25 +267,26 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   figShape(ctx, DAN_FIG.tunicShade, (c) => { c.moveTo(1 + lean, top + 1); c.lineTo(4 + lean, top + 1); c.lineTo(7.5 + lean, top + 6.5); c.lineTo(5 + lean, top + 7.5); });
   // the rifle: a long body with a magazine below and a glowing muzzle
   const gy = top + 6;
+  // (the body is drawn narrowed; the rifle is drawn longer to keep its length)
   figShape(ctx, DAN_FIG.gunShade, (c) => {
-    c.moveTo(-3 + lean, gy); c.lineTo(12 + lean, gy); c.lineTo(12 + lean, gy + 1.5);
-    c.lineTo(4.5 + lean, gy + 1.5); c.lineTo(4.5 + lean, gy + 3.2); c.lineTo(2 + lean, gy + 3.2);
-    c.lineTo(2 + lean, gy + 1.5); c.lineTo(-1 + lean, gy + 1.5); c.lineTo(-3 + lean, gy + 3);
+    c.moveTo(-3 + lean, gy); c.lineTo(17 + lean, gy); c.lineTo(17 + lean, gy + 1.5);
+    c.lineTo(5.5 + lean, gy + 1.5); c.lineTo(5.5 + lean, gy + 3.2); c.lineTo(2.5 + lean, gy + 3.2);
+    c.lineTo(2.5 + lean, gy + 1.5); c.lineTo(-1 + lean, gy + 1.5); c.lineTo(-3 + lean, gy + 3);
   }, 0.5);
   ctx.fillStyle = DAN_FIG.gunLight;
-  ctx.fillRect(-2 + lean, gy + 0.3, 13, 0.6);
+  ctx.fillRect(-2 + lean, gy + 0.3, 18, 0.6);
   ctx.fillStyle = DAN_FIG.glow;
-  ctx.fillRect(11 + lean, gy + 0.2, 1.4, 1.2);
+  ctx.fillRect(15.6 + lean, gy + 0.2, 1.8, 1.2);
   if (pose === "fire") {                              // the shot leaving the muzzle
     ctx.fillStyle = DAN_FIG.flash;
     ctx.beginPath();
-    ctx.moveTo(12.5 + lean, gy + 0.8); ctx.lineTo(16 + lean, gy - 1.5); ctx.lineTo(15 + lean, gy + 0.8); ctx.lineTo(16 + lean, gy + 3);
+    ctx.moveTo(17.5 + lean, gy + 0.8); ctx.lineTo(22 + lean, gy - 1.5); ctx.lineTo(20.5 + lean, gy + 0.8); ctx.lineTo(22 + lean, gy + 3);
     ctx.closePath(); ctx.fill();
   }
   // near arm and both hands on the rifle
   figShape(ctx, DAN_FIG.tunic, (c) => { c.moveTo(-4 + lean, top + 1); c.lineTo(-1 + lean, top + 1); c.lineTo(3 + lean, top + 5.5); c.lineTo(0.5 + lean, top + 7); });
-  figEllipse(ctx, DAN_FIG.skin, 2.8 + lean, gy + 0.8, 1.5, 1.2, 0.5);
-  figEllipse(ctx, DAN_FIG.skin, 7 + lean, gy + 0.9, 1.5, 1.2, 0.5);
+  figEllipse(ctx, DAN_FIG.skin, 3.2 + lean, gy + 0.8, 1.7, 1.2, 0.5);
+  figEllipse(ctx, DAN_FIG.skin, 9 + lean, gy + 0.9, 1.7, 1.2, 0.5);
   ctx.restore();
   // head: the rendered one (assets/dan_head.png, cut from the run frame) on
   // a short neck; drawn by hand only until it has loaded
@@ -297,7 +298,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
     const k = hs.meta.scale, w = hs.meta.w / k, h = hs.meta.h / k;
     ctx.imageSmoothingEnabled = true;                // the render is finer than the canvas: scale it down smoothly
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(hs.img, hx - hs.meta.cx + 1.8, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
+    ctx.drawImage(hs.img, hx - hs.meta.cx + 1.4, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
     ctx.imageSmoothingEnabled = false;
     ctx.restore();
     return;
