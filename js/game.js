@@ -89,8 +89,7 @@ function exitAt(list, feet) {
  *  two left of the rails) widened to the whole shaft, so standing anywhere
  *  between the rails works too. */
 function liftSpan(room, l) {
-  const sh = room.shafts.find((s) => l.x1 >= s.x - 3 && l.x0 <= s.x + s.w);
-  return sh ? [Math.min(l.x0, sh.x - 1), sh.x + sh.w - 1] : [l.x0, l.x1];
+  return [l.x0, l.x1];          // exactly the cells the original answered a call from: run past them and a jump is a jump
 }
 function inLiftZone(room, l, cell) {
   const [a, b] = liftSpan(room, l);
@@ -150,9 +149,9 @@ function placePrisons() {
   const out = new Map();
   const cells = (LEVEL.prisons || []).map((k) => ({ key: k, zone: ROOMS[k].zone }));
   for (const zone of new Set(PLAYABLE.map((item) => item.room.zone))) {
-    // the cell of this sector, else the nearest sector behind him: never one
-    // beyond a door he has not opened, where he would be shut in
-    const own = cells.filter((c) => c.zone <= zone).sort((a, b) => b.zone - a.zone)[0] || cells[0];
+    // the cells are listed sector by sector: this sector's, else the last
+    // sector's behind him - never one beyond a door he has not opened
+    const own = cells[Math.min(zone, cells.length) - 1];
     if (own) out.set(zone, own.key);
   }
   return out;
@@ -167,7 +166,7 @@ function makeTreens(key, room) {
   const dead = state.deadTreens.get(key) || new Set();   // a Treen shot stays shot
   const r = rng(hashKey(key));
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
-  const n = wide.length === 0 ? 0 : Math.floor(r() * 3);
+  const n = wide.length === 0 || room.zone === 4 ? 0 : Math.floor(r() * 3);   // the fourth sector is unguarded, as in the original
   const out = [];
   for (let i = 0; i < n; i++) {
     const p = wide[Math.floor(r() * wide.length)];
@@ -436,11 +435,8 @@ function updateDan(dt) {
     const hold = dir > 0 ? held.down() : held.up();
     const onward = lift.link && lift.link.to !== state.room && isOpen(lift.link);   // the shaft goes on
     if (hold && onward) { lift.stop = lift.link.stop; lift.stopHere = false; }   // riding through: the next stop is the next link's
-    const sh = lift.shaft;
-    if (sh) {
-      const cx = (sh.x + sh.w / 2) * 8 - DAN_W / 2;
-      dan.x += Math.sign(cx - dan.x) * Math.min(90 * dt, Math.abs(cx - dan.x));
-    }
+    // (the field carries him straight up or down from where he called it, as
+    // the original does: it never draws him in towards the rails)
     const before = dan.y + DAN_H;
     dan.y += dir * LIFT_SPEED * dt;
     const feet = dan.y + DAN_H;

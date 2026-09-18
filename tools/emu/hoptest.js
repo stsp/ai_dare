@@ -24,6 +24,7 @@ const [room, plan] = process.argv.slice(2);
     for (const step of plan.split(';')) {
       const [op, arg] = step.trim().split(/\s+/);
       if (op === 'walklog') { for (let i = 0; i < +arg; i++) { keys[K.right] = true; tick(); if (i % 2 === 0) log.push('   ' + i + ': ' + st() + ' x=' + dan.x.toFixed(1) + ' y=' + dan.y.toFixed(2) + ' vy ' + dan.vy.toFixed(1) + ' g ' + dan.onGround + ' treens ' + treens.filter((t) => !t.dead).map((t) => Math.round(t.x / 8) + ',' + (t.y + TREEN_H)).join(' ')); } clear(); }
+      if (op === 'jumplog') { keys[K[arg]] = true; for (let i = 0; i < 8; i++) tick(); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 60; i++) { tick(); if (i % 5 === 0) log.push('   ' + i + ': ' + st() + ' x=' + dan.x.toFixed(1) + ' y=' + dan.y.toFixed(1) + ' vy=' + dan.vy.toFixed(0) + ' g=' + dan.onGround + ' lift=' + !!dan.onLift + ' latch=' + dan.liftLatch); } clear(); }
       if (op === 'walk') walk(arg); else if (op === 'goto') goto(+arg); else if (op === 'lift') lift(arg); else if (op === 'jump') jump(arg); else if (op === 'wait') { for (let i = 0; i < +arg; i++) tick(); }
       log.push(step.trim().padEnd(14) + ' -> ' + st());
     }
