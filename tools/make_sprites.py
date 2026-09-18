@@ -18,7 +18,6 @@ import numpy as np
 from PIL import Image
 
 SCALE = 3            # canvas pixels per screen pixel
-HEAD_OVERSAMPLE = 4  # the head is kept finer still, and scaled down when drawn
 HEAD_FRAME = "kneel"  # the render the head is cut from: its face sits best on the drawn body
 RUN_H = 33           # a running frame, in screen pixels (hit box is 32)
 FRAMES = {           # sheet name -> render in the repository root
@@ -113,12 +112,12 @@ def main():
 
     # the head alone, for the drawn figure to wear: from the running frame,
     # at the same scale as the frames, its neck at the bottom edge
-    # ... kept at three times the canvas scale, so it stays sharp when the
-    # canvas is shown larger than its pixels (a high-density or a big screen)
+    # ... kept at the render's own resolution (`scale` is its pixels per
+    # screen pixel), so it stays sharp however large the canvas is drawn
     hrgb, ha, hcx = head_of(*cuts[HEAD_FRAME])
-    head = shrink(hrgb, ha, scale * HEAD_OVERSAMPLE)
+    head = shrink(hrgb, ha, 1.0)                     # every pixel the render has: it is scaled down only when drawn
     Image.fromarray(head, "RGBA").save("assets/dan_head.png", optimize=True)
-    head_meta = {"image": "assets/dan_head.png", "scale": SCALE * HEAD_OVERSAMPLE, "w": head.shape[1], "h": head.shape[0],
+    head_meta = {"image": "assets/dan_head.png", "scale": round(SCALE / scale, 3), "w": head.shape[1], "h": head.shape[0],
                  "cx": round(hcx * scale / SCALE, 1)}
 
     frames, x = {}, 0

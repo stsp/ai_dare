@@ -205,6 +205,27 @@ const DAN_FIG = {
   gun: "#4b515c", gunShade: "#2a2e36", gunLight: "#9aa3b2", glow: "#7ff5ff", flash: "#fff2a0",
 };
 
+/** The head render is far finer than it is drawn; a browser's one-step
+ *  downscale of such a ratio drops pixels and shimmers, so it is brought down
+ *  by halving steps to twice the size it is drawn at, once per canvas scale. */
+const HEAD_CACHE = new Map();
+function headForScale(hs, k) {
+  const key = Math.round(k * 4);
+  if (HEAD_CACHE.has(key)) return HEAD_CACHE.get(key);
+  const target = Math.max(1, hs.meta.w * (k / hs.meta.scale) * 2);   // pixels wide it will be drawn at, doubled
+  let cur = hs.img, w = hs.img.width, h = hs.img.height;
+  while (w / 2 >= target) {
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(w / 2); cv.height = Math.round(h / 2);
+    const c = cv.getContext("2d");
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
+    c.drawImage(cur, 0, 0, cv.width, cv.height);
+    cur = cv; w = cv.width; h = cv.height;
+  }
+  HEAD_CACHE.set(key, cur);
+  return cur;
+}
+
 function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.save();
   ctx.translate(bx + bw / 2, by + bh);
@@ -220,7 +241,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   // the body is drawn a little narrower than it was designed, to sit under
   // the rendered head's proportions
   ctx.save();
-  ctx.scale(0.68, 1);
+  ctx.scale(0.56, 1);
   const leg = (dx, swing, back) => {
     const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
     const boot = back ? DAN_FIG.bootShade : DAN_FIG.boot;
@@ -295,10 +316,11 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.fillRect(hx - 1.2, hy - 1.2, 2.4, 2);          // neck
   const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
   if (hs) {
-    const k = hs.meta.scale, w = hs.meta.w / k, h = hs.meta.h / k;
-    ctx.imageSmoothingEnabled = true;                // the render is finer than the canvas: scale it down smoothly
+    const w = hs.meta.w / hs.meta.scale, h = hs.meta.h / hs.meta.scale;   // his head in screen units
+    const src = headForScale(hs, Math.abs(ctx.getTransform().a));
+    ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(hs.img, hx - hs.meta.cx + 1.4, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
+    ctx.drawImage(src, hx - hs.meta.cx + 1.0, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
     ctx.imageSmoothingEnabled = false;
     ctx.restore();
     return;
