@@ -707,6 +707,22 @@ def main():
         if room in rooms and not any(l["from"] == room and l["kind"] == side for l in links):
             doors.append({"from": room, "kind": side, "needs": int(n)})
 
+    # the surface - the landing zone's black sky - is the first sector's top
+    # row of the map and nothing else: a room whose floor band the extractor
+    # read as bare cyan (a screen mostly shaft, or a room the map matcher put
+    # on the top row) is underground with the rest of its zone
+    from collections import Counter
+    surface = geo["sectors"].index(["cyan"]) if ["cyan"] in geo["sectors"] else -1
+    for zone in {r["zone"] for r in rooms.values()}:
+        members = [r for r in rooms.values() if r["zone"] == zone]
+        below = Counter(r["sector"] for r in members if r["sector"] != surface)
+        if not below:
+            continue
+        usual = below.most_common(1)[0][0]
+        for r in members:
+            on_top = r["map"] != "screen" and str(r["map"]).startswith("0,")
+            if r["sector"] == surface and not (zone == 1 and on_top):
+                r["sector"] = usual
     parts = [p for p in args.parts.split(",") if p]
     level = {
         "source": geo.get("source"),
