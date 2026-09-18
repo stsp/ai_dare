@@ -145,14 +145,15 @@ function highestPlatform(room) {
 }
 
 /** Prison cells: the rooms the original puts a captured Dan in, one per
- *  sector; a sector without one of its own uses the nearest by zone. */
+ *  sector; a sector without one of its own uses the nearest behind it. */
 function placePrisons() {
   const out = new Map();
   const cells = (LEVEL.prisons || []).map((k) => ({ key: k, zone: ROOMS[k].zone }));
-  for (const item of PLAYABLE) {
-    if (!cells.length) break;
-    const best = cells.reduce((a, b) => (Math.abs(b.zone - item.room.zone) < Math.abs(a.zone - item.room.zone) ? b : a));
-    out.set(item.room.sector, best.key);
+  for (const zone of new Set(PLAYABLE.map((item) => item.room.zone))) {
+    // the cell of this sector, else the nearest sector behind him: never one
+    // beyond a door he has not opened, where he would be shut in
+    const own = cells.filter((c) => c.zone <= zone).sort((a, b) => b.zone - a.zone)[0] || cells[0];
+    if (own) out.set(zone, own.key);
   }
   return out;
 }
@@ -662,7 +663,7 @@ function capture() {
   state.energy = ENERGY_MAX;
   state.timeLeft -= CAPTURE_PENALTY;
   state.score = Math.max(0, state.score - 200);
-  const cell = PRISONS.get(currentRoom().sector) || START.key;
+  const cell = PRISONS.get(currentRoom().zone) || START.key;
   const p = highestPlatform(ROOMS[cell]);
   resetDan(p.x, p.y - DAN_H);
   enterRoom(cell, p.x, p.y - DAN_H);
