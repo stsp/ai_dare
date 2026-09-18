@@ -238,57 +238,64 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   const lean = run ? 1.6 : kneel ? 1 : 0;              // forward lean of the trunk
   const top = hip - (kneel ? 10 : 13);                 // shoulder line: crouched on one knee
 
-  // the body is drawn a little narrower than it was designed, to sit under
-  // the rendered head's proportions
-  ctx.save();
-  ctx.scale(0.56, 1);
+  // the body seen from the side, as the head is: one shoulder before the
+  // other, a narrow chest, both arms out along the rifle, legs in profile
   const leg = (dx, swing, back) => {
     const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
     const boot = back ? DAN_FIG.bootShade : DAN_FIG.boot;
+    const shoe = (ax, ay) => figShape(ctx, boot, (c) => {           // a boot from the side: toe forward, a heel
+      c.moveTo(ax - 1.4, ay - 2.4); c.lineTo(ax + 1.2, ay - 2.4); c.lineTo(ax + 3.4, ay - 0.8);
+      c.lineTo(ax + 3.2, ay); c.lineTo(ax - 1.6, ay);
+    }, 0.45);
     if (kneel) {                                       // one knee down, the other foot planted
       if (back) {
-        figShape(ctx, cloth, (c) => { c.moveTo(-3.5, hip); c.lineTo(0.5, hip); c.lineTo(-1, -1.5); c.lineTo(-6, -1.5); });
-        figShape(ctx, boot, (c) => { c.moveTo(-9.5, 0); c.lineTo(-6, -2.2); c.lineTo(-1.5, -2.2); c.lineTo(-1.5, 0); });
+        figShape(ctx, cloth, (c) => { c.moveTo(-2, hip); c.lineTo(1.2, hip); c.lineTo(-0.8, -1.5); c.lineTo(-5, -1.5); });
+        figShape(ctx, boot, (c) => { c.moveTo(-8, 0); c.lineTo(-5, -2.2); c.lineTo(-1, -2.2); c.lineTo(-1, 0); });
       } else {
-        figShape(ctx, cloth, (c) => { c.moveTo(-1, hip); c.lineTo(3, hip); c.lineTo(7.5, -6); c.lineTo(5.5, -2); c.lineTo(2.5, -2); c.lineTo(2.5, -6); });
-        figShape(ctx, boot, (c) => { c.moveTo(2, -2.4); c.lineTo(6.5, -2.4); c.lineTo(7.5, 0); c.lineTo(1.6, 0); });
+        figShape(ctx, cloth, (c) => { c.moveTo(-0.6, hip); c.lineTo(2.4, hip); c.lineTo(6.4, -6); c.lineTo(4.6, -2); c.lineTo(2.2, -2); c.lineTo(2.2, -6); });
+        shoe(3, 0);
       }
       return;
     }
     if (jump) {                                        // knees tucked up under him
-      const kx = dx + 3, ky = hip + 4;
-      figShape(ctx, cloth, (c) => { c.moveTo(dx - 2, hip); c.lineTo(dx + 2, hip); c.lineTo(kx + 2.5, ky); c.lineTo(kx - 1, ky + 3.5); c.lineTo(kx - 3.5, ky + 1); });
-      figShape(ctx, boot, (c) => { c.moveTo(kx - 3.6, ky + 0.8); c.lineTo(kx - 0.6, ky + 3.6); c.lineTo(kx - 3, ky + 5); c.lineTo(kx - 6, ky + 2.4); });
+      const kx = dx + 2.6, ky = hip + 4;
+      figShape(ctx, cloth, (c) => { c.moveTo(dx - 1.5, hip); c.lineTo(dx + 1.5, hip); c.lineTo(kx + 2, ky); c.lineTo(kx - 0.6, ky + 3.2); c.lineTo(kx - 2.8, ky + 0.8); });
+      figShape(ctx, boot, (c) => { c.moveTo(kx - 3, ky + 0.6); c.lineTo(kx - 0.2, ky + 3.4); c.lineTo(kx - 2.4, ky + 4.8); c.lineTo(kx - 5.2, ky + 2.2); });
       return;
     }
-    const kneeX = dx + swing * 2.5, footX = dx + swing * 5;
+    const kneeX = dx + swing * 2.2, footX = dx + swing * 4.5;
     const lift = Math.max(0, swing) * 1.6;             // the leading foot comes off the ground
-    figShape(ctx, cloth, (c) => {
-      c.moveTo(dx - 2.2, hip); c.lineTo(dx + 2.2, hip);
-      c.lineTo(kneeX + 1.9, -6 - lift); c.lineTo(footX + 1.5, -2 - lift);
-      c.lineTo(footX - 1.5, -2 - lift); c.lineTo(kneeX - 1.9, -6 - lift);
+    figShape(ctx, cloth, (c) => {                      // thigh and shin, tapering to the ankle
+      c.moveTo(dx - 1.7, hip); c.lineTo(dx + 1.7, hip);
+      c.lineTo(kneeX + 1.5, hip + 6); c.lineTo(footX + 1.1, -2.2 - lift);
+      c.lineTo(footX - 1.1, -2.2 - lift); c.lineTo(kneeX - 1.5, hip + 6);
     });
-    figShape(ctx, boot, (c) => { c.moveTo(footX - 1.8, -2.4 - lift); c.lineTo(footX + 2.4, -2.4 - lift); c.lineTo(footX + 3, -lift); c.lineTo(footX - 2, -lift); });
+    shoe(footX, -lift);
   };
-  leg(-1.5, -stride, true);
-  // tunic: broad shoulders, a belt at the waist, leaning into the run
+  leg(-0.4, -stride, true);
+  // torso in profile: a straight back, the chest out in front, the shoulder rounded at the top
   figShape(ctx, DAN_FIG.tunic, (c) => {
-    c.moveTo(-4.4 + lean, top); c.lineTo(4.4 + lean, top);
-    c.lineTo(3.8, hip); c.lineTo(-3.8, hip);
+    c.moveTo(-1.9 + lean * 0.4, hip);
+    c.lineTo(-2.1 + lean, top + 1.5);
+    c.quadraticCurveTo(-2 + lean, top - 0.3, 0.2 + lean, top - 0.3);
+    c.quadraticCurveTo(2.6 + lean, top - 0.3, 2.7 + lean, top + 2.5);
+    c.quadraticCurveTo(3 + lean, top + 6, 2.2 + lean * 0.4, hip);
   });
   ctx.fillStyle = DAN_FIG.tunicShade;
-  ctx.fillRect(-3.6, hip - 2.6, 7.2, 1.3);           // belt
+  ctx.fillRect(-1.9 + lean * 0.4, hip - 2.6, 4.1, 1.3);   // belt
   ctx.fillStyle = DAN_FIG.buckle;
-  ctx.fillRect(-0.7, hip - 2.8, 1.4, 1.7);
+  ctx.fillRect(1.2 + lean * 0.4, hip - 2.8, 1, 1.7);
   ctx.fillStyle = DAN_FIG.tunicLight;
-  ctx.fillRect(-3.2 + lean, top + 1.2, 1.6, 0.8);     // shoulder flash
-  ctx.fillRect(1.8 + lean, top + 1.2, 1.6, 0.8);
-  leg(1.5, stride, false);
-  // far arm reaching to the rifle's stock
-  figShape(ctx, DAN_FIG.tunicShade, (c) => { c.moveTo(1 + lean, top + 1); c.lineTo(4 + lean, top + 1); c.lineTo(7.5 + lean, top + 6.5); c.lineTo(5 + lean, top + 7.5); });
-  // the rifle: a long body with a magazine below and a glowing muzzle
+  ctx.fillRect(-0.6 + lean, top + 0.8, 1.6, 0.7);       // shoulder flash
+  leg(0.4, stride, false);
+  // the far arm, behind the near one, reaching to the rifle's fore-end
+  const sx = 0.4 + lean, sy = top + 1.6;                // the shoulder
   const gy = top + 6;
-  // (the body is drawn narrowed; the rifle is drawn longer to keep its length)
+  figShape(ctx, DAN_FIG.tunicShade, (c) => {
+    c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 10, gy - 0.2);
+    c.lineTo(sx + 10, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
+  });
+  // the rifle, held out level
   figShape(ctx, DAN_FIG.gunShade, (c) => {
     c.moveTo(-3 + lean, gy); c.lineTo(17 + lean, gy); c.lineTo(17 + lean, gy + 1.5);
     c.lineTo(5.5 + lean, gy + 1.5); c.lineTo(5.5 + lean, gy + 3.2); c.lineTo(2.5 + lean, gy + 3.2);
@@ -304,14 +311,16 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
     ctx.moveTo(17.5 + lean, gy + 0.8); ctx.lineTo(22 + lean, gy - 1.5); ctx.lineTo(20.5 + lean, gy + 0.8); ctx.lineTo(22 + lean, gy + 3);
     ctx.closePath(); ctx.fill();
   }
-  // near arm and both hands on the rifle
-  figShape(ctx, DAN_FIG.tunic, (c) => { c.moveTo(-4 + lean, top + 1); c.lineTo(-1 + lean, top + 1); c.lineTo(3 + lean, top + 5.5); c.lineTo(0.5 + lean, top + 7); });
-  figEllipse(ctx, DAN_FIG.skin, 3.2 + lean, gy + 0.8, 1.7, 1.2, 0.5);
-  figEllipse(ctx, DAN_FIG.skin, 9 + lean, gy + 0.9, 1.7, 1.2, 0.5);
-  ctx.restore();
+  // the near arm: down from the shoulder to the elbow, forward to the grip
+  figShape(ctx, DAN_FIG.tunic, (c) => {
+    c.moveTo(sx - 1.4, sy); c.lineTo(sx + 1, sy - 0.4); c.lineTo(sx + 3.4, gy - 0.2); c.lineTo(sx + 5, gy);
+    c.lineTo(sx + 5, gy + 1.8); c.lineTo(sx + 2.6, gy + 1.8); c.lineTo(sx + 0.2, sy + 2.6);
+  });
+  figEllipse(ctx, DAN_FIG.skin, sx + 5.2, gy + 0.9, 1.6, 1.2, 0.5);    // the near hand at the grip
+  figEllipse(ctx, DAN_FIG.skin, sx + 10.4, gy + 0.7, 1.5, 1.1, 0.5);   // the far hand on the fore-end
   // head: the rendered one (assets/dan_head.png, cut from the run frame) on
   // a short neck; drawn by hand only until it has loaded
-  const hx = lean * 1.0, hy = top - 1;
+  const hx = lean + 0.2, hy = top - 1;
   ctx.fillStyle = DAN_FIG.skinShade;
   ctx.fillRect(hx - 1.2, hy - 1.2, 2.4, 2);          // neck
   const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
@@ -320,7 +329,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
     const src = headForScale(hs, Math.abs(ctx.getTransform().a));
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(src, hx - hs.meta.cx + 1.0, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
+    ctx.drawImage(src, hx - hs.meta.cx + 1.2, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
     ctx.imageSmoothingEnabled = false;
     ctx.restore();
     return;
