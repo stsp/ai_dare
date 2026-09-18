@@ -597,6 +597,7 @@ def main():
             if needs.get((a, b), 0):
                 links[-1]["needs"] = needs[(a, b)]
     flat = [(k, tuple(r)) for k, rs in spans.items() for r in rs]
+    broken_rooms = {b for (a, b, via, floor, stop) in spans if stop == "in"}   # where the lift breaks
     for (a, b, via, floor, stop), (x0, x1) in sorted(flat, key=str):
         if via == "drop":                     # out of the broken lift's shaft
             for sh in rooms[a]["shafts"]:     # wherever between the rails he is
@@ -649,7 +650,10 @@ def main():
         # for one, or a room whose rails it could not see
         if a == b and not any(sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0 for sh in rooms[a]["shafts"]):
             continue
-        is_broken = stop == "in" or (a, b, via, floor, stop) in broken
+        # the broken lift: the ride that breaks just inside the next room, or
+        # the leg of a ride that fell on through a room (a hop off a gallery
+        # that landed in the room below is no lift breaking)
+        is_broken = stop == "in" or (floor < 0 and a in broken_rooms)
         links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet,
                       "stop": stop_feet, **({"broken": True} if is_broken else {})})
         if a != b and needs.get((a, b), 0):
