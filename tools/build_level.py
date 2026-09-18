@@ -723,6 +723,11 @@ def main():
             on_top = r["map"] != "screen" and str(r["map"]).startswith("0,")
             if r["sector"] == surface and not (zone == 1 and on_top):
                 r["sector"] = usual
+    # the prisons are given in sector order: each belongs to its sector,
+    # whatever survey first stumbled into it
+    for i, cell in enumerate(args.prisons.split(",")):
+        if cell in rooms:
+            rooms[cell]["zone"] = i + 1
     parts = [p for p in args.parts.split(",") if p]
     level = {
         "source": geo.get("source"),
