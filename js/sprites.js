@@ -24,6 +24,7 @@ function loadSheet(name, meta) {
   img.src = meta.image;
 }
 loadSheet("dan", window.DAN_SHEET);
+loadSheet("dan_head", window.DAN_SHEET && window.DAN_SHEET.head);   // his head alone, for the drawn figure to wear
 
 /** Draw a sheet frame with its feet on the floor of the hit box (bx, by, bw,
  *  bh) and its body over the box's centre. Returns false while the sheet is
