@@ -214,7 +214,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   // how far the trunk sits above the ground in each pose
   const hip = kneel ? -8 : jump ? -14 : -12 + bob;
   const lean = run ? 1.6 : kneel ? 1 : 0;              // forward lean of the trunk
-  const top = hip - 13;                                // shoulder line
+  const top = hip - (kneel ? 10 : 13);                 // shoulder line: crouched on one knee
 
   const leg = (dx, swing, back) => {
     const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
