@@ -57,3 +57,6 @@ emulator page on `http://127.0.0.1:8802/`.
   moves in the engine from a room and prints where each left Dan.
   `route_seq.json` is the walkthrough's room sequence; a `null` marks a
   break between recordings.
+* `mksnap.js SNAP CELL SCRIPT OUT.json` plays a key script from a snapshot
+  and saves the machine state after it - a seed for a survey of somewhere
+  the walkthrough never stood (the surface beyond the first pit).

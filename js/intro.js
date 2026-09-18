@@ -87,7 +87,7 @@ function updateIntro(dt) {
   else if (intro.phase === 1 && intro.t > INTRO_CALL) { intro.phase = 2; intro.t = 0; }
   else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.msgTop = null; }
   else if (intro.phase === 3 && intro.t > INTRO_DIGBY) { startGame(); state.score += intro.score; return; }
-  if (tapped.Enter) { startGame(); state.score += intro.score; return; }
+  if (tapped.Enter || tapped.Escape) { startGame(); state.score += intro.score; return; }   // skip the fight
 
   if (intro.phase === 2) {
     // Dan flies the ship: up, down, forward and back, and fire
