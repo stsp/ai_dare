@@ -295,7 +295,10 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
   if (hs) {
     const k = hs.meta.scale, w = hs.meta.w / k, h = hs.meta.h / k;
+    ctx.imageSmoothingEnabled = true;                // the render is finer than the canvas: scale it down smoothly
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(hs.img, hx - hs.meta.cx + 1.8, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
+    ctx.imageSmoothingEnabled = false;
     ctx.restore();
     return;
   }

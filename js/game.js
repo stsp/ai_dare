@@ -744,6 +744,15 @@ function beep(freq, dur, type) {
 // -------------------------------------------------------------------- drawing
 
 const canvas = document.getElementById("screen");
+// draw at the display's own density: the figures are paths and the head a
+// fine render, both sharp at any size, while the tiles scale by whole pixels
+{
+  const dpr = Math.max(1, Math.min(3, Math.round(window.devicePixelRatio || 1)));
+  canvas.style.width = canvas.width + "px";
+  canvas.style.height = canvas.height + "px";
+  canvas.width *= dpr;
+  canvas.height *= dpr;
+}
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
