@@ -19,6 +19,7 @@ from PIL import Image
 
 SCALE = 3            # canvas pixels per screen pixel
 HEAD_OVERSAMPLE = 3  # the head is kept finer still, and scaled down when drawn
+HEAD_FRAME = "kneel"  # the render the head is cut from: its face sits best on the drawn body
 RUN_H = 33           # a running frame, in screen pixels (hit box is 32)
 FRAMES = {           # sheet name -> render in the repository root
     "fire": "VeniceAI_2KHeIZa68KmmRm_0.png",
@@ -96,8 +97,8 @@ def head_of(rgb, a):
     chin = next(y for y in range(int(h * 0.12), int(h * 0.4)) if len(rows[y]) and rows[y].max() < front - 0.2 * width)
     # the shoulders begin where the figure suddenly widens; the columns the
     # head spans (peak of the cap included) come from the rows above that
-    shoulders = next(y for y in range(int(h * 0.1), chin + 1) if len(rows[y]) and rows[y].max() - rows[y].min() > 1.4 * width)
-    x0 = int(min(r.min() for r in rows[:shoulders] if len(r)))
+    shoulders = next((y for y in range(int(h * 0.1), chin + 1) if len(rows[y]) and rows[y].max() - rows[y].min() > 1.4 * width), chin)
+    x0 = int(max(min(r.min() for r in rows[:shoulders] if len(r)), back - 0.15 * width))   # a little behind the head, not the shoulder
     x1 = int(max(r.max() for r in rows[:shoulders] if len(r))) + 1
     crop_a = a[:chin, x0:x1].copy()
     crop_rgb = rgb[:chin, x0:x1]
@@ -114,7 +115,7 @@ def main():
     # at the same scale as the frames, its neck at the bottom edge
     # ... kept at three times the canvas scale, so it stays sharp when the
     # canvas is shown larger than its pixels (a high-density or a big screen)
-    hrgb, ha, hcx = head_of(*cuts["run1"])
+    hrgb, ha, hcx = head_of(*cuts[HEAD_FRAME])
     head = shrink(hrgb, ha, scale * HEAD_OVERSAMPLE)
     Image.fromarray(head, "RGBA").save("assets/dan_head.png", optimize=True)
     head_meta = {"image": "assets/dan_head.png", "scale": SCALE * HEAD_OVERSAMPLE, "w": head.shape[1], "h": head.shape[0],
