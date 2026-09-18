@@ -18,6 +18,7 @@ import numpy as np
 from PIL import Image
 
 SCALE = 3            # canvas pixels per screen pixel
+HEAD_OVERSAMPLE = 3  # the head is kept finer still, and scaled down when drawn
 RUN_H = 33           # a running frame, in screen pixels (hit box is 32)
 FRAMES = {           # sheet name -> render in the repository root
     "fire": "VeniceAI_2KHeIZa68KmmRm_0.png",
@@ -111,10 +112,12 @@ def main():
 
     # the head alone, for the drawn figure to wear: from the running frame,
     # at the same scale as the frames, its neck at the bottom edge
+    # ... kept at three times the canvas scale, so it stays sharp when the
+    # canvas is shown larger than its pixels (a high-density or a big screen)
     hrgb, ha, hcx = head_of(*cuts["run1"])
-    head = shrink(hrgb, ha, scale)
+    head = shrink(hrgb, ha, scale * HEAD_OVERSAMPLE)
     Image.fromarray(head, "RGBA").save("assets/dan_head.png", optimize=True)
-    head_meta = {"image": "assets/dan_head.png", "scale": SCALE, "w": head.shape[1], "h": head.shape[0],
+    head_meta = {"image": "assets/dan_head.png", "scale": SCALE * HEAD_OVERSAMPLE, "w": head.shape[1], "h": head.shape[0],
                  "cx": round(hcx * scale / SCALE, 1)}
 
     frames, x = {}, 0
@@ -143,7 +146,7 @@ def main():
                 + json.dumps(meta) + ";\n")
     for name, fr in frames.items():
         print(f"{name:6} {fr['w'] // SCALE}x{fr['h'] // SCALE} cells, body at {fr['cx']}")
-    print(f"head   {head_meta['w'] // SCALE}x{head_meta['h'] // SCALE} cells, neck at {head_meta['cx']}")
+    print(f"head   {head_meta['w'] // head_meta['scale']}x{head_meta['h'] // head_meta['scale']} cells, neck at {head_meta['cx']}")
 
 
 if __name__ == "__main__":
