@@ -856,14 +856,11 @@ function draw() {
   if (boss) {
     boss.anim += 0.05;
     const bob = Math.round(Math.sin(boss.anim) * 2);
-    drawSprite(ctx, "boss", Math.round(boss.x), Math.round(boss.y + bob),
-               { main: C.bgreen, shade: C.green, light: C.bwhite });
+    drawMekonSeated(ctx, Math.round(boss.x), Math.round(boss.y + bob), 24, 30, boss.anim);
   }
   for (const t of treens) {
     if (t.dead) continue;
-    drawSprite(ctx, Math.floor(t.anim) % 2 ? "treen_walk" : "treen_stand",
-               Math.round(t.x - 5), Math.round(t.y),
-               { main: C.bgreen, shade: C.green, light: C.bwhite }, t.dir < 0);
+    drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0);
   }
   for (const l of lasers) {
     ctx.fillStyle = l.friendly ? C.bwhite : C.bred;

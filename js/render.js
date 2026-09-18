@@ -280,15 +280,14 @@ function drawPanel(ctx, state) {
       ctx.fillRect(vx, vy + j, vs, 2);
     }
   } else if (state.viewer === "mekon") {
-    ctx.fillStyle = C.bgreen;
-    ctx.beginPath();
-    ctx.ellipse(vx + vs / 2, vy + 11, 9, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = C.black;
-    ctx.fillRect(vx + 8, vy + 10, 2, 2);
-    ctx.fillRect(vx + 16, vy + 10, 2, 2);
-    ctx.fillStyle = C.green;
-    ctx.fillRect(vx + 9, vy + 19, 8, 5);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(vx, vy, vs, vs); ctx.clip();
+    ctx.fillStyle = "#0a1a2a";
+    ctx.fillRect(vx, vy, vs, vs);
+    drawMekonHead(ctx, vx, vy + 1, vs, state.phase * 6);
+    ctx.fillStyle = "rgba(255,255,255,0.08)";           // the link's scan lines
+    for (let j = 0; j < vs; j += 2) ctx.fillRect(vx, vy + j, vs, 1);
+    ctx.restore();
   } else {
     const r = rng(0x1234);
     ctx.fillStyle = C.white;
