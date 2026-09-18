@@ -38,10 +38,18 @@ function figEllipse(ctx, fill, cx, cy, rx, ry, width) {
 
 /** A Treen guard facing right, feet at the bottom of the box (bx, by, bw, bh).
  *  `phase` runs the walk (0..1 per stride); `flip` turns him to the left. */
-function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip) {
+function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   ctx.save();
   ctx.translate(bx + bw / 2, by + bh);         // origin between his feet
   if (flip) ctx.scale(-1, 1);
+  act = act || {};
+  if (act.dying > 0) {                         // shot: he topples over backwards and lies still
+    const fall = Math.min(1, act.dying);
+    ctx.translate(0, -3.5 * fall);
+    ctx.rotate(-Math.PI / 2 * fall);
+    phase = 0;
+  }
+  if (act.fire) ctx.translate(-0.6, 0);        // the recoil
   const stride = Math.sin(phase * Math.PI * 2);   // -1..1: the legs swing
   const bob = Math.abs(stride) * 0.6;
   const hip = -12 + bob, top = -25 + bob;         // the hips and the shoulder line
@@ -91,6 +99,12 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip) {
   ctx.fillRect(-1.5, gy + 0.3, 14, 0.6);
   ctx.fillStyle = FIG.glow;
   ctx.fillRect(12.2, gy + 0.2, 1.4, 1.2);          // the muzzle's charge
+  if (act.fire) {                                  // the bolt leaving the muzzle
+    ctx.fillStyle = "#ff6a6a";
+    ctx.beginPath();
+    ctx.moveTo(13.6, gy + 0.8); ctx.lineTo(18, gy - 1.4); ctx.lineTo(16.6, gy + 0.8); ctx.lineTo(18, gy + 3);
+    ctx.closePath(); ctx.fill();
+  }
   // the near arm, down to the elbow and forward to the grip, both hands on the rifle
   figShape(ctx, FIG.cloth, (c) => {
     c.moveTo(sx - 1.4, sy); c.lineTo(sx + 1, sy - 0.4); c.lineTo(sx + 3.4, gy - 0.2); c.lineTo(sx + 5, gy);
@@ -230,6 +244,13 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.save();
   ctx.translate(bx + bw / 2, by + bh);
   if (flip) ctx.scale(-1, 1);
+  if (pose === "down") {                               // out cold: flat on his back, head away from where he faced
+    ctx.translate(0, -3.5);
+    ctx.rotate(-Math.PI / 2);
+    pose = "stand";
+  }
+  const lift = pose === "lift";                        // riding: the rifle lowered
+  if (lift) pose = "stand";
   const run = pose === "run", kneel = pose === "kneel", jump = pose === "jump";
   const stride = run ? Math.sin(phase * Math.PI * 2) : 0;
   const bob = run ? Math.abs(Math.cos(phase * Math.PI * 2)) * 0.8 : 0;
@@ -291,6 +312,8 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   // the far arm, behind the near one, reaching to the rifle's fore-end
   const sx = 0.4 + lean, sy = top + 1.6;                // the shoulder
   const gy = top + 6;
+  ctx.save();
+  if (lift) { ctx.translate(sx, sy); ctx.rotate(0.95); ctx.translate(-sx, -sy); }   // arms and rifle swung down at his side
   figShape(ctx, DAN_FIG.tunicShade, (c) => {
     c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 10, gy - 0.2);
     c.lineTo(sx + 10, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
@@ -318,6 +341,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   });
   figEllipse(ctx, DAN_FIG.skin, sx + 5.2, gy + 0.9, 1.6, 1.2, 0.5);    // the near hand at the grip
   figEllipse(ctx, DAN_FIG.skin, sx + 10.4, gy + 0.7, 1.5, 1.1, 0.5);   // the far hand on the fore-end
+  ctx.restore();
   // head: the rendered one (assets/dan_head.png, cut from the run frame) on
   // a short neck; drawn by hand only until it has loaded
   const hx = lean + 0.2, hy = top - 1;
@@ -326,7 +350,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
   if (hs) {
     const w = hs.meta.w / hs.meta.scale, h = hs.meta.h / hs.meta.scale;   // his head in screen units
-    const src = headForScale(hs, Math.abs(ctx.getTransform().a));
+    const m = ctx.getTransform(); const src = headForScale(hs, Math.hypot(m.a, m.b));   // the canvas scale, whichever way he lies
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(src, hx - hs.meta.cx + 1.2, hy + 0.8 - h, w, h);   // set forward on the neck, over the collar
