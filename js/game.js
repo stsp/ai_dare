@@ -345,7 +345,7 @@ function moveY(body, dy, platforms, w, h, yOff) {
   if (dy >= 0) {
     for (const p of platforms) {
       const bottom = body.y + yOff + h;
-      if (bottom >= p.y && prevBottom <= p.y + 2 &&
+      if (bottom >= p.y && prevBottom <= p.y + 0.5 &&       // once below a floor's top he is past it: no catching the far edge of a gap
           body.x + w > p.x0 && body.x < p.x1) {
         body.y = p.y - h - yOff;
         body.vy = 0;
@@ -546,9 +546,15 @@ function moveBetweenRooms() {
   const ride = dan.onLift && dan.onLift.link;
   const feet = dan.y + DAN_H;
   const left = exitAt(e.lefts, feet), right = exitAt(e.rights, feet);
+  // through a doorway he arrives at the height the original set him down at
+  // (the link's feet) when he is walking or coming down - a step or a course
+  // between the two rooms' floors is absorbed at the door, as there
+  const arrive = (l) => { if (l.feet != null && dan.vy >= 0 && Math.abs(feet - l.feet) <= 14) { dan.y = l.feet - DAN_H; dan.vy = 0; } };
   if (dan.x <= 0 && isOpen(left)) {
+    arrive(left);
     enterRoom(left.to, VIEW_W - DAN_W - 3, dan.y);
   } else if (dan.x + DAN_W >= VIEW_W && isOpen(right)) {
+    arrive(right);
     enterRoom(right.to, 3, dan.y);
   } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
     enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
@@ -556,7 +562,7 @@ function moveBetweenRooms() {
     dan.liftLatch = true;
     // the one lift that is out of order: the original says so as he rides into its room
     if (ride.broken || EXITS[ride.to].lifts.some((l) => l.broken && l.feet < 0)) say(["OUT OF ORDER"], 3);
-  } else if (dan.y + DAN_H > 134 && !dan.onLift && isOpen(zone(e.drops))) {
+  } else if (dan.y + DAN_H > 130 && !dan.onLift && isOpen(zone(e.drops))) {
     // fell through a hole in the floor: the original switches rooms as soon
     // as he drops below the floor course, before his run carries him past it
     enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);

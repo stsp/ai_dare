@@ -416,6 +416,12 @@ def main():
         if any(h0 < x1 and h1 > x0 for h0, h1 in rooms[b]["holes"]):
             continue                          # a stop inside the shaft over a pit: the car only
         if not any(abs(p["y"] - row) <= 1 and p["x0"] < x1 and p["x1"] > x0 for p in rooms[b]["platforms"]):
+            # ... reaching the ledge beside it, when one is drawn within two cells
+            for p in rooms[b]["platforms"]:
+                if abs(p["y"] - row) <= 1 and 0 <= p["x0"] - x1 <= 2:
+                    x1 = p["x0"]
+                if abs(p["y"] - row) <= 1 and 0 <= x0 - p["x1"] <= 2:
+                    x0 = p["x1"]
             rooms[b]["platforms"].append({"y": row, "x0": x0, "x1": x1, "landing": True})
             rooms[b]["platforms"].sort(key=lambda p: (p["y"], p["x0"]))
     _dbg("probed")
@@ -712,27 +718,35 @@ def main():
         if room in rooms and not any(l["from"] == room and l["kind"] == side for l in links):
             doors.append({"from": room, "kind": side, "needs": int(n)})
 
-    # the surface - the landing zone's black sky - is the first sector's top
-    # row of the map and nothing else: a room whose floor band the extractor
-    # read as bare cyan (a screen mostly shaft, or a room the map matcher put
-    # on the top row) is underground with the rest of its zone
+    # the surface is under the stars: a room whose screen has a sky of them
+    # (isolated dots across its upper rows) is drawn open to space, every
+    # other room is underground with the rest of its zone, whatever colours
+    # the extractor read off its floor band
+    def star_cells(scr):
+        n = 0
+        for row in range(1, 9):
+            for col in range(1, 31):
+                dots = 0
+                for yy in range(8):
+                    y = row * 8 + yy
+                    dots += bin(scr[((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | col]).count("1")
+                n += 1 <= dots <= 3
+        return n
     from collections import Counter
-    surface = geo["sectors"].index(["cyan"]) if ["cyan"] in geo["sectors"] else -1
+    if ["cyan"] not in geo["sectors"]:
+        geo["sectors"].append(["cyan"])
+    surface = geo["sectors"].index(["cyan"])
+    sky = {}
+    for n in rooms:
+        scr = os.path.join(args.screens, f"room_{n}.scr")
+        if os.path.exists(scr):
+            sky[n] = star_cells(open(scr, "rb").read()) >= 40
     for zone in {r["zone"] for r in rooms.values()}:
-        members = [r for r in rooms.values() if r["zone"] == zone]
-        below = Counter(r["sector"] for r in members if r["sector"] != surface)
-        if not below:
-            continue
-        usual = below.most_common(1)[0][0]
-        for r in members:
-            on_top = r["map"] != "screen" and str(r["map"]).startswith("0,")
-            if r["sector"] == surface and not (zone == 1 and on_top):
-                r["sector"] = usual
-    # the prisons are given in sector order: each belongs to its sector,
-    # whatever survey first stumbled into it
-    for i, cell in enumerate(args.prisons.split(",")):
-        if cell in rooms:
-            rooms[cell]["zone"] = i + 1
+        members = [(n, r) for n, r in rooms.items() if r["zone"] == zone]
+        below = Counter(r["sector"] for n, r in members if not sky.get(n) and r["sector"] != surface)
+        usual = below.most_common(1)[0][0] if below else geo["sectors"].index(["cyan", "white"]) if ["cyan", "white"] in geo["sectors"] else 1
+        for n, r in members:
+            r["sector"] = surface if sky.get(n, r["sector"] == surface) else (usual if r["sector"] == surface else r["sector"])
     parts = [p for p in args.parts.split(",") if p]
     level = {
         "source": geo.get("source"),

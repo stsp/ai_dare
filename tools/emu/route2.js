@@ -22,7 +22,7 @@ const { chromium } = require('playwright-core');
     const step = (name, fn, expect) => { fn(); const ok = expect ? String(state.room) === String(expect) : true; log.push(`${ok ? 'ok ' : 'XX '}${name.padEnd(28)} -> ${st()}${state.carrying ? ' carrying' : ''} fitted=${state.fitted}${state.mode !== 'play' ? ' MODE ' + state.mode : ''}`); return ok; };
     resetDan(24, 96); enterRoom('85', 24, 96); dan.invuln = 1e9; settle();
     const plan = [
-      ['85: to cell 12', () => { goto(12); }, '85'],
+      ['85: to cell 15', () => { goto(15); }, '85'],
       ['85: jump right', () => { jump('right'); }, '85'],
       ['85: walk right', () => { walk('right'); }, '86'],
       ['86: walk right', () => walk('right'), '87'],
