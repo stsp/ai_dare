@@ -654,6 +654,11 @@ def main():
         # the leg of a ride that fell on through a room (a hop off a gallery
         # that landed in the room below is no lift breaking)
         is_broken = stop == "in" or (floor < 0 and a in broken_rooms)
+        if is_broken and floor < 0:
+            # ridden down from above, the lift breaks at the bottom of its
+            # shaft in this room, at floor level, and Dan falls on through the
+            # hole there: the ride ends here, the room's drop does the rest
+            b, stop_feet = a, (TH - 2) * 8
         links.append({"from": a, "to": b, "kind": via, "x0": x0, "x1": x1, "feet": feet,
                       "stop": stop_feet, **({"broken": True} if is_broken else {})})
         if a != b and needs.get((a, b), 0):

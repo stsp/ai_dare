@@ -418,8 +418,11 @@ function updateDan(dt) {
     dan.onLift.startFeet = dan.y + DAN_H;      // the floor he set off from does not catch him
     if (!dan.onLift.link && sh) {
       const kind = dan.onLift.dir > 0 ? "down" : "up";
-      dan.onLift.link = exits.lifts.find((l) => l.kind === kind && l.x1 >= sh.x - 3 && l.x0 <= sh.x + sh.w &&
-                                                l.to !== state.room) || null;
+      const inShaft = (l) => l.kind === kind && l.x1 >= sh.x - 3 && l.x0 <= sh.x + sh.w;
+      dan.onLift.link = exits.lifts.find((l) => inShaft(l) && l.to !== state.room) || null;
+      // the broken lift: entered riding, it gives out at the bottom of the shaft here
+      const gone = !dan.onLift.link && exits.lifts.find((l) => inShaft(l) && l.broken && l.feet < 0);
+      if (gone) { dan.onLift.link = gone; dan.onLift.stop = gone.stop; dan.onLift.stopHere = true; }
     }
   }
 
