@@ -29,7 +29,10 @@ cells), found by watching which bytes follow the keys.
 
 `tools/match_rooms.py` then says which room of the map each screen is, and
 `tools/build_level.py` assembles the level from the graph and the map's
-geometry.
+geometry. `--gate a:b:n` puts a door between two rooms that opens after `n`
+parts, `--label N:seed:blockers` announces the rooms reachable from `seed`
+(inside its zone, not through `blockers`) as sector `N` and shifts the later
+sectors up by one, and `--boss room:cell:row` seats the Mekon hologram.
 
 ## The rest of the harness
 
