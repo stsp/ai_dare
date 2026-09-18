@@ -31,6 +31,7 @@ const CAPTURE_PENALTY = 600;   // ten minutes
 
 const DAN_W = 10, DAN_H = 32, DAN_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
 const TREEN_W = 10, TREEN_H = 32;
+const TREEN_FALL = 0.7;          // seconds a shot guard takes to topple
 
 // --------------------------------------------------------------- level utils
 
@@ -230,7 +231,7 @@ function resetDan(x, y) {
   dan = {
     x, y, vx: 0, vy: 0, face: 1,
     onGround: false, kneeling: false, turning: 0,
-    onLift: null, liftLatch: false, shaftFall: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0,
+    onLift: null, liftLatch: false, shaftFall: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0, stun: 0,
   };
 }
 
@@ -373,11 +374,11 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => { keys[e.code] = false; });
 
 const held = {
-  left: () => keys.ArrowLeft || keys.KeyO,
-  right: () => keys.ArrowRight || keys.KeyP,
-  up: () => keys.ArrowUp || keys.KeyQ,
-  down: () => keys.ArrowDown || keys.KeyA,
-  fire: () => keys.Space || keys.KeyM,
+  left: () => !(dan.stun > 0) && (keys.ArrowLeft || keys.KeyO),
+  right: () => !(dan.stun > 0) && (keys.ArrowRight || keys.KeyP),
+  up: () => !(dan.stun > 0) && (keys.ArrowUp || keys.KeyQ),
+  down: () => !(dan.stun > 0) && (keys.ArrowDown || keys.KeyA),
+  fire: () => !(dan.stun > 0) && (keys.Space || keys.KeyM),
 };
 
 // ----------------------------------------------------------------- Dan update
@@ -387,6 +388,7 @@ function updateDan(dt) {
   const platforms = platformsOf(room);
 
   if (dan.hurt > 0) dan.hurt -= dt;
+  if (dan.stun > 0) { dan.stun -= dt; dan.vx = 0; }   // out cold in the cell: nothing answers the keys
   if (dan.invuln > 0) dan.invuln -= dt;
   if (dan.fireCool > 0) dan.fireCool -= dt;
 
@@ -589,7 +591,9 @@ function moveBetweenRooms() {
 
 function updateTreens(dt) {
   for (const t of treens) {
+    if (t.dying > 0) t.dying -= dt;              // toppling after the shot that got him
     if (t.dead) continue;
+    if (t.fire > 0) t.fire -= dt;
     t.anim += dt * 5;
     t.x += t.dir * 22 * dt;
     if (t.x <= t.x0) { t.x = t.x0; t.dir = 1; }
@@ -599,6 +603,7 @@ function updateTreens(dt) {
     const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
     if (t.cool <= 0 && level) {
       t.cool = 1.4 + Math.random();
+      t.fire = 0.22;
       const dir = dan.x > t.x ? 1 : -1;
       t.dir = dir;
       lasers.push({
@@ -624,6 +629,7 @@ function updateLasers(dt) {
       for (const t of treens) {
         if (!t.dead && overlaps(l.x, l.y, 4, 2, t.x, t.y, TREEN_W, TREEN_H)) {
           t.dead = true;
+          t.dying = TREEN_FALL;
           if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
           state.deadTreens.get(state.room).add(t.id);
           l.travelled = 1e9;
@@ -673,6 +679,7 @@ function capture() {
   resetDan(p.x, p.y - DAN_H);
   enterRoom(cell, p.x, p.y - DAN_H);
   say(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"], 3);
+  dan.stun = 2.2;                              // he lies where they left him before coming round
   state.nextTaunt = 4;                         // he calls to gloat once Dan wakes
 }
 
@@ -826,6 +833,8 @@ function drawGates(ctx, key, room) {
 /** Which pose Dan is in now: kneeling, the moment after a shot, in the air,
  *  striding (the figure runs a four-phase cycle off `dan.anim`) or standing. */
 function danFrame() {
+  if (dan.stun > 0) return "down";
+  if (dan.onLift) return "lift";
   if (dan.kneeling) return "kneel";
   if (dan.fireCool > 0.16 && dan.onGround) return "fire";
   if (!dan.onGround && !dan.onLift) return "jump";
@@ -873,8 +882,9 @@ function draw() {
     drawMekonSeated(ctx, Math.round(boss.x), Math.round(boss.y + bob), 24, 30, boss.anim);
   }
   for (const t of treens) {
-    if (t.dead) continue;
-    drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0);
+    if (t.dead && !(t.dying > 0)) continue;
+    drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
+                    { fire: t.fire > 0, dying: t.dead ? 1 - Math.max(0, t.dying) / TREEN_FALL : 0 });
   }
   for (const l of lasers) {
     ctx.fillStyle = l.friendly ? C.bwhite : C.bred;
