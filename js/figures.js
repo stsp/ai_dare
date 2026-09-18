@@ -198,7 +198,7 @@ function drawMekonSeated(ctx, bx, by, bw, bh, t) {
    Dan's hit box, feet at its bottom, as with the rendered frames. */
 const DAN_FIG = {
   skin: "#f1c9a0", skinShade: "#c99468", hair: "#3b2a1a",
-  cap: "#4e6b2f", capShade: "#33481f", peak: "#151515",
+  cap: "#5f7d3a", capShade: "#3d5325", capBand: "#1d2736", peak: "#151515",
   tunic: "#5a7a35", tunicShade: "#3c5322", tunicLight: "#8cae5c",
   trouser: "#526d31", trouserShade: "#354820",
   boot: "#1a1a1a", bootShade: "#000000", belt: "#2b2b2b", buckle: "#d9b24a",
@@ -298,24 +298,27 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.fillRect(hx + 0.6, hy - 1.9, 1.8, 0.5);         // mouth
   ctx.fillStyle = DAN_FIG.hair;
   ctx.fillRect(hx + 1.4, hy - 3.7, 0.9, 0.8);         // eye
-  // a service cap: a wide flat crown over a stiff band, the black peak
-  // out over the eyes, a badge on the band
-  figShape(ctx, DAN_FIG.capShade, (c) => {            // the band, round the head
-    c.moveTo(hx - 3.6, hy - 5.2); c.lineTo(hx + 3.9, hy - 5.2); c.lineTo(hx + 3.9, hy - 7); c.lineTo(hx - 3.6, hy - 7);
-  }, 0.5);
-  figShape(ctx, DAN_FIG.cap, (c) => {                 // the crown, wider than the band, tilted up at the front
-    c.moveTo(hx - 4.6, hy - 6.8);
-    c.quadraticCurveTo(hx - 5.2, hy - 9.4, hx - 1.5, hy - 10);
-    c.lineTo(hx + 3.2, hy - 10.6);
-    c.quadraticCurveTo(hx + 5.6, hy - 10.4, hx + 5, hy - 6.8);
-  }, 0.5);
-  ctx.fillStyle = DAN_FIG.tunicLight;
-  ctx.fillRect(hx - 3.2, hy - 9.2, 1.8, 0.6);         // a little light on the crown
+  // the cap of the renders: a dark band with a gold strap round the head,
+  // a low olive crown that reaches back and rises to its front, where the
+  // badge sits, and a short black peak angled down over the eyes
+  figShape(ctx, DAN_FIG.capBand, (c) => {             // the band
+    c.moveTo(hx - 3.6, hy - 5.0); c.lineTo(hx + 4.0, hy - 5.0); c.lineTo(hx + 4.0, hy - 6.3); c.lineTo(hx - 3.6, hy - 6.3);
+  }, 0.45);
   ctx.fillStyle = DAN_FIG.buckle;
-  ctx.fillRect(hx + 0.2, hy - 6.7, 1.4, 1.2);         // badge on the band
-  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak: forward and a touch down
-    c.moveTo(hx + 0.8, hy - 5.3); c.lineTo(hx + 7.4, hy - 4.6);
-    c.quadraticCurveTo(hx + 7.6, hy - 3.6, hx + 6.4, hy - 3.6); c.lineTo(hx + 0.8, hy - 4.4);
+  ctx.fillRect(hx - 1.6, hy - 5.9, 5.2, 0.5);         // the strap across the front
+  figShape(ctx, DAN_FIG.cap, (c) => {                 // the crown, low and wide
+    c.moveTo(hx - 5.4, hy - 6.3);
+    c.quadraticCurveTo(hx - 5.6, hy - 7.6, hx - 3.0, hy - 7.6);
+    c.lineTo(hx + 3.4, hy - 8.7);
+    c.quadraticCurveTo(hx + 5.6, hy - 8.6, hx + 5.4, hy - 6.3);
+  }, 0.45);
+  ctx.fillStyle = DAN_FIG.capShade;
+  ctx.fillRect(hx - 5.2, hy - 6.8, 10.4, 0.5);        // the crown's seam
+  ctx.fillStyle = DAN_FIG.buckle;
+  ctx.fillRect(hx + 2.6, hy - 8.1, 1.2, 1.1);         // badge at the front of the crown
+  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak
+    c.moveTo(hx + 1.6, hy - 5.2); c.lineTo(hx + 7.6, hy - 4.4);
+    c.quadraticCurveTo(hx + 7.8, hy - 3.6, hx + 6.6, hy - 3.6); c.lineTo(hx + 1.6, hy - 4.3);
   }, 0.45);
   ctx.restore();
 }
