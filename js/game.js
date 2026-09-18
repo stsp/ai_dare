@@ -744,17 +744,23 @@ function beep(freq, dur, type) {
 // -------------------------------------------------------------------- drawing
 
 const canvas = document.getElementById("screen");
-// draw at the display's own density: the figures are paths and the head a
-// fine render, both sharp at any size, while the tiles scale by whole pixels
-{
-  const dpr = Math.max(1, Math.min(3, Math.round(window.devicePixelRatio || 1)));
-  canvas.style.width = canvas.width + "px";
-  canvas.style.height = canvas.height + "px";
-  canvas.width *= dpr;
-  canvas.height *= dpr;
-}
 const ctx = canvas.getContext("2d");
-ctx.imageSmoothingEnabled = false;
+/** Size the canvas to the window: as many whole screen pixels per game pixel
+ *  as fit (at the display's own density), so the tiles scale evenly while the
+ *  drawn figures and Dan's rendered head get every pixel the display has. */
+function fitCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const k = Math.max(2, Math.min(9, Math.floor(Math.min(window.innerWidth * 0.96 / SCREEN_W, window.innerHeight * 0.88 / SCREEN_H) * dpr)));
+  if (canvas.width !== SCREEN_W * k) {
+    canvas.width = SCREEN_W * k;
+    canvas.height = SCREEN_H * k;
+  }
+  canvas.style.width = (canvas.width / dpr) + "px";
+  canvas.style.height = (canvas.height / dpr) + "px";
+  ctx.imageSmoothingEnabled = false;         // (a resize resets the context)
+}
+fitCanvas();
+window.addEventListener("resize", fitCanvas);
 
 /** The markings by a lift: an arrow on the floor for each way it goes, over
  *  the cells it answers from. */

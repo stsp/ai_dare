@@ -18,7 +18,7 @@ import numpy as np
 from PIL import Image
 
 SCALE = 3            # canvas pixels per screen pixel
-HEAD_OVERSAMPLE = 3  # the head is kept finer still, and scaled down when drawn
+HEAD_OVERSAMPLE = 4  # the head is kept finer still, and scaled down when drawn
 HEAD_FRAME = "kneel"  # the render the head is cut from: its face sits best on the drawn body
 RUN_H = 33           # a running frame, in screen pixels (hit box is 32)
 FRAMES = {           # sheet name -> render in the repository root
