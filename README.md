@@ -91,7 +91,11 @@ and the pickups are still the project's own single-colour bitmaps in
 python3 tools/extract_level.py -o level_map.json           # map -> geometry of all 106 rooms
 python3 tools/validate_level.py MAP.png level_map.json 1,5  # draw a room's geometry over the map
 python3 tools/match_rooms.py MAP.png data/emu --graph data/emu/graph.json --level level_map.json -o data/emu/match.json
-python3 tools/build_level.py data/emu/graph.json data/emu/match.json   # -> level.json + js/level.js
+python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/graph3.json \
+    data/emu/graph4.json data/emu/graph5.json data/emu/graph6.json --match data/emu/match.json \
+    --geometry level_map.json --parts 83,148,255,56,50 --slot 143 --from-screen 117 \
+    --prisons 50,53,241,192 --gate 185:186:2 --label 4:186:185,217 --boss 63:22:16 \
+    -o level.json                                            # -> level.json + js/level.js
 python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
 ```
 

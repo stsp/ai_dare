@@ -68,6 +68,15 @@ def main():
     ap.add_argument("--doors", default="",
                     help="doors known from the walkthrough but not yet surveyed, as "
                          "room:side:parts, e.g. 209:right:2 - drawn shut until surveyed")
+    ap.add_argument("--gate", default="",
+                    help="doors on surveyed doorways the phases do not show, as from:to:parts, "
+                         "e.g. 185:186:2 - the walk needs that many parts fitted")
+    ap.add_argument("--label", default="",
+                    help="a sector the original announces inside one survey phase, as "
+                         "N:seed:blockers - the rooms reachable from `seed` without entering a "
+                         "blocker are announced as sector N, and later sectors count on from there")
+    ap.add_argument("--boss", default="",
+                    help="where the Mekon's hologram stands, as room:cell:row (his feet)")
     ap.add_argument("--from-screen", default="",
                     help="rooms to read off their own screen even where the map seems to match")
     ap.add_argument("--exclude", default="",
@@ -745,13 +754,44 @@ def main():
     for n in rooms:
         scr = os.path.join(args.screens, f"room_{n}.scr")
         if os.path.exists(scr):
-            sky[n] = star_cells(open(scr, "rb").read()) >= 40
+            sky[n] = star_cells(open(scr, "rb").read()) >= 60   # (a window onto the stars, as in 63, has fewer)
     for zone in {r["zone"] for r in rooms.values()}:
         members = [(n, r) for n, r in rooms.items() if r["zone"] == zone]
         below = Counter(r["sector"] for n, r in members if not sky.get(n) and r["sector"] != surface)
         usual = below.most_common(1)[0][0] if below else geo["sectors"].index(["cyan", "white"]) if ["cyan", "white"] in geo["sectors"] else 1
         for n, r in members:
             r["sector"] = surface if sky.get(n, r["sector"] == surface) else (usual if r["sector"] == surface else r["sector"])
+    # doors the walkthrough shows on doorways within one survey phase
+    for spec in filter(None, args.gate.split(",")):
+        a, b, n = spec.split(":")
+        for l in links:
+            if l["from"] == a and l["to"] == b and l["kind"] in ("left", "right"):
+                l["needs"] = int(n)
+    # what the original announces on entering: its sector numbers, which cut
+    # one survey phase in two (sectors 3 and 4 both open with the same part)
+    for n, r in rooms.items():
+        r["label"] = r["zone"]
+    if args.label:
+        num, seed, blockers = args.label.split(":")
+        num, blockers = int(num), set(blockers.split(","))
+        seen, queue = {seed}, [seed]
+        while queue:
+            a = queue.pop()
+            for l in links:
+                for x, y in ((l["from"], l["to"]), (l["to"], l["from"])):
+                    if x == a and y in rooms and y not in seen and y not in blockers and rooms[y]["zone"] == rooms[seed]["zone"]:
+                        seen.add(y); queue.append(y)
+        base = rooms[seed]["zone"]
+        for n, r in rooms.items():
+            if n in seen:
+                r["label"] = num
+            elif r["zone"] > base:
+                r["label"] = min(6, r["zone"] + 1)
+    boss = None
+    if args.boss:
+        room, cell, row = args.boss.split(":")
+        if room in rooms:
+            boss = {"room": room, "x": int(cell) * 8, "feet": int(row) * 8}
     parts = [p for p in args.parts.split(",") if p]
     level = {
         "source": geo.get("source"),
@@ -765,6 +805,7 @@ def main():
         "doors": doors,
         "prisons": [p for p in args.prisons.split(",") if p in rooms],
         "slot": args.slot if args.slot in rooms else None,
+        "boss": boss,
     }
     with open(args.out, "w") as f:
         json.dump(level, f, separators=(",", ":"))

@@ -167,7 +167,7 @@ function makeTreens(key, room) {
   const dead = state.deadTreens.get(key) || new Set();   // a Treen shot stays shot
   const r = rng(hashKey(key));
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
-  const n = wide.length === 0 || room.zone === 4 ? 0 : Math.floor(r() * 3);   // the fourth sector is unguarded, as in the original
+  const n = wide.length === 0 || (room.label || room.zone) === 4 ? 0 : Math.floor(r() * 3);   // the fourth sector is unguarded, as in the original
   const out = [];
   for (let i = 0; i < n; i++) {
     const p = wide[Math.floor(r() * wide.length)];
@@ -209,6 +209,7 @@ const state = {
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
+  hologramSeen: false,
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
   taunts: 0, nextTaunt: 40,   // the Mekon's calls
@@ -252,13 +253,18 @@ function enterRoom(key, x, y) {
     state.alerted.add(key);
     say(["INTRUDER ALERT !"], 2.5);
   }
-  const zone = room.zone;
+  const zone = room.label || room.zone;                    // the number the original announces
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
     say(["DAN IS NOW IN SECTOR " + zone], 2.5);
     if (zone > 1) taunt();
   }
-  boss = null;
+  // the Mekon's hologram: he waits on his dais in one room of the fifth sector
+  boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
+  if (boss && !state.hologramSeen) {
+    state.hologramSeen = true;
+    say(["\"I SAY....IT'S A HOLOGRAM !\""], 3);
+  }
   if (key === SDS_ROOM) {
     say(["THE SELF DESTRUCT ROOM"], 2.5);
     if (state.carrying) note(["WALK TO THE LEFT", "TO FIT THE PART"], 3);
