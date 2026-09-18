@@ -306,19 +306,18 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   }, 0.45);
   ctx.fillStyle = DAN_FIG.buckle;
   ctx.fillRect(hx - 1.6, hy - 5.9, 5.2, 0.5);         // the strap across the front
-  figShape(ctx, DAN_FIG.cap, (c) => {                 // the crown, low and wide
-    c.moveTo(hx - 5.4, hy - 6.3);
-    c.quadraticCurveTo(hx - 5.6, hy - 7.6, hx - 3.0, hy - 7.6);
-    c.lineTo(hx + 3.4, hy - 8.7);
-    c.quadraticCurveTo(hx + 5.6, hy - 8.6, hx + 5.4, hy - 6.3);
+  figShape(ctx, DAN_FIG.cap, (c) => {                 // the crown: its top a straight rise from the back to a sharp corner at the front
+    c.moveTo(hx - 5.6, hy - 6.3);
+    c.lineTo(hx - 4.8, hy - 7.4);
+    c.lineTo(hx + 4.4, hy - 9.2);                     // the sharp top corner
+    c.lineTo(hx + 5.8, hy - 6.3);
   }, 0.45);
   ctx.fillStyle = DAN_FIG.capShade;
-  ctx.fillRect(hx - 5.2, hy - 6.8, 10.4, 0.5);        // the crown's seam
+  ctx.fillRect(hx - 5.4, hy - 6.8, 11, 0.5);          // the crown's seam
   ctx.fillStyle = DAN_FIG.buckle;
-  ctx.fillRect(hx + 2.6, hy - 8.1, 1.2, 1.1);         // badge at the front of the crown
-  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak
-    c.moveTo(hx + 1.6, hy - 5.2); c.lineTo(hx + 7.6, hy - 4.4);
-    c.quadraticCurveTo(hx + 7.8, hy - 3.6, hx + 6.6, hy - 3.6); c.lineTo(hx + 1.6, hy - 4.3);
+  ctx.fillRect(hx + 2.8, hy - 8.3, 1.2, 1.1);         // badge at the front of the crown
+  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak: a sharp point out over the eyes
+    c.moveTo(hx + 1.6, hy - 5.3); c.lineTo(hx + 8.2, hy - 4.0); c.lineTo(hx + 6.0, hy - 3.6); c.lineTo(hx + 1.6, hy - 4.3);
   }, 0.45);
   ctx.restore();
 }
