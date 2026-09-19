@@ -92,9 +92,11 @@ the lifts' marks, the doors, the parts, the pickups, the mechanism's lights.
 `--door` cuts the door slabs out of shut-and-open pairs of screens,
 `--objects` takes the original's gun tables, lifts the floor guns off the
 backdrops and records every gun's place, span and wall colour, `--solid`
-packs the original's own flag map of the cells it draws in front of the
+packs the original's own flag map: the cells it draws in front of the
 figures (walls, walkways, shafts, doorways), so the room hides Dan's feet on
-a walkway and hides him in a doorway or a shaft as the original does, `--arrow`
+a walkway and hides him in a doorway or a shaft as the original does, and
+the cells that stop him walking (walls, steps, the lifts' stations - checked
+in the emulator: he cannot walk into 118's step or past 120's posts), `--arrow`
 finds the lifts' scrolling arrow cells (in any of their eight phases) so the
 game can animate them, and `--button` finds the call buttons beside them,
 whose colours the game cycles while a lift is called or moving, as the
