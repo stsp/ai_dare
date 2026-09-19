@@ -86,7 +86,8 @@ many times by the emulator surveys, and again with Dan stepped and jumped
 about in it; `tools/make_rooms.py` takes, cell by cell, the value most dumps
 agree on, so Dan, the Treens and the message boxes fall away, wipes the parts
 of the mechanism, writes the cleaned screens back to `data/emu` and packs the
-play areas into `assets/rooms.png`. The game lays its own things over them:
+play areas (the original's rows 0-17, so its floor courses meet the level's)
+into `assets/rooms.png`. The game lays its own things over them:
 the lifts' marks, the doors, the parts, the pickups, the mechanism's lights.
 `--door` cuts the door slabs out of shut-and-open pairs of screens,
 `--objects` takes the original's gun tables, lifts the floor guns off the
@@ -155,7 +156,10 @@ space, enter or escape is pressed.
   seeded hash of the room; on the screen he lands on and in the hologram room
   there are none to start with. A few seconds after he arrives, while fewer
   than two are about, one runs in from beyond the edge away from Dan at the
-  original's pace, closes to a few cells and pauses before firing. A guard
+  original's pace, comes well clear of the wall, closes to a few cells and
+  pauses before firing. Some of them take the grav-lifts: to Dan's floor when
+  he is on another floor of the same room, and after him when he rides out
+  while they are giving chase, arriving behind him in the next room. A guard
   shot stands with his arms up for a moment, then is gone, for fifty points;
   both moments sound the original's beeper bursts. The fourth sector is unguarded. Pickups are
   procedural, from a seeded hash of each room. The five parts of the mechanism lie where the original keeps them

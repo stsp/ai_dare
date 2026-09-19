@@ -47,10 +47,9 @@ function makeGuns(key) {
   const list = (window.ROOMS_SHEET && window.ROOMS_SHEET.guns && window.ROOMS_SHEET.guns[key]) || [];
   return list.map(([type, x, y, w, fill], i) => {
     const id = key + ":" + i;
-    // a floor gun is drawn on the floor course; Dan's feet rest on that course's lower edge, so
-    // its box - the eight rows his hop must clear - sits a row under where it is drawn
+    // a floor gun sits on the floor course, its eight rows the ones Dan's hop must clear
     const floor = type === GUN_FLOOR;
-    return { id, type, x, y, w, h: floor ? 8 : 16, cy: floor ? y + 8 : y, fill, dead: state.deadGuns.has(id) };
+    return { id, type, x, y, w, h: floor ? 8 : 16, cy: y, fill, dead: state.deadGuns.has(id) };
   });
 }
 

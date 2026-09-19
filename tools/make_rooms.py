@@ -6,7 +6,7 @@ a Treen or a message box somewhere in it. Cell by cell, the value most of the
 dumps agree on is the room itself; the sprites and boxes fall away. The parts
 of the mechanism are wiped too (the game lays its own), and a message box
 that every dump shows is rebuilt from the band's pattern. The cleaned screens
-go back to data/emu, and their play areas (columns 1-30, rows 1-18: 240 by
+go back to data/emu, and their play areas (columns 1-30, rows 0-17: 240 by
 144, what the game's view shows) are packed into assets/rooms.png with an
 index in js/rooms_sheet.js.
 
@@ -229,7 +229,7 @@ def main():
             gone = erase_sprites(tiles, attr, masks)
             if gone: print(f"room {n}: {gone} figure(s) wiped by shape", file=sys.stderr)
         save(os.path.join(args.screens, f"room_{n}.scr"), tiles, attr)
-        im = Image.fromarray(rgb(tiles, attr, 1, 19, 1, 31))
+        im = Image.fromarray(rgb(tiles, attr, 0, 18, 1, 31))
         x, y = (i % per_row) * 240, (i // per_row) * 144
         sheet.paste(im, (x, y))
         index[str(n)] = [x, y]
@@ -256,11 +256,11 @@ def main():
                     pa = a[r, side]
                     fill = PALETTE[(pa >> 3) & 7]
                     if pa & 0x40: fill = fill.replace("d8", "ff")
-                out.append([kind, (c - 1) * 8, (r - 1) * 8, w * 8, fill])
+                out.append([kind, (c - 1) * 8, r * 8, w * 8, fill])
             guns[str(n)] = out
             save(path, t, a)
             x0, y0 = index[str(n)]
-            sheet.paste(Image.fromarray(rgb(t, a, 1, 19, 1, 31)), (x0, y0))
+            sheet.paste(Image.fromarray(rgb(t, a, 0, 18, 1, 31)), (x0, y0))
         print(f"{sum(len(v) for v in guns.values())} guns in {len(guns)} rooms")
     # lift arrows: the cell scrolls a pixel every four frames; any phase of it, up or down, marks one
     arrows = {}
@@ -278,7 +278,7 @@ def main():
                 for r in range(3, 17):
                     for c in range(1, 31):
                         d = phases.get(t[r, c].tobytes())
-                        if d: seen[(r, c)] = [(c - 1) * 8, (r - 1) * 8, d, int(a[r, c])]   # and the cell's colours
+                        if d: seen[(r, c)] = [(c - 1) * 8, r * 8, d, int(a[r, c])]   # and the cell's colours
             if seen: arrows[str(n)] = list(seen.values())
         print(f"{sum(len(v) for v in arrows.values())} lift arrows in {len(arrows)} rooms")
         arrow_bits = [int(v) for v in base]
@@ -309,7 +309,7 @@ def main():
             for (r, c) in cells: to[r, c] = tp[r, c]; ao[r, c] = ap_[r, c]
             save(path, to, ao)
             x0, y0 = index[str(n)]
-            sheet.paste(Image.fromarray(rgb(to, ao, 1, 19, 1, 31)), (x0, y0))
+            sheet.paste(Image.fromarray(rgb(to, ao, 0, 18, 1, 31)), (x0, y0))
         else:
             ref = slab.get(side)
             if not ref: print(f"door {room} {side}: no reference slab yet", file=sys.stderr); continue
@@ -331,7 +331,7 @@ def main():
         for k, d in doors.items():
             r0, r1, c0, c1 = d["box"]; im = d["img"]
             extra.paste(im, (x, 0))
-            door_index[k] = [x, sheet.height, im.width, im.height, (c0 - 1) * 8, (r0 - 1) * 8]   # in the sheet; where in the view
+            door_index[k] = [x, sheet.height, im.width, im.height, (c0 - 1) * 8, r0 * 8]   # in the sheet; where in the view
             x += im.width + 4
         full = Image.new("RGB", (sheet.width, sheet.height + 64), (0, 0, 0)); full.paste(sheet, (0, 0)); full.paste(extra, (0, sheet.height))
         sheet = full
