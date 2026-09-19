@@ -1256,15 +1256,6 @@ function draw() {
   drawGuns(ctx);
   if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase, state.backdrop);
 
-  for (const p of pickups) {
-    if (!p.taken) {                              // the original's cup: white on its own black cell
-      ctx.fillStyle = C.black; ctx.fillRect(Math.round(p.x), Math.round(p.y), 8, 16);
-      drawBits(ctx, CUP_BITS, Math.round(p.x), Math.round(p.y), [C.bwhite]);
-    }
-  }
-  for (const k of sdsParts) {
-    if (!k.taken && k.key === key && k.id === state.fitted) drawPartBox(ctx, Math.round(k.x), Math.round(k.y));
-  }
   if (boss && !state.backdrop) {                      // the backdrop already holds the original's hologram
     boss.anim += 0.05;
     const bob = Math.round(Math.sin(boss.anim) * 2);
@@ -1283,6 +1274,17 @@ function draw() {
   // as in the original, the room stands in front of the figures: the walkways
   // hide their feet, the shafts and doorways hide whoever passes through them
   drawForeground(ctx, key);
+  // the cups and the parts are tiles of the room in the original, flagged to
+  // stand in front of the figures like the walls: drawn after them
+  for (const p of pickups) {
+    if (!p.taken) {                              // the original's cup: white on its own black cell
+      ctx.fillStyle = C.black; ctx.fillRect(Math.round(p.x), Math.round(p.y), 8, 16);
+      drawBits(ctx, CUP_BITS, Math.round(p.x), Math.round(p.y), [C.bwhite]);
+    }
+  }
+  for (const k of sdsParts) {
+    if (!k.taken && k.key === key && k.id === state.fitted) drawPartBox(ctx, Math.round(k.x), Math.round(k.y));
+  }
   drawLiftMarks(ctx, key, room);
   drawGates(ctx, key, room);
   for (const l of lasers) {
