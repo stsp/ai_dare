@@ -99,8 +99,8 @@ the cells that stop him walking (walls, steps, the lifts' stations - checked
 in the emulator: he cannot walk into 118's step or past 120's posts), `--arrow`
 finds the lifts' scrolling arrow cells (in any of their eight phases) so the
 game can animate them, and `--button` finds the call buttons beside them,
-whose colours the game cycles while a lift is called or moving, as the
-original does.
+which blink while a lift is moving as the original's do: the two take turns,
+magenta and red, swapping every four frames, both blue as the ride begins.
 
 Dan, the Treens and the Mekon are the project's own figures, drawn as
 vectors (`js/figures.js`), with Dan's head from the project's own renders.
