@@ -68,7 +68,9 @@ emulator page on `http://127.0.0.1:8802/`.
   recorded: loads a snapshot with Dan on that floor, walks him to the cell,
   presses Q or A and traces his y. A ride moves him 3-5 px a frame the way
   the key says; anything else (a fall, no movement) is a call the survey
-  imagined. `data/emu/phantom_lifts.json` lists the calls found false, and
+  imagined. `--place` retries the calls no walk could reach with Dan's x and y
+  poked onto the cell; put down in the air he lands first, and the result
+  says which floor the key was pressed on. `data/emu/phantom_lifts.json` lists the calls found false, and
   `build_level.py --fake-lifts` leaves them out of the level.
 * `merge_graphs.py OUT g1 g2 ...` merges surveys (nodes first-wins).
 * `run_fsnaps.sh START END INTERVAL DIR` plays the published RZX walkthrough

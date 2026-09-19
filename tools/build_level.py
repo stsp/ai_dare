@@ -825,9 +825,18 @@ def main():
             parts.append({"room": room, "x": int(cell)} if cell else {"room": room})
     if args.fake_lifts:
         # lift calls the emulator showed to be a jump or a fall at a gap's edge, not a lift
-        fake = {(f["from"], f["kind"], f["x0"], f["feet"]) for f in json.load(open(args.fake_lifts))}
-        before = len(links)
-        links = [l for l in links if (l["from"], l["kind"], l.get("x0"), l.get("feet")) not in fake]
+        # (a call made in the air over a real lift carries "feet_to": the floor the ride really starts from)
+        fake = {(f["from"], f["kind"], f["x0"], f["feet"]): f.get("feet_to") for f in json.load(open(args.fake_lifts))}
+        before, kept = len(links), []
+        have = {(l["from"], l["kind"], l.get("x0"), l.get("feet")) for l in links}
+        for l in links:
+            k = (l["from"], l["kind"], l.get("x0"), l.get("feet"))
+            if k not in fake:
+                kept.append(l)
+            elif fake[k] is not None and (k[0], k[1], k[2], fake[k]) not in have:
+                have.add((k[0], k[1], k[2], fake[k]))
+                kept.append({**l, "feet": fake[k]})
+        links = kept
         print(f"{before - len(links)} phantom lift calls left out")
     level = {
         "source": geo.get("source"),

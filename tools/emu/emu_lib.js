@@ -45,4 +45,4 @@ async function boot(opts = {}) {
   const shot = (name) => page.screenshot({ path: OUT + name, clip: { x: 40, y: 52, width: 240, height: 144 } });
   return { browser, page, loadFile, peek, room, shot, OUT };
 }
-module.exports = { boot, OUT };
+module.exports = { boot, OUT, POKES };

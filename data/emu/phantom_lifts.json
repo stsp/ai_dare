@@ -306,5 +306,279 @@
 "x0": 8,
 "feet": 64,
 "why": "a jump or a fall, not a ride: 62,62,65,65,65,69,69,69,74,74,74,80"
+},
+{
+"from": "121",
+"kind": "up",
+"x0": 20,
+"feet": 72,
+"why": "made in the air: no floor at 72, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "150",
+"kind": "up",
+"x0": 6,
+"feet": 72,
+"why": "made in the air: no floor at 72, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "156",
+"kind": "down",
+"x0": 17,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "156",
+"kind": "up",
+"x0": 17,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "210",
+"kind": "down",
+"x0": 3,
+"feet": 80,
+"why": "no floor at 80; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "210",
+"kind": "up",
+"x0": 3,
+"feet": 80,
+"why": "no floor at 80; put on the floor at 128 the key gives no ride: 119,119,119,116,116,116,114,114,114,113,113,113"
+},
+{
+"from": "210",
+"kind": "down",
+"x0": 16,
+"feet": 80,
+"why": "no floor at 80; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "210",
+"kind": "down",
+"x0": 17,
+"feet": 80,
+"why": "no floor at 80: put there Dan fell out of the room (y 75 -> 35)"
+},
+{
+"from": "212",
+"kind": "down",
+"x0": 11,
+"feet": 80,
+"why": "no floor at 80; put on the floor at 128 the key gives no ride: 124,124,124,126,126,126,129,129,129,133,133,133"
+},
+{
+"from": "212",
+"kind": "down",
+"x0": 12,
+"feet": 80,
+"why": "no floor at 80: put there Dan fell out of the room (y 75 -> 35)"
+},
+{
+"from": "213",
+"kind": "up",
+"x0": 1,
+"feet": 71,
+"why": "no floor at 71; put on the floor at 80 the key gives no ride: 75,75,75,75,75,75,75,75,75"
+},
+{
+"from": "213",
+"kind": "down",
+"x0": 12,
+"feet": 71,
+"why": "no floor at 71: put there Dan fell out of the room (y 66 -> 35)"
+},
+{
+"from": "213",
+"kind": "down",
+"x0": 13,
+"feet": 71,
+"why": "no floor at 71: put there Dan fell out of the room (y 66 -> 35)"
+},
+{
+"from": "216",
+"kind": "down",
+"x0": 16,
+"feet": 96,
+"why": "no floor at 96: put there Dan fell out of the room (y 91 -> 35)"
+},
+{
+"from": "219",
+"kind": "down",
+"x0": 12,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "219",
+"kind": "down",
+"x0": 13,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "219",
+"kind": "up",
+"x0": 13,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,119,119,119,116,116,116,114,114,114,113"
+},
+{
+"from": "242",
+"kind": "down",
+"x0": 15,
+"feet": 48,
+"why": "made in the air: no floor at 48, the ride is from 64",
+"feet_to": 64
+},
+{
+"from": "245",
+"kind": "down",
+"x0": 10,
+"feet": 56,
+"why": "no floor at 56; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "245",
+"kind": "down",
+"x0": 23,
+"feet": 56,
+"why": "no floor at 56; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "245",
+"kind": "up",
+"x0": 10,
+"feet": 56,
+"why": "no floor at 56; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "245",
+"kind": "up",
+"x0": 23,
+"feet": 56,
+"why": "no floor at 56; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "248",
+"kind": "up",
+"x0": 19,
+"feet": 109,
+"why": "made in the air: no floor at 109, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "248",
+"kind": "up",
+"x0": 19,
+"feet": 100,
+"why": "made in the air: no floor at 100, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "249",
+"kind": "up",
+"x0": 11,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,119,119,119,116,116,116,114,114,114,113"
+},
+{
+"from": "253",
+"kind": "up",
+"x0": 21,
+"feet": 118,
+"why": "made in the air: no floor at 118, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "55",
+"kind": "down",
+"x0": 19,
+"feet": 57,
+"why": "no floor at 57; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "55",
+"kind": "up",
+"x0": 19,
+"feet": 57,
+"why": "no floor at 57; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "60",
+"kind": "down",
+"x0": 17,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,123,123,123,123,123,123,123,123,123,123"
+},
+{
+"from": "60",
+"kind": "up",
+"x0": 13,
+"feet": 121,
+"why": "made in the air: no floor at 121, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "60",
+"kind": "up",
+"x0": 18,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 128 the key gives no ride: 123,123,119,119,119,116,116,116,114,114,114,113"
+},
+{
+"from": "61",
+"kind": "up",
+"x0": 21,
+"feet": 64,
+"why": "no floor at 64; put on the floor at 72 the key gives no ride: 63,63,63,60,60,60,58,58,58,57,57,57"
+},
+{
+"from": "89",
+"kind": "down",
+"x0": 17,
+"feet": 81,
+"why": "no floor at 81: put there Dan fell out of the room (y 76 -> 35)"
+},
+{
+"from": "89",
+"kind": "down",
+"x0": 18,
+"feet": 81,
+"why": "no floor at 81: put there Dan fell out of the room (y 76 -> 35)"
+},
+{
+"from": "94",
+"kind": "up",
+"x0": 20,
+"feet": 100,
+"why": "made in the air: no floor at 100, the ride is from 128",
+"feet_to": 128
+},
+{
+"from": "117",
+"kind": "down",
+"x0": 22,
+"feet": -1,
+"why": "no floor at that column on any level: a fall into 149, which the drop link has"
+},
+{
+"from": "217",
+"kind": "down",
+"x0": 18,
+"feet": -1,
+"why": "no floor at that column on any level: a fall into 249, which the drop link has"
+},
+{
+"from": "212",
+"kind": "down",
+"x0": 0,
+"feet": -1,
+"why": "no ride from any floor at that column (A held 30 frames)"
 }
 ]

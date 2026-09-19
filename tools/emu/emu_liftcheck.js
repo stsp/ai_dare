@@ -2,11 +2,13 @@
 // him to the call's cell, press up or down, and watch his height. A grav-lift carries him steadily;
 // a jump peaks ten pixels up and comes back; a fall needs no key at all. Calls that do not ride are
 // phantoms - a jump or a fall at a gap's edge that the survey took for a ride.
-//   node emu_liftcheck.js SNAP_INDEX.json OUT.json      (DANDARE_WORK holds the snapshots; level.json in cwd)
-const { boot, OUT } = require('./emu_lib');
+//   node emu_liftcheck.js SNAP_INDEX.json OUT.json [--place]   (DANDARE_WORK holds the snapshots; level.json in cwd)
+// With --place, the calls no walk could reach are retried with Dan put straight on the cell (his x and y poked).
+const { boot, OUT, POKES } = require('./emu_lib');
 const fs = require('fs');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1] };
 const [indexFile, outFile] = process.argv.slice(2);
+const PLACE = process.argv.includes('--place');
 (async () => {
   const level = JSON.parse(fs.readFileSync('level.json', 'utf8'));
   const index = JSON.parse(fs.readFileSync(OUT + indexFile, 'utf8'));
@@ -25,9 +27,15 @@ const [indexFile, outFile] = process.argv.slice(2);
     window.__pos = async () => { const d = await __peek(0xC012, 2); const rm = await __peek(0x6297, 1); return { x: d[1], y: d[0], room: rm[0] }; };
     // walk to a cell, then press the key and trace the height
     window.__try = async (cell, key, walkKeys) => {
-      let p = await __pos(); const room = p.room, y0 = p.y;
+      let p = await __pos(); const room = p.room; let y0 = p.y;
       for (let i = 0; i < 30; i++) await __frame();                       // let the room settle
-      p = await __pos(); if (p.y !== y0) return { verdict: 'unsettled', y0, y: p.y };
+      p = await __pos();
+      if (p.y !== y0) {                                                   // put down in the air: let him land, then go on from there
+        let same = 0, last = p.y;
+        for (let i = 0; i < 90 && same < 10; i++) { await __frame(); p = await __pos(); if (p.room !== room) return { verdict: 'fell out of the room', y0, y: p.y }; same = p.y === last ? same + 1 : 0; last = p.y; }
+        if (same < 10) return { verdict: 'unsettled', y0, y: p.y };
+        y0 = p.y;
+      }
       let fell = false;
       for (let i = 0; i < 260 && p.x !== cell; i++) {
         const k = p.x < cell ? walkKeys.P : walkKeys.O; __key(k[0], k[1], true); await __frame(); __key(k[0], k[1], false);
@@ -47,13 +55,14 @@ const [indexFile, outFile] = process.argv.slice(2);
     };
   });
   for (const [k, l] of calls) {
-    if (results[k]) continue;
+    if (results[k] && (!PLACE || results[k].verdict === 'traced')) continue;
     const feet = l.feet;
-    const snaps = (index[l.from] || []).filter(([f, x, y]) => Math.abs(y + 5 - feet) <= 6);
+    let snaps = (index[l.from] || []).filter(([f, x, y]) => Math.abs(y + 5 - feet) <= 6);
+    if (PLACE) snaps = index[l.from] || [];
     if (!snaps.length) { results[k] = { verdict: 'no snapshot on that floor' }; continue; }
     // the snapshot with Dan nearest the cell
     snaps.sort((a, b) => Math.abs(a[1] - l.x0) - Math.abs(b[1] - l.x0));
-    await E.loadFile(snaps[0][0]);
+    await E.loadFile(snaps[0][0], PLACE ? { ...POKES, 0xC012: feet - 5, 0xC013: l.x0 } : POKES);
     const r = await E.page.evaluate(([cell, key, walk]) => __try(cell, key, walk), [l.x0, KEYS[l.kind === 'up' ? 'Q' : 'A'], { P: KEYS.P, O: KEYS.O }]);
     if (r.verdict === 'traced') {
       const t = r.trace, y0 = r.y0;
@@ -62,7 +71,7 @@ const [indexFile, outFile] = process.argv.slice(2);
       else r.ride = t[7] >= y0 + 6 && t[15] >= y0 + 16 && t.slice(0, 16).every((y, i) => i === 0 || y >= t[i - 1]);   // down at once, steadily
       r.summary = `${l.from} ${l.kind} at ${l.x0} feet ${feet}: y ${y0} -> ${t.slice(0, 20).join(',')} ${r.ride ? 'RIDE' : 'no ride'}`;
     } else r.summary = `${l.from} ${l.kind} at ${l.x0} feet ${feet}: ${r.verdict}`;
-    r.link = l; results[k] = r;
+    r.link = l; if (PLACE) r.placed = true; results[k] = r;
     console.log(r.summary);
     fs.writeFileSync(OUT + outFile, JSON.stringify(results));
   }
