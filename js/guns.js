@@ -168,7 +168,7 @@ function gunsUnderDan(prevFeet) {
       state.deadGuns.add(g.id);
       state.score += GUN_CRUSH_SCORE;
       note(tx(["DAN CAN CRUSH FLOOR GUNS"]), 2.5);
-      gunSound("crush");
+      beeperBurst("crush");
     }
   }
 }
@@ -181,40 +181,8 @@ function gunsShotBy(l) {
       g.dead = true;
       state.deadGuns.add(g.id);
       state.invert = 2 * FRAME;
-      gunSound("shot");
+      beeperBurst("gunShot");
       l.cells = 0;
     }
   }
-}
-
-/** The original's beeper bursts for the two ends a gun can meet: its sound
- *  routine steps a bit pattern round, holding each edge for a count that
- *  drifts by a step every so many toggles (the records at C804 and C809). */
-const GUN_SOUNDS = { crush: [0x80, 0x20, 0x19, 2, 0x5a], shot: [0x40, 0x18, 0x21, 3, 0x54] };
-function gunSound(which) {
-  const [hold0, outer, step, inner, bits0] = GUN_SOUNDS[which];
-  try {
-    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-    const sr = actx.sampleRate, T = 3500000;
-    const samples = [];
-    let hold = hold0, bits = bits0, t = 0, level = 0;
-    for (let d = 0; d < outer; d++) {
-      for (let h = 0; h < inner; h++) {
-        bits = ((bits << 1) | (bits >> 7)) & 0xff;
-        level = bits & 0x10 ? 0.6 : -0.3;
-        const dur = (13 * hold + 50) / T;                // the delay loop, in seconds
-        const n = Math.round((t + dur) * sr) - samples.length;
-        for (let i = 0; i < n; i++) samples.push(level);
-        t += dur;
-      }
-      hold = (hold + step) & 0xff;
-      t += 47 / T;
-    }
-    const buf = actx.createBuffer(1, samples.length, sr);
-    buf.getChannelData(0).set(samples);
-    const src = actx.createBufferSource(), g = actx.createGain();
-    src.buffer = buf; g.gain.value = 0.15;
-    src.connect(g); g.connect(actx.destination);
-    src.start();
-  } catch (e) { /* no audio available */ }
 }

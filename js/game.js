@@ -229,8 +229,9 @@ function spawnTreen(key, room) {
   const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
   const side = way[farSide] ? farSide : way[farSide === "right" ? "left" : "right"] ? (farSide === "right" ? "left" : "right") : null;
   if (!side) return;
-  const x = side === "right" ? Math.min(x1, VIEW_W - TREEN_W) : Math.max(x0, 0);
-  treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0 });
+  // he starts beyond the edge and runs in through the doorway, not from a cell inside it
+  const x = side === "right" ? VIEW_W : -TREEN_W;
+  treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true });
   if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
 }
 
@@ -685,7 +686,7 @@ function updateTreens(dt) {
     }
   }
   for (const t of treens) {
-    if (t.dying > 0) t.dying -= dt;              // his last moment after the shot that got him
+    if (t.dying > 0) { t.dying -= dt; if (t.dying <= 0) beeperBurst("treenGone"); }   // his last moment after the shot that got him
     if (t.dead) continue;
     const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
     const dx = (dan.x + DAN_W / 2) - (t.x + TREEN_W / 2);
@@ -712,8 +713,12 @@ function updateTreens(dt) {
       t.anim += dt * 9;
       t.x += t.dir * TREEN_RUN * dt;
     }
-    if (t.x <= t.x0) { t.x = t.x0; if (!inRange) t.dir = 1; }
-    if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!inRange) t.dir = -1; }
+    if (t.entering) {
+      if (t.x >= t.x0 && t.x + TREEN_W <= t.x1 + TREEN_W) t.entering = false;   // in, and on his beat
+    } else {
+      if (t.x <= t.x0) { t.x = t.x0; if (!inRange) t.dir = 1; }
+      if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!inRange) t.dir = -1; }
+    }
 
     if (dan.invuln <= 0 && !dan.onLift && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
       hurtDan(18);
@@ -730,7 +735,7 @@ function killTreen(t) {
   state.flash = TREEN_DEATH;                 // the original flashes the whole room
   if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
   state.deadTreens.get(state.room).add(t.id);
-  beep(160, 0.18, "sawtooth");
+  beeperBurst("treenHit");
 }
 
 /** A shot's dash hits whatever it crosses; the dead shot's streak fades.
@@ -740,7 +745,7 @@ function laserHit(l) {
     if (!t.dead && t.id !== l.by && overlaps(l.x, l.y, LASER_STEP, 2, t.x, t.y, TREEN_W, TREEN_H)) {
       killTreen(t);
       l.cells = 0;
-      if (l.friendly) state.score += 75;
+      if (l.friendly) state.score += 50;         // the original's fifty for a guard
     }
   }
   if (l.friendly) { gunsShotBy(l); return; }
@@ -887,6 +892,41 @@ function beep(freq, dur, type) {
  *  half-period grows from about one to seven samples at 44.1 kHz, every sixth
  *  a longer one - a falling chirp of seven and a half milliseconds. */
 let zapBuffer = null;
+/** The original's beeper bursts, from its five-byte sound records: its
+ *  routine steps a bit pattern round, holding each edge for a count that
+ *  drifts by a step after so many toggles. [hold, outer, step, inner, bits] */
+const BURSTS = {
+  treenHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
+  treenGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
+  crush: [0x80, 0x20, 0x19, 0x02, 0x5a],       // C804: a floor gun crushed
+  gunShot: [0x40, 0x18, 0x21, 0x03, 0x54],     // C809: a wall or ceiling gun shot
+};
+function beeperBurst(which) {
+  const [hold0, outer, step, inner, bits0] = BURSTS[which];
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const sr = actx.sampleRate, T = 3500000;
+    const samples = [];
+    let hold = hold0, bits = bits0, t = 0;
+    for (let d = 0; d < outer; d++) {
+      for (let h = 0; h < inner; h++) {
+        bits = ((bits << 1) | (bits >> 7)) & 0xff;
+        const level = bits & 0x10 ? 0.6 : -0.3;
+        t += (13 * (hold || 256) + 50) / T;             // the delay loop, in seconds
+        while (samples.length < t * sr) samples.push(level);
+      }
+      hold = (hold + step) & 0xff;
+      t += 47 / T;
+    }
+    const buf = actx.createBuffer(1, samples.length, sr);
+    buf.getChannelData(0).set(samples);
+    const src = actx.createBufferSource(), g = actx.createGain();
+    src.buffer = buf; g.gain.value = 0.15;
+    src.connect(g); g.connect(actx.destination);
+    src.start();
+  } catch (e) { /* no audio available */ }
+}
+
 function zap() {
   try {
     if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
