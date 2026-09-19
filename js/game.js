@@ -190,6 +190,9 @@ const PRISONS = placePrisons();
  *  to a few cells and pauses before he fires. The fourth sector is unguarded,
  *  as in the original. */
 const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
+const TREEN_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
+const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Dan
+const TREEN_CHASE = 3;           // seconds a guard counts as giving chase after he last had Dan in range
 const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
 // where none is about when Dan walks in, and they only run in after him:
@@ -209,7 +212,7 @@ function makeTreens(key, room) {
     const x = x0 + r() * (x1 - x0);
     if (Math.abs(x - dan.x) < 48 && Math.abs(p.y * 8 - TREEN_H - dan.y) < 24) continue;   // never on top of him
     if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
-    out.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0 });
+    out.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0, lifts: r() < TREEN_LIFT_CHANCE });
   }
   return out;
 }
@@ -231,8 +234,54 @@ function spawnTreen(key, room) {
   if (!side) return;
   // he starts beyond the edge and runs in through the doorway, not from a cell inside it
   const x = side === "right" ? VIEW_W : -TREEN_W;
-  treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true });
+  treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < TREEN_LIFT_CHANCE });
   if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
+}
+
+/** A guard who uses the lifts: Dan on another floor of this room, and a lift
+ *  on the guard's floor that stops at Dan's, and he heads for it; Dan riding
+ *  out of the room while the guard is giving chase, and he follows him onto
+ *  it, to arrive behind him in the next room. */
+function treenSeeksLift(t, key, room) {
+  const feet = t.y + TREEN_H;
+  const onHisFloor = (l) => l.feet != null && Math.abs(l.feet - feet) <= 14 &&
+                            l.x0 * 8 >= t.x0 - 8 && (l.x1 + 1) * 8 <= t.x1 + TREEN_W + 8;   // its cells on his beat
+  let link = null;
+  if (dan.onLift && dan.onLift.link && t.chase > 0 && onHisFloor(dan.onLift.link)) link = dan.onLift.link;   // after him
+  else if (dan.onGround) {
+    const danFeet = dan.y + DAN_H;
+    if (Math.abs(danFeet - feet) >= 12) link = EXITS[key].lifts.find((l) => l.to === key && l.stop != null && onHisFloor(l) && Math.abs(l.stop - danFeet) <= 14) || null;
+  }
+  if (!link) return;
+  t.lift = { link, x: ((link.x0 + link.x1 + 1) / 2) * 8 - TREEN_W / 2, wait: 0.3 + Math.random() * 1.2 };
+}
+function treenToLift(t, dt) {
+  const dx = t.lift.x - t.x;
+  t.fire = false;
+  if (Math.abs(dx) > 2) { t.dir = dx > 0 ? 1 : -1; t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9; return; }
+  t.lift.wait -= dt;                                  // a moment on the cells before the field takes him
+  if (t.lift.wait > 0) return;
+  const l = t.lift.link;
+  t.riding = { dir: l.kind === "down" ? 1 : -1, stop: l.stop, out: l.to !== state.room, to: l.to };
+  t.lift = null;
+}
+function rideTreen(t, dt, room) {
+  const r = t.riding;
+  t.fire = false;
+  t.y += r.dir * LIFT_SPEED * dt;
+  const feet = t.y + TREEN_H;
+  if (r.out) {
+    // off the screen after Dan: he arrives in the next room when Dan does
+    if (t.y + TREEN_H < 0 || t.y > VIEW_H) { t.dead = true; t.gone = true; state.pursuer = { room: r.to, x: t.x, dir: r.dir, stop: r.stop }; }
+    return;
+  }
+  if ((r.dir > 0 && feet >= r.stop) || (r.dir < 0 && feet <= r.stop)) {
+    t.y = r.stop - TREEN_H;
+    const p = platformsOf(room).find((p) => Math.abs(p.y - r.stop) <= 14 && t.x + TREEN_W > p.x0 - 8 && t.x < p.x1 + 8);
+    if (p) { t.x0 = p.x0; t.x1 = p.x1 - TREEN_W; }
+    t.riding = null;
+    t.dir = dan.x > t.x ? 1 : -1;
+  }
 }
 
 function widestPlatformOf(room) {
@@ -274,6 +323,7 @@ const state = {
   treenClock: 0, treenNext: 0,   // the next arrival
   deadTreens: new Map(),   // room -> which of its guards have been shot
   deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
+  pursuer: null,           // a guard riding the lift after Dan into the next room
   invert: 0,               // the screen inverted after a gun is shot, seconds left
   burst: 0,              // lift-transfer flash, seconds left
   flash: 0,              // the room's colours cycling after a guard is shot, seconds left
@@ -298,6 +348,9 @@ function resetDan(x, y) {
 }
 
 function enterRoom(key, x, y) {
+  // a guard riding the lift out after Dan is still on his way when Dan arrives
+  const chaser = treens.find((t) => !t.dead && t.riding && t.riding.out && t.riding.to === key);
+  if (chaser) state.pursuer = { room: key, x: chaser.x, dir: chaser.riding.dir, stop: chaser.riding.stop };
   state.room = key;
   // the original ends the game the moment Dan steps into the launch bay -
   // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
@@ -308,6 +361,13 @@ function enterRoom(key, x, y) {
   state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
   if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
   pickups = makePickups(key, room);
+  // a guard who took the lift after Dan rides in behind him
+  if (state.pursuer && state.pursuer.room === key) {
+    const q = state.pursuer;
+    treens.push({ id: state.treenSeq++, x: q.x, y: q.dir > 0 ? -TREEN_H : VIEW_H, x0: 0, x1: VIEW_W - TREEN_W, dir: 1, anim: 0, dead: false, react: 0,
+                  lifts: true, riding: { dir: q.dir, stop: q.stop, out: false } });
+  }
+  state.pursuer = null;
   guns = makeGuns(key);
   gunShots = [];
   lasers = [];
@@ -688,9 +748,13 @@ function updateTreens(dt) {
   for (const t of treens) {
     if (t.dying > 0) { t.dying -= dt; if (t.dying <= 0) beeperBurst("treenGone"); }   // his last moment after the shot that got him
     if (t.dead) continue;
+    if (t.riding) { rideTreen(t, dt, room); continue; }
+    if (t.lift) { treenToLift(t, dt); continue; }
     const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
     const dx = (dan.x + DAN_W / 2) - (t.x + TREEN_W / 2);
-    const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0;
+    const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0 && !t.entering;   // not from the doorway
+    if (inRange) t.chase = TREEN_CHASE; else if (t.chase > 0) t.chase -= dt;
+    if (t.lifts && !inRange) treenSeeksLift(t, key, room);
     t.react = inRange ? t.react + dt : 0;        // he takes a moment before he opens fire
     const engaged = inRange && t.react >= TREEN_REACT;
     t.fire = engaged;
@@ -714,7 +778,8 @@ function updateTreens(dt) {
       t.x += t.dir * TREEN_RUN * dt;
     }
     if (t.entering) {
-      if (t.x >= t.x0 && t.x + TREEN_W <= t.x1 + TREEN_W) t.entering = false;   // in, and on his beat
+      // in, and a few cells clear of the wall he came through, before he is one of the room's
+      if (t.x >= t.x0 + TREEN_CLEAR && t.x + TREEN_W <= t.x1 + TREEN_W - TREEN_CLEAR) t.entering = false;
     } else {
       if (t.x <= t.x0) { t.x = t.x0; if (!inRange) t.dir = 1; }
       if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!inRange) t.dir = -1; }
