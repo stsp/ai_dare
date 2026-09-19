@@ -22,8 +22,10 @@ def figure_mask(im):
     q = deque()
 
     def light(x, y):
+        # the checkerboard's two greys, and the soft grey shadow the render
+        # casts on it - anything colourless and not dark, reached from outside
         r, g, b = px[x, y][:3]
-        return min(r, g, b) >= 222 and max(r, g, b) - min(r, g, b) <= 14
+        return min(r, g, b) >= 120 and max(r, g, b) - min(r, g, b) <= 14
 
     for x in range(w):
         for y in (0, h - 1):
@@ -39,9 +41,8 @@ def figure_mask(im):
             if 0 <= nx < w and 0 <= ny < h and not seen[ny * w + nx] and light(nx, ny):
                 seen[ny * w + nx] = 1; q.append((nx, ny))
     mask = Image.frombytes("L", (w, h), bytes(0 if s else 255 for s in seen))
-    # shave the light fringe the flood leaves along the outline
-    mask = mask.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
-    return mask
+    # shave the fringe the flood leaves along the outline, and keep the edge crisp
+    return mask.filter(ImageFilter.MinFilter(5))
 
 
 def cut(im, mask, box):
@@ -96,39 +97,37 @@ def main():
 
     page = Image.new("RGB", (W, H), (255, 255, 255))
     d = ImageDraw.Draw(page)
-    # the frame: white, then a black line, as the original's
-    d.rectangle([0, 0, W - 1, H - 1], outline=(0, 0, 0), width=2)
-    d.rectangle([2 * K, 2 * K, W - 1 - 2 * K, H - 1 - 2 * K], outline=(0, 0, 0), width=2)
 
-    # the Mekon's panel, right, over the tech wall
+    # the Mekon's panel, right, over the tech wall: composed apart, so the
+    # figure is clipped to its panel and never crosses the frame's lines
     rx0, ry0, rx1, ry1 = 120 * K, 3 * K, 253 * K, 189 * K
-    wall = tech_wall(rx1 - rx0, ry1 - ry0)
-    page.paste(wall, (rx0, ry0))
+    right = tech_wall(rx1 - rx0, ry1 - ry0)
     mk = fit(mekon, rx1 - rx0, int((ry1 - ry0) * 1.02))
-    page.paste(mk, (rx0 + (rx1 - rx0 - mk.width) // 2, ry1 - mk.height), mk)
-    d.rectangle([rx0, ry0, rx1, ry1], outline=(0, 0, 0), width=2)
+    right.paste(mk, ((rx1 - rx0 - mk.width) // 2, ry1 - ry0 - mk.height), mk)
+    page.paste(right, (rx0, ry0))
 
     # Dan's panel, left, under the plaque
     lx0, ly0, lx1, ly1 = 3 * K, 43 * K, 116 * K, 189 * K
-    panel = Image.new("RGB", (lx1 - lx0, ly1 - ly0))
-    pd = ImageDraw.Draw(panel)
-    for y in range(panel.height):
-        t = y / panel.height
-        pd.line([(0, y), (panel.width, y)], fill=(int(10 + 20 * t), int(12 + 22 * t), int(30 + 40 * t)))
-    page.paste(panel, (lx0, ly0))
-    dn = fit(dan, lx1 - lx0, int((ly1 - ly0) * 1.04))
-    page.paste(dn, (lx0 + (lx1 - lx0 - dn.width) // 2, ly1 - dn.height), dn)
-    # keep the figure inside its panel: paint the margins back
-    d.rectangle([0, ly0, lx0 - 1, H], fill=(255, 255, 255)); d.rectangle([lx1 + 1, ly0, rx0 - 1, H], fill=(255, 255, 255))
-    d.rectangle([0, 0, W, 2 * K - 1], fill=(255, 255, 255)); d.rectangle([0, H - 2 * K, W, H], fill=(255, 255, 255))
+    left = Image.new("RGB", (lx1 - lx0, ly1 - ly0))
+    pd = ImageDraw.Draw(left)
+    for y in range(left.height):
+        t = y / left.height
+        pd.line([(0, y), (left.width, y)], fill=(int(10 + 20 * t), int(12 + 22 * t), int(30 + 40 * t)))
+    dn = fit(dan, lx1 - lx0, int((ly1 - ly0) * 0.97))       # the cap stays clear of the line above
+    left.paste(dn, ((lx1 - lx0 - dn.width) // 2, ly1 - ly0 - dn.height), dn)
+    page.paste(left, (lx0, ly0))
+
+    # the frame's lines
     d.rectangle([0, 0, W - 1, H - 1], outline=(0, 0, 0), width=2)
     d.rectangle([2 * K, 2 * K, W - 1 - 2 * K, H - 1 - 2 * K], outline=(0, 0, 0), width=2)
     d.rectangle([lx0, ly0, lx1, ly1], outline=(0, 0, 0), width=2)
     d.rectangle([rx0, ry0, rx1, ry1], outline=(0, 0, 0), width=2)
 
-    # the plaque, blank: the game letters it
+    # the plaque, blank - the game letters it - raised off the page as the
+    # original's is: a black shadow to the right and below, and a black rim
     px0, py0, px1, py1 = 2 * K, 2 * K, 176 * K, 41 * K
-    d.rectangle([px0, py0, px1, py1], fill=(214, 0, 0), outline=(0, 0, 0), width=3)
+    d.rectangle([px0 + 3 * K, py0 + 2 * K, px1 + 3 * K, py1 + 2 * K], fill=(0, 0, 0))
+    d.rectangle([px0, py0, px1, py1], fill=(214, 0, 0), outline=(0, 0, 0), width=K)
     page.save(out)
     print("wrote", out, page.size)
 
