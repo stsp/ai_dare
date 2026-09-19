@@ -191,6 +191,7 @@ const PRISONS = placePrisons();
  *  as in the original. */
 const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
 const TREEN_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
+const TREEN_BEHIND = 64;         // how far into the room Dan must be before one follows him in through his own door
 const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Dan
 const TREEN_CHASE = 3;           // seconds a guard counts as giving chase after he last had Dan in range
 const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
@@ -230,8 +231,12 @@ function spawnTreen(key, room) {
   const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
   const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) };
   const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
-  const side = way[farSide] ? farSide : way[farSide === "right" ? "left" : "right"] ? (farSide === "right" ? "left" : "right") : null;
-  if (!side) return;
+  const nearSide = farSide === "right" ? "left" : "right";
+  // through the door behind Dan only once he is well into the room: never
+  // straight at his back as he steps in
+  const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
+  const side = way[farSide] ? farSide : way[nearSide] && clear >= TREEN_BEHIND ? nearSide : null;
+  if (!side) { state.treenClock = state.treenNext; return; }         // try again next frame
   // he starts beyond the edge and runs in through the doorway, not from a cell inside it
   const x = side === "right" ? VIEW_W : -TREEN_W;
   treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < TREEN_LIFT_CHANCE });
