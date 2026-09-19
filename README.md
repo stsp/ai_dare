@@ -10,8 +10,12 @@ Open `index.html` in a browser. No build step, no dependencies, no server.
 ```
 O / P  or  ← →     run                Q / ↑    jump, and ride grav-lifts
 A / ↓              kneel              Space    fire
-Enter              start
+Enter              start              Escape   skip the intro or the ending
 ```
+
+Cheat codes, typed on the title page (or during play): `DOORS` opens every
+door, `PARTS` fits all five parts and starts the eleven-minute countdown,
+`TIME` stops the clock. They last until the page is reloaded.
 
 ## The mission
 
