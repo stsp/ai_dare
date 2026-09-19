@@ -205,11 +205,14 @@ function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
 // the screen he lands on, and the hologram's room
 function entryOnlyRoom(key, room) { return key === START.key || (LEVEL.boss && LEVEL.boss.room === key); }
 
+/** How many of a room's guards have been shot, over the whole game. */
+function deadHere(key) { return (state.deadTreens.get(key) || new Set()).size; }
+
 function makeTreens(key, room) {
   if (unguardedRoom(key, room) || entryOnlyRoom(key, room)) return [];
   const r = rng(hashKey(key));
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
-  const n = wide.length === 0 ? 0 : Math.floor(r() * 3);
+  const n = wide.length === 0 ? 0 : Math.min(Math.floor(r() * 3), TREEN_MAX - deadHere(key));   // the room's share, less the ones shot here
   const out = [];
   for (let i = 0; i < n; i++) {
     const p = wide[Math.floor(r() * wide.length)];
@@ -780,8 +783,10 @@ function moveBetweenRooms() {
 
 function updateTreens(dt) {
   const key = state.room, room = currentRoom();
-  // the next one arrives when his time comes, unless the room is unguarded, cleared, or full
-  if (!unguardedRoom(key, room) && !state.clearedRooms.has(key) && treens.filter((t) => !t.dead).length < TREEN_MAX) {
+  // the next one arrives when his time comes, unless the room is unguarded,
+  // cleared, or has had its share: a room's guards are TREEN_MAX in all, the
+  // ones shot here counted, so one left standing never brings another
+  if (!unguardedRoom(key, room) && !state.clearedRooms.has(key) && treens.filter((t) => !t.dead).length + deadHere(key) < TREEN_MAX) {
     state.treenClock += dt;
     if (state.treenClock >= state.treenNext) {
       state.treenClock = 0;
@@ -896,7 +901,7 @@ function updateLasers(dt) {
   }
   lasers = lasers.filter((l) => l.cells > 0 || l.trail.length);
 
-  if ((state.deadTreens.get(state.room) || new Set()).size >= TREEN_MAX && !treens.some((t) => !t.dead)) {   // two shot here and none left: the room is safe
+  if (deadHere(state.room) >= TREEN_MAX && !treens.some((t) => !t.dead)) {   // two shot here and none left: the room is safe
     const key = state.room;
     if (!state.clearedRooms.has(key)) {
       state.clearedRooms.add(key);
