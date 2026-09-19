@@ -1181,8 +1181,8 @@ function drawSplash(ctx) {
   if (Math.floor(state.phase * 2) % 2) {
     ctx.font = `bold ${Math.round(6 * k)}px "Liberation Sans", Arial, sans-serif`;
     ctx.lineWidth = 3 * k / 4; ctx.strokeStyle = C.black; ctx.fillStyle = C.bwhite;
-    ctx.strokeText(tx(["PRESS ANY KEY"])[0], 60 * k, 184 * k);
-    ctx.fillText(tx(["PRESS ANY KEY"])[0], 60 * k, 184 * k);
+    ctx.strokeText(tx(["PRESS SPACE"])[0], 60 * k, 184 * k);
+    ctx.fillText(tx(["PRESS SPACE"])[0], 60 * k, 184 * k);
   }
   ctx.restore();
 }
@@ -1234,7 +1234,7 @@ function frame(now) {
   state.phase += dt;
 
   if (state.mode === "splash") {
-    if (Object.keys(tapped).length) { state.mode = "title"; menu.t = 0; }
+    if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; }
   } else if (state.mode === "title") {
     updateMenu(dt);
     if (tapped.Enter || tapped.Space) beginIntro();

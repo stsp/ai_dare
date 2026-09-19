@@ -113,7 +113,7 @@ def main():
     page.paste(right, (rx0, ry0))
 
     # Dan's panel, left, under the plaque
-    lx0, ly0, lx1, ly1 = 3 * K, 43 * K, 116 * K, 189 * K
+    lx0, ly0, lx1, ly1 = 3 * K, 46 * K, 116 * K, 189 * K       # a white line below the plaque's shadow
     left = Image.new("RGB", (lx1 - lx0, ly1 - ly0))
     pd = ImageDraw.Draw(left)
     for y in range(left.height):
