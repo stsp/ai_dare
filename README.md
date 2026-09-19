@@ -145,8 +145,9 @@ bursts are synthesised from its sound records.
 top left, Dan under it, the Mekon beside him over a wall of blue panels - but
 drawn from the hi-res render in the repository root (`tools/make_title.py`
 cuts the two heads off the render's checkerboard). The game letters the
-plaque itself, so the story renames it, and shows the picture until a key is
-pressed.
+plaque itself in a bold slab serif (`assets/plaque.ttf`, DejaVu Serif Bold,
+licence beside it), so the story renames it, and shows the picture until
+space, enter or escape is pressed.
 
 ## Other departures
 

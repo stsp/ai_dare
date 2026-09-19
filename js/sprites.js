@@ -27,6 +27,8 @@ loadSheet("dan", window.DAN_SHEET);
 loadSheet("dan_head", window.DAN_SHEET && window.DAN_SHEET.head);   // his head alone, for the drawn figure to wear
 loadSheet("rooms", window.ROOMS_SHEET);   // the rooms as the original draws them, cleaned of sprites
 loadSheet("title", { image: "assets/title.png" });   // the loading picture, from the render
+// the plaque's lettering: a bold slab serif, as the original's, with the Cyrillic the story needs
+try { new FontFace("Plaque", "url(assets/plaque.ttf)").load().then((f) => document.fonts.add(f)); } catch (e) { /* the browser's serif will do */ }
 
 /** Draw a sheet frame with its feet on the floor of the hit box (bx, by, bw,
  *  bh) and its body over the box's centre. Returns false while the sheet is

@@ -1214,12 +1214,12 @@ function drawSplash(ctx) {
   const [a, b] = [tx(["DAN DARE"])[0], tx(["PILOT OF THE FUTURE"])[0]];
   ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   ctx.fillStyle = C.byellow;
-  ctx.font = `italic 900 ${Math.round(22 * k)}px "Arial Black", Impact, "Liberation Sans", sans-serif`;
+  ctx.font = `bold ${Math.round(21 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
   ctx.fillText(a, 89 * k, 27 * k, 168 * k);
-  ctx.font = `italic bold ${Math.round(8.5 * k)}px "Liberation Sans", Arial, sans-serif`;
+  ctx.font = `bold ${Math.round(8 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
   ctx.fillText(b, 89 * k, 38 * k, 168 * k);
   if (Math.floor(state.phase * 2) % 2) {
-    ctx.font = `bold ${Math.round(6 * k)}px "Liberation Sans", Arial, sans-serif`;
+    ctx.font = `bold ${Math.round(6 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
     ctx.lineWidth = 3 * k / 4; ctx.strokeStyle = C.black; ctx.fillStyle = C.bwhite;
     ctx.strokeText(tx(["PRESS SPACE"])[0], 60 * k, 184 * k);
     ctx.fillText(tx(["PRESS SPACE"])[0], 60 * k, 184 * k);
