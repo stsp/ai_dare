@@ -13,6 +13,13 @@ A / ↓              kneel              Space    fire
 Enter              start              Escape   skip the intro or the ending
 ```
 
+`1` on the title page opens the options, laid out as the original's: the
+control keys, and a third line the original never had - the story. Chosen,
+every message, the panel and the title tell of a policeman sent, in place of
+the postman, to carry the mailboxes of a rough district to the sorting
+office (`js/story.js`; the font gains Cyrillic for it). The original's words
+are the default, and the choice is remembered by the browser.
+
 Cheat codes, typed on the title page (or during play): `DOORS` opens every
 door, `PARTS` fits all five parts and starts the eleven-minute countdown,
 `TIME` stops the clock. They last until the page is reloaded.

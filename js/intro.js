@@ -7,7 +7,7 @@
 
 const MENU_PAGES = [
   ["* IPC / DAN DARE LIMITED", "* 1986  VIRGIN GAMES LTD", "WRITTEN BY THE GANG OF FIVE.", "",
-   "PRESS 'FIRE' TO PLAY", "OR ENTER TO START"],
+   "PRESS 'FIRE' TO PLAY", "OR '1' FOR OPTIONS"],
   ["BEST  SCORES", "", "AAAARRRRGGHH........000500", ".RAN................000400",
    "..OUT...............000300", "...OF...............000200", "....MEMORY..........000100"],
 ];
@@ -32,6 +32,15 @@ function drawBig(ctx, text, x, y, colour, k) {
   ctx.restore();
 }
 
+/** The title box, which the story renames. */
+function drawTitleBox(ctx) {
+  ctx.fillStyle = C.blue; ctx.fillRect(44, 4, 152, 50);
+  ctx.fillStyle = C.cyan; ctx.fillRect(46, 6, 148, 46);
+  const a = tx(["DAN DARE"])[0], b = tx(["PILOT OF THE FUTURE"])[0];
+  drawBig(ctx, a, 120 - textWidth(a) * 1.5, 11, C.blue, 3);
+  drawBig(ctx, b, 120 - textWidth(b) * 0.7, 36, C.blue, 1.4);
+}
+
 function drawMenu(ctx) {
   drawFrame(ctx);
   ctx.save();
@@ -42,11 +51,7 @@ function drawMenu(ctx) {
   ctx.fillStyle = C.white;
   ctx.fillRect(0, 34, VIEW_W, 1);
   ctx.fillRect(VIEW_W - 1, 34, 1, VIEW_H - 34);
-  // the title box
-  ctx.fillStyle = C.blue; ctx.fillRect(44, 4, 152, 50);
-  ctx.fillStyle = C.cyan; ctx.fillRect(46, 6, 148, 46);
-  drawBig(ctx, "DAN DARE", 120 - textWidth("DAN DARE") * 1.5, 11, C.blue, 3);
-  drawBig(ctx, "PILOT OF THE FUTURE", 120 - textWidth("PILOT OF THE FUTURE") * 0.7, 36, C.blue, 1.4);
+  drawTitleBox(ctx);
   // the page, its lines each in a colour of their own that keeps changing
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 56, VIEW_W, VIEW_H - 56); ctx.clip();
@@ -55,6 +60,7 @@ function drawMenu(ctx) {
   const y0 = 64 - menu.scroll;
   lines.forEach((ln, i) => {
     if (!ln) return;
+    ln = tx([ln])[0];
     const w = textWidth(ln) * 1.6;
     drawBig(ctx, ln, Math.max(2, 120 - w / 2), y0 + i * 12, CYCLE[(tick + i * 2) % CYCLE.length], 1.6);
   });
@@ -85,7 +91,7 @@ function updateIntro(dt) {
   intro.t += dt;
   intro.scroll += dt * 48;
   const s = intro.ship;
-  if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(["\"YOU WILL NOT SUCCEED, DARE!\""], INTRO_CALL); }
+  if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), INTRO_CALL); }
   else if (intro.phase === 1 && intro.t > INTRO_CALL) { intro.phase = 2; intro.t = 0; }
   else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.msgTop = null; }
   else if (intro.phase === 3 && intro.t > INTRO_DIGBY) { startGame(); state.score += intro.score; return; }
@@ -228,10 +234,10 @@ function drawIntro(ctx) {
       ctx.fillStyle = C.bwhite; ctx.fillRect(Math.round(f.x) - 1, Math.round(f.y) - 1, 3, 3);
     }
     for (const b of intro.bursts) { ctx.fillStyle = b.c; ctx.fillRect(Math.round(b.x), Math.round(b.y), 2, 2); }
-    if (intro.phase === 0) drawMessage(ctx, ["DAN AND DIGBY SPEED", "OVER THE ASTEROID!"], true);
+    if (intro.phase === 0) drawMessage(ctx, tx(["DAN AND DIGBY SPEED", "OVER THE ASTEROID!"]), true);
     if (intro.phase === 1 && state.msgBottom) drawMessage(ctx, state.msgBottom, false, true);
   } else {
-    drawMessage(ctx, ["DIGBY REMAINS ON THE SHIP", "AND AWAITS DAN'S RETURN"], true);
+    drawMessage(ctx, tx(["DIGBY REMAINS ON THE SHIP", "AND AWAITS DAN'S RETURN"]), true);
   }
   ctx.restore();
   drawPanel(ctx, state);

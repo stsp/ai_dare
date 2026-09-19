@@ -224,6 +224,7 @@ const state = {
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
   cheat: {},             // doors | parts | time, typed as codes; they last the session
+  story: "dare",         // whose words: the pilot's, or the policeman's (options page)
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
@@ -268,20 +269,20 @@ function enterRoom(key, x, y) {
   treens = treens.filter((t) => Math.abs(t.x - dan.x) > 28 || Math.abs(t.y - dan.y) > 24);
   if (treens.some((t) => !t.dead) && !state.alerted.has(key)) {
     state.alerted.add(key);
-    say(["INTRUDER ALERT !"], 2.5);
+    say(tx(["INTRUDER ALERT !"]), 2.5);
   }
   const zone = room.label || room.zone;                    // the number the original announces
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
-    say(["DAN IS NOW IN SECTOR " + zone], 2.5);
+    say(tx(["DAN IS NOW IN SECTOR #"], zone), 2.5);
     if (zone > 1) taunt();
   }
   // the Mekon's hologram: he waits on his dais in one room of the fifth sector
   boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
-  if (boss) say(["\"I SAY....IT'S A HOLOGRAM !\""], 3);   // every time he walks in, as in the original
+  if (boss) say(tx(["\"I SAY....IT'S A HOLOGRAM !\""]), 3);   // every time he walks in, as in the original
   if (key === SDS_ROOM) {
-    say(["THE SELF DESTRUCT ROOM"], 2.5);
-    if (state.carrying) note(["WALK TO THE LEFT", "TO FIT THE PART"], 3);
+    say(tx(["THE SELF DESTRUCT ROOM"]), 2.5);
+    if (state.carrying) note(tx(["WALK TO THE LEFT", "TO FIT THE PART"]), 3);
   }
 }
 
@@ -303,7 +304,7 @@ const TAUNTS = [
 ];
 /** He calls to gloat: on a new sector, a fitted part, a capture, and now and then. */
 function taunt() {
-  call(TAUNTS[state.taunts++ % TAUNTS.length], 3);
+  call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
   state.nextTaunt = 45 + Math.random() * 60;
 }
 
@@ -335,7 +336,7 @@ function startGame() {
   const spawn = widestPlatform(START.room);
   resetDan(16, spawn.y - DAN_H);
   enterRoom(START.key, 16, spawn.y - DAN_H);
-  say(["DAN LANDS ON", "THE ASTEROID"], 3);
+  say(tx(["DAN LANDS ON", "THE ASTEROID"]), 3);
 }
 
 // ------------------------------------------------------------------ collision
@@ -477,7 +478,7 @@ function updateDan(dt) {
         const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8);
         dan.onLift = null; dan.liftLatch = true;
         if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }   // else the broken lift: he falls
-        else if (lift.broken || (lift.link && lift.link.broken)) say(["OUT OF ORDER"], 3);
+        else if (lift.broken || (lift.link && lift.link.broken)) say(tx(["OUT OF ORDER"]), 3);
       }
     }
     // the field ends at the top of the shaft with no stop there: as in the
@@ -585,7 +586,7 @@ function moveBetweenRooms() {
     dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
     dan.liftLatch = true;
     // the one lift that is out of order: the original says so as he rides into its room
-    if (ride.broken || EXITS[ride.to].lifts.some((l) => l.broken && l.feet < 0)) say(["OUT OF ORDER"], 3);
+    if (ride.broken || EXITS[ride.to].lifts.some((l) => l.broken && l.feet < 0)) say(tx(["OUT OF ORDER"]), 3);
   } else if (dan.y + DAN_H > 130 && !dan.onLift && isOpen(zone(e.drops))) {
     // fell through a hole in the floor: the original switches rooms as soon
     // as he drops below the floor course, before his run carries him past it
@@ -594,7 +595,7 @@ function moveBetweenRooms() {
     enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
     dan.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
     dan.liftLatch = true;
-    if (ride.broken) say(["OUT OF ORDER"], 3);
+    if (ride.broken) say(tx(["OUT OF ORDER"]), 3);
   } else {
     // no way out that way: keep Dan on this screen
     if (dan.x < 0) dan.x = 0;
@@ -633,7 +634,7 @@ function updateTreens(dt) {
         lasers.push({
           x: t.dir > 0 ? tip : tip - LASER_STEP, y: t.y + 13,
           dir: t.dir, cells: LASER_MIN + Math.floor(Math.random() * (LASER_MAX - LASER_MIN + 1)),
-          trail: [], acc: 0, friendly: false,
+          trail: [], acc: 0, friendly: false, by: t.id,
         });
         zap();
       }
@@ -653,22 +654,28 @@ function updateTreens(dt) {
   }
 }
 
-/** A shot's dash hits whatever it crosses; the dead shot's streak fades. */
+/** A Treen shot: arms up, the room flashes, and he is gone. */
+function killTreen(t) {
+  t.dead = true;
+  t.dying = TREEN_DEATH;
+  state.flash = TREEN_DEATH;                 // the original flashes the whole room
+  if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
+  state.deadTreens.get(state.room).add(t.id);
+  beep(160, 0.18, "sawtooth");
+}
+
+/** A shot's dash hits whatever it crosses; the dead shot's streak fades.
+ *  A Treen's shot takes any Treen in its way but the one who fired it. */
 function laserHit(l) {
-  if (l.friendly) {
-    for (const t of treens) {
-      if (!t.dead && overlaps(l.x, l.y, LASER_STEP, 2, t.x, t.y, TREEN_W, TREEN_H)) {
-        t.dead = true;
-        t.dying = TREEN_DEATH;
-        state.flash = TREEN_DEATH;                 // the original flashes the whole room
-        if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
-        state.deadTreens.get(state.room).add(t.id);
-        l.cells = 0;
-        state.score += 75;
-        beep(160, 0.18, "sawtooth");
-      }
+  for (const t of treens) {
+    if (!t.dead && t.id !== l.by && overlaps(l.x, l.y, LASER_STEP, 2, t.x, t.y, TREEN_W, TREEN_H)) {
+      killTreen(t);
+      l.cells = 0;
+      if (l.friendly) state.score += 75;
     }
-  } else if (overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
+  }
+  if (l.friendly) return;
+  if (overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
              !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
     // the beam strikes him: he flickers, and now and then the rattle of it sounds
     dan.hurt = Math.max(dan.hurt, 0.25);
@@ -709,7 +716,7 @@ function updateLasers(dt) {
     const key = state.room;
     if (!state.clearedRooms.has(key)) {
       state.clearedRooms.add(key);
-      note(["THIS ROOM IS SAFE"], 1.8);
+      note(tx(["THIS ROOM IS SAFE"]), 1.8);
     }
   }
 }
@@ -723,7 +730,7 @@ function hurtDan(amount) {
 }
 
 function fellTooFar() {
-  note(["DAN FELL TOO FAR!"], 3);
+  note(tx(["DAN FELL TOO FAR!"]), 3);
   capture();
 }
 
@@ -737,7 +744,7 @@ function capture() {
   const p = highestPlatform(ROOMS[cell]);
   resetDan(p.x, p.y - DAN_H);
   enterRoom(cell, p.x, p.y - DAN_H);
-  say(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"], 3);
+  say(tx(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
   dan.stun = 2.2;                              // he lies where they left him before coming round
   state.nextTaunt = 4;                         // he calls to gloat once Dan wakes
 }
@@ -747,23 +754,23 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 8)) {
+    if (!p.taken && !dan.onGround && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 8)) {   // he has to jump on it, as in the original
       p.taken = true;
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
       state.score += 25;
       beep(660, 0.12);
-      note(["ENERGY RESTORED"], 1.5);
+      note(tx(["ENERGY RESTORED"]), 1.5);
     }
   }
   for (const k of sdsParts) {
     // the parts come one at a time: the next is where the last fitted one led
     if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
-    if (overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {
+    if (!dan.onGround && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {   // jumped on, never just walked over
       k.taken = true;
       state.carrying = true;
       state.score += 500;
       beep(990, 0.2);
-      say(["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"], 2.5);
+      say(tx(["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"]), 2.5);
     }
   }
   // the socket: walk to the left of the self-destruct room with a part
@@ -777,14 +784,14 @@ function updatePickups() {
       state.armed = true;
       state.timeLeft = 11 * 60 - 1;
       state.score += 2000;
-      call(["\"11 MINUTES TO SELF DESTRUCT\""], 4);
+      call(tx(["\"11 MINUTES TO SELF DESTRUCT\""]), 4);
       state.nextTaunt = 6;
     } else if (state.fitted >= LEVEL.parts.length) {
-      say(["PART " + state.fitted + " FITTED"], 3);
-      note(["THE SURVEY ENDS HERE", "FOR NOW"], 4);
+      say(tx(["PART # FITTED"], state.fitted), 3);
+      note(tx(["THE SURVEY ENDS HERE", "FOR NOW"]), 4);
     } else {
-      say(["PART " + state.fitted + " FITTED"], 3);
-      note(["A DOOR OPENS TO", "THE NEXT SECTOR"], 4);
+      say(tx(["PART # FITTED"], state.fitted), 3);
+      note(tx(["A DOOR OPENS TO", "THE NEXT SECTOR"]), 4);
       state.nextTaunt = 5;
     }
   }
@@ -965,6 +972,7 @@ function draw() {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
   if (state.mode === "title") return drawMenu(ctx);
+  if (state.mode === "options") return drawOptions(ctx);
   if (state.mode === "intro") return drawIntro(ctx);
   if (state.mode === "ending") return drawEnding(ctx);
 
@@ -1094,6 +1102,9 @@ function frame(now) {
   if (state.mode === "title") {
     updateMenu(dt);
     if (tapped.Enter || tapped.Space) beginIntro();
+    else if (tapped.Digit1) { state.mode = "options"; }
+  } else if (state.mode === "options") {
+    updateOptions();
   } else if (state.mode === "intro") {
     updateIntro(dt);
   } else if (state.mode === "ending") {
@@ -1124,4 +1135,5 @@ function frame(now) {
 resetDan(24, 40);
 enterRoom(START.key, 24, 40);
 state.mode = "title";
+state.story = loadStory();
 requestAnimationFrame(frame);
