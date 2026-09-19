@@ -189,10 +189,12 @@ const PRISONS = placePrisons();
  *  his floor - at the original's pace, about sixty pixels a second - closes
  *  to a few cells and pauses before he fires. The fourth sector is unguarded,
  *  as in the original. */
-const TREEN_MAX = 2, TREEN_AGAIN = [6, 14];   // seconds between arrivals
+const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
 const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
-function entryOnlyRoom(key, room) { return room.sector === 0 || (LEVEL.boss && LEVEL.boss.room === key); }
+// where none is about when Dan walks in, and they only run in after him:
+// the screen he lands on, and the hologram's room
+function entryOnlyRoom(key, room) { return key === START.key || (LEVEL.boss && LEVEL.boss.room === key); }
 
 function makeTreens(key, room) {
   if (unguardedRoom(key, room) || entryOnlyRoom(key, room)) return [];
