@@ -1120,8 +1120,9 @@ const LIFT_BUTTON = [0x00, 0x3c, 0x4e, 0x5e, 0x5e, 0x5e, 0x3c, 0x00];   // the r
 function drawLiftMarks(ctx, key, room) {
   // over the original's screen its own marks: the arrow cells beside each
   // shaft, which scroll a pixel every four frames, down or up as the lift goes
-  const arrows = state.backdrop && window.ROOMS_SHEET && window.ROOMS_SHEET.arrows && window.ROOMS_SHEET.arrows[key];
-  if (arrows) {
+  if (state.backdrop) {
+    // the original's screen carries its own marks; the game adds nothing of its own to it
+    const arrows = window.ROOMS_SHEET.arrows && window.ROOMS_SHEET.arrows[key] || [];
     const bits = window.ROOMS_SHEET.arrow;
     const step = Math.floor(state.phase / (4 * FRAME));
     for (const [x, y, dir, attr] of arrows) {
