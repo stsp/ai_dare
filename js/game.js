@@ -193,6 +193,7 @@ const PRISONS = placePrisons();
  *  to a few cells and pauses before he fires. The fourth sector is unguarded,
  *  as in the original. */
 const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
+const TREEN_FIRST = [0.4, 2.2];   // and sooner still into a room that was empty when Dan walked in
 const TREEN_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
 const TREEN_BEHIND = 64;         // how far into the room Dan must be before one follows him in through his own door
 const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Dan
@@ -369,7 +370,8 @@ function enterRoom(key, x, y) {
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }   // where he arrives: the guards keep clear of it
   treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   state.treenClock = 0;
-  state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
+  const wait = treens.length ? TREEN_AGAIN : TREEN_FIRST;
+  state.treenNext = wait[0] + Math.random() * (wait[1] - wait[0]);
   if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
   pickups = makePickups(key, room);
   // a guard who took the lift after Dan rides in behind him
