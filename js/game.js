@@ -549,7 +549,7 @@ function updateDan(dt) {
     if (call) {
       // the stop is in the room the link leads to: here only for a ride
       // between this room's own floors
-      dan.onLift = { dir: held.down() ? 1 : -1, link: call, stop: call.stop, stopHere: call.to === state.room };
+      dan.onLift = { dir: held.down() ? 1 : -1, link: call, stop: call.stop, stopHere: call.to === state.room, at: state.phase };
     }
   }
   // the field carries him between the rails, whichever cell he called it from;
@@ -1115,12 +1115,6 @@ function drawForeground(ctx, key) {
 }
 
 const LIFT_BUTTON = [0x00, 0x3c, 0x4e, 0x5e, 0x5e, 0x5e, 0x3c, 0x00];   // the round call button, as the original draws it
-/** Dan standing on the cells a lift answers from, at their floor. */
-function liftUnderDan(key, room) {
-  if (!dan.onGround) return false;
-  const cell = Math.floor((dan.x + DAN_W / 2) / 8), feet = dan.y + DAN_H;
-  return EXITS[key].lifts.some((l) => inLiftZone(room, l, cell) && Math.abs(feet - l.feet) <= 14);
-}
 function drawLiftMarks(ctx, key, room) {
   // over the original's screen its own marks: the arrow cells beside each
   // shaft, which scroll a pixel every four frames, down or up as the lift goes
@@ -1139,16 +1133,18 @@ function drawLiftMarks(ctx, key, room) {
         for (let i = 0; i < 8; i++) if (row & (0x80 >> i)) ctx.fillRect(x + i, y + j, 1, 1);
       }
     }
-    // the stations' call buttons: while Dan stands on a lift's cells or rides, the
-    // original cycles their ink through magenta, red and blue every four frames
+    // the stations' call buttons blink while a lift is moving, as filmed in the
+    // original: the two take turns, one magenta while the other is red, swapping
+    // every four frames, and both go blue for a moment as the ride begins
     const buttons = window.ROOMS_SHEET.buttons && window.ROOMS_SHEET.buttons[key];
-    if (buttons && (dan.onLift || liftUnderDan(key, room))) {
-      const inks = [C.bmagenta, C.bred, C.bblue];
+    const riding = dan.onLift || treens.some((t) => !t.dead && t.riding);
+    if (buttons && riding) {
+      const starting = dan.onLift && dan.onLift.at != null && state.phase - dan.onLift.at < 8 * FRAME;
       buttons.forEach(([x, y, attr], i) => {
         const paper = PALETTE[(attr >> 3) & 7];
         ctx.fillStyle = attr & 0x40 ? paper.replace("d8", "ff") : paper;
         ctx.fillRect(x, y, 8, 8);
-        ctx.fillStyle = inks[(step * 7 + i * 3 + ((step >> 2) & 1)) % 3];
+        ctx.fillStyle = starting ? C.bblue : ((step + i) & 1) ? C.bred : C.bmagenta;
         for (let j = 0; j < 8; j++) for (let k = 0; k < 8; k++) if (LIFT_BUTTON[j] & (0x80 >> k)) ctx.fillRect(x + k, y + j, 1, 1);
       });
     }
