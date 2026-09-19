@@ -76,6 +76,9 @@ def main():
                     help="a sector the original announces inside one survey phase, as "
                          "N:seed:blockers - the rooms reachable from `seed` without entering a "
                          "blocker are announced as sector N, and later sectors count on from there")
+    ap.add_argument("--clear", default="",
+                    help="wipe tiles the map shows but the game draws itself, as room:c0:c1:r0:r1 "
+                         "(cells c0..c1, rows r0..r1), e.g. 143:13:22:6:14 - the self-destruct mechanism")
     ap.add_argument("--boss", default="",
                     help="where the Mekon's hologram stands, as room:cell:row (his feet)")
     ap.add_argument("--from-screen", default="",
@@ -768,6 +771,18 @@ def main():
         for l in links:
             if l["from"] == a and l["to"] == b and l["kind"] in ("left", "right"):
                 l["needs"] = int(n)
+    for spec in filter(None, args.clear.split(",")):
+        room, c0, c1, r0, r1 = spec.split(":")
+        if room in rooms:
+            r = rooms[room]
+            W = 30 if len(r["cells"]) % 30 == 0 else 32
+            cells = list(r["cells"])
+            for row in range(int(r0), int(r1) + 1):
+                for col in range(int(c0), int(c1) + 1):
+                    cells[row * W + col] = "0"
+            r["cells"] = "".join(cells)
+            r["platforms"] = [pl for pl in r["platforms"]
+                              if not (int(r0) <= pl["y"] - 1 <= int(r1) and pl["x0"] >= int(c0) and pl["x1"] <= int(c1) + 1)]
     # what the original announces on entering: its sector numbers, which cut
     # one survey phase in two (sectors 3 and 4 both open with the same part)
     for n, r in rooms.items():

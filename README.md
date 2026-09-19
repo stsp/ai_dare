@@ -98,7 +98,7 @@ python3 tools/match_rooms.py MAP.png data/emu --graph data/emu/graph.json --leve
 python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/graph3.json \
     data/emu/graph4.json data/emu/graph5.json data/emu/graph6.json --match data/emu/match.json \
     --geometry level_map.json --parts 83:4,148:7,185:26,255:24,56:13 --slot 143 --from-screen 117 \
-    --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 \
+    --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 --clear 143:13:22:6:14 \
     -o level.json                                            # -> level.json + js/level.js
 python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
 ```
