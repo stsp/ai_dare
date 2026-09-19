@@ -129,10 +129,14 @@ python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/
 
 The surveys that walked the original recorded a lift wherever Dan's y
 changed after Q or A - and a fall through a gap looks the same to them. Every
-recorded call was retried in the emulator (`tools/emu/emu_liftcheck.js`): a
-ride moves Dan a steady 3-5 px a frame the way the key says; the calls that
-did anything else are `data/emu/phantom_lifts.json`, and the level is built
-without them (`--fake-lifts`). Room 111, for one, has no lift at all.
+recorded call was retried in the emulator (`tools/emu/emu_liftcheck.js`): Dan
+is walked, or put straight down (`--place`), on the call's cell and floor, the
+key is pressed, and a ride moves him a steady 3-5 px a frame the way the key
+says. The calls that did anything else - a jump, a fall through a gap, a call
+made in the air with no floor under it - are `data/emu/phantom_lifts.json`,
+and the level is built without them (`--fake-lifts`; a call made mid-ride over
+a real lift is moved down to the floor the ride starts from). Room 111, for
+one, has no lift at all.
 
 ## The guns
 
