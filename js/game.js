@@ -178,15 +178,35 @@ const PRISONS = placePrisons();
 
 // ------------------------------------------------------------------ entities
 
-/** Where the Treens come from. No room has them when Dan walks in: after a
- *  while one arrives, then another - never more than two at once. In most
- *  rooms he materialises on Dan's floor, well away from him; on the surface
- *  and in the Mekon's hologram room they only ever run in from the far edge.
- *  The fourth sector is unguarded, as in the original. */
-const TREEN_MAX = 2, TREEN_FIRST = [3, 7], TREEN_AGAIN = [8, 16];   // seconds
-const TREEN_FORM = 0.7, TREEN_REACT = 0.6;                          // materialising; the pause before he fires
+/** Where the Treens come from. In most rooms some are already about when Dan
+ *  walks in, placed by a seeded hash of the room; on the surface and in the
+ *  Mekon's hologram room there are none to start with. Then, every so often
+ *  while fewer than two are about, one runs in from the edge away from Dan on
+ *  his floor - at the original's pace, about sixty pixels a second - closes
+ *  to a few cells and pauses before he fires. The fourth sector is unguarded,
+ *  as in the original. */
+const TREEN_MAX = 2, TREEN_AGAIN = [6, 14];   // seconds between arrivals
+const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
 function entryOnlyRoom(key, room) { return room.sector === 0 || (LEVEL.boss && LEVEL.boss.room === key); }
+
+function makeTreens(key, room) {
+  if (unguardedRoom(key, room) || entryOnlyRoom(key, room)) return [];
+  const r = rng(hashKey(key));
+  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
+  const n = wide.length === 0 ? 0 : Math.floor(r() * 3);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const p = wide[Math.floor(r() * wide.length)];
+    const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
+    if (x1 <= x0) continue;
+    const x = x0 + r() * (x1 - x0);
+    if (Math.abs(x - dan.x) < 48 && Math.abs(p.y * 8 - TREEN_H - dan.y) < 24) continue;   // never on top of him
+    if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
+    out.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0 });
+  }
+  return out;
+}
 
 function spawnTreen(key, room) {
   const feet = dan.y + DAN_H;
@@ -195,18 +215,9 @@ function spawnTreen(key, room) {
   if (!p) return;
   const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
   if (x1 <= x0) return;
-  const t = { id: state.treenSeq++, x: x0, y: p.y * 8 - TREEN_H, x0, x1, dir: 1, anim: 0, dead: false, form: 0, react: 0 };
-  if (entryOnlyRoom(key, room)) {
-    t.x = dan.x + DAN_W / 2 < VIEW_W / 2 ? Math.min(x1, VIEW_W - TREEN_W) : Math.max(x0, 0);   // in from the far edge
-  } else {
-    const far = [];
-    for (let x = x0; x <= x1; x += 8) if (Math.abs(x - dan.x) >= 64) far.push(x);
-    if (!far.length) return;
-    t.x = far[Math.floor(Math.random() * far.length)];
-    t.form = TREEN_FORM;                                    // he takes shape where he stands
-  }
-  t.dir = dan.x > t.x ? 1 : -1;
-  treens.push(t);
+  // in from the edge away from Dan, running
+  const x = dan.x + DAN_W / 2 < VIEW_W / 2 ? Math.min(x1, VIEW_W - TREEN_W) : Math.max(x0, 0);
+  treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0 });
   if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
 }
 
@@ -276,9 +287,10 @@ function enterRoom(key, x, y) {
   // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
   if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
-  treens = [];                                              // none about when he walks in
+  treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   state.treenClock = 0;
-  state.treenNext = TREEN_FIRST[0] + Math.random() * (TREEN_FIRST[1] - TREEN_FIRST[0]);
+  state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
+  if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
   pickups = makePickups(key, room);
   lasers = [];
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
@@ -642,7 +654,6 @@ function updateTreens(dt) {
   for (const t of treens) {
     if (t.dying > 0) t.dying -= dt;              // his last moment after the shot that got him
     if (t.dead) continue;
-    if (t.form > 0) { t.form -= dt; continue; }  // still taking shape
     const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
     const dx = (dan.x + DAN_W / 2) - (t.x + TREEN_W / 2);
     const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0;
@@ -651,7 +662,7 @@ function updateTreens(dt) {
     t.fire = engaged;
     if (inRange) {
       t.dir = dx > 0 ? 1 : -1;
-      if (Math.abs(dx) > TREEN_STAND_OFF) { t.x += t.dir * 22 * dt; t.anim += dt * 5; }
+      if (Math.abs(dx) > TREEN_STAND_OFF) { t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9; }
       t.shot = engaged ? (t.shot || 0) + dt : 0;
       while (t.shot >= TREEN_FIRE_PERIOD) {
         t.shot -= TREEN_FIRE_PERIOD;
@@ -665,13 +676,13 @@ function updateTreens(dt) {
       }
     } else {
       t.shot = 0;
-      t.anim += dt * 5;
-      t.x += t.dir * 22 * dt;
+      t.anim += dt * 9;
+      t.x += t.dir * TREEN_RUN * dt;
     }
     if (t.x <= t.x0) { t.x = t.x0; if (!inRange) t.dir = 1; }
     if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!inRange) t.dir = -1; }
 
-    if (dan.invuln <= 0 && !dan.onLift && !(t.form > 0) && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
+    if (dan.invuln <= 0 && !dan.onLift && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
       hurtDan(18);
       dan.vx = (dan.x < t.x ? -1 : 1) * 90;
       dan.vy = -70;
@@ -1031,12 +1042,6 @@ function draw() {
   }
   for (const t of treens) {
     if (t.dead && !(t.dying > 0)) continue;
-    if (t.form > 0) {                                     // materialising: a flicker of green that fills his shape
-      const r = rng(Math.floor(state.phase * 30) + t.id * 977), fill = 1 - t.form / TREEN_FORM;
-      ctx.fillStyle = C.bgreen;
-      for (let i = 0; i < 60 * fill + 6; i++) ctx.fillRect(Math.round(t.x + r() * TREEN_W), Math.round(t.y + r() * TREEN_H), 1, 1);
-      continue;
-    }
     drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
                     { fire: !!t.fire, armsUp: t.dead });
   }
