@@ -59,6 +59,8 @@ function drawMenu(ctx) {
     drawBig(ctx, ln, Math.max(2, 120 - w / 2), y0 + i * 12, CYCLE[(tick + i * 2) % CYCLE.length], 1.6);
   });
   ctx.restore();
+  const on = cheatsOn();
+  if (on.length) drawText(ctx, "CHEATS: " + on.join(" "), 4, VIEW_H - 9, C.bmagenta);
   ctx.restore();
   drawPanel(ctx, state);
 }

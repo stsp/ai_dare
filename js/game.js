@@ -84,7 +84,7 @@ for (const l of LEVEL.links) {
   else e.lifts.push(l);
 }
 /** A door the original only opened once enough parts were fitted. */
-function isOpen(l) { return !!l && !(l.needs > state.fitted); }
+function isOpen(l) { return !!l && (state.cheat.doors || !(l.needs > state.fitted)); }
 /** The doorway on this side at the height Dan is walking: a room's left or
  *  right edge can lead to different rooms from different floors. */
 function exitAt(list, feet) {
@@ -205,7 +205,7 @@ function makePickups(key, room) {
 // --------------------------------------------------------------------- state
 
 const state = {
-  mode: "title",           // title | play | captured | won | lost
+  mode: "title",           // title | intro | play | ending
   room: START.key,
   timeLeft: START_TIME,
   energy: ENERGY_MAX,
@@ -216,6 +216,7 @@ const state = {
   armed: false,        // all five parts fitted: the countdown runs
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
+  cheat: {},             // doors | parts | time, typed as codes; they last the session
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
@@ -250,7 +251,7 @@ function enterRoom(key, x, y) {
   state.room = key;
   // the original ends the game the moment Dan steps into the launch bay -
   // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
-  if (key === ESCAPE_ROOM && state.mode === "play") { state.mode = "won"; state.score += 5000; }
+  if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
   treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   pickups = makePickups(key, room);
@@ -383,6 +384,7 @@ addEventListener("keydown", (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   if (!keys[e.code]) tapped[e.code] = true;
   keys[e.code] = true;
+  typeCheat(e.key);
 });
 addEventListener("keyup", (e) => { keys[e.code] = false; });
 
@@ -914,6 +916,7 @@ function draw() {
 
   if (state.mode === "title") return drawMenu(ctx);
   if (state.mode === "intro") return drawIntro(ctx);
+  if (state.mode === "ending") return drawEnding(ctx);
 
   drawFrame(ctx);
   ctx.save();
@@ -992,18 +995,6 @@ function draw() {
 
   drawPanel(ctx, state);
 
-  if (state.mode === "won") banner("DAN AND DIGBY MAKE A GETAWAY!", "THE ASTEROID IS DESTROYED");
-  if (state.mode === "lost") banner("OUT OF TIME", "THE ASTEROID HITS EARTH");
-}
-
-function banner(a, b) {
-  ctx.fillStyle = "rgba(0,0,0,0.75)";
-  ctx.fillRect(VIEW_X, VIEW_Y + 40, VIEW_W, 50);
-  const wa = textWidth(a), wb = textWidth(b);
-  drawText(ctx, a, VIEW_X + (VIEW_W - wa) / 2, VIEW_Y + 52, C.byellow);
-  drawText(ctx, b, VIEW_X + (VIEW_W - wb) / 2, VIEW_Y + 66, C.bwhite);
-  drawText(ctx, "PRESS ENTER", VIEW_X + (VIEW_W - textWidth("PRESS ENTER")) / 2,
-           VIEW_Y + 78, C.bcyan);
 }
 
 function drawTitle() {
@@ -1052,13 +1043,15 @@ function frame(now) {
   last = now;
   state.phase += dt;
 
-  if (state.mode === "title" || state.mode === "won" || state.mode === "lost") {
+  if (state.mode === "title") {
     updateMenu(dt);
     if (tapped.Enter || tapped.Space) beginIntro();
   } else if (state.mode === "intro") {
     updateIntro(dt);
+  } else if (state.mode === "ending") {
+    updateEnding(dt);
   } else {
-    state.timeLeft -= dt * CLOCK_RATE;
+    if (!state.cheat.time) state.timeLeft -= dt * CLOCK_RATE;
     if (state.messageTimer > 0) state.messageTimer -= dt;
     if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
     if (state.viewerStatic > 0) state.viewerStatic -= dt;
@@ -1067,7 +1060,7 @@ function frame(now) {
     if (state.flash > 0) state.flash -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
-      state.mode = "lost";
+      beginEnding("lost");
     }
     updateDan(dt);
     updateTreens(dt);
