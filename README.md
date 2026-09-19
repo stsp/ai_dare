@@ -161,8 +161,9 @@ space, enter or escape is pressed.
 
 * In most rooms some Treens are already about when Dan walks in, placed by a
   seeded hash of the room; on the screen he lands on and in the hologram room
-  there are none to start with. A few seconds after he arrives, while fewer
-  than two are about, one runs in from beyond the edge away from Dan at the
+  there are none to start with. Within a couple of seconds of his arrival in
+  an empty room, or a few seconds otherwise, while fewer than two are about,
+  one runs in from beyond the edge away from Dan at the
   original's pace, comes well clear of the wall, closes to a few cells and
   pauses before firing. Some of them take the grav-lifts: to Dan's floor when
   he is on another floor of the same room, and after him when he rides out
