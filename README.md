@@ -161,8 +161,8 @@ space, enter or escape is pressed.
   he is on another floor of the same room, and after him when he rides out
   while they are giving chase, arriving behind him in the next room. A guard
   shot stands with his arms up for a moment, then is gone, for fifty points;
-  both moments sound the original's beeper bursts. The fourth sector is unguarded. Pickups are
-  procedural, from a seeded hash of each room. The five parts of the mechanism lie where the original keeps them
+  both moments sound the original's beeper bursts. The fourth sector is unguarded. The cups of energy stand where the
+  original's object tables put them, and are drunk by landing on them. The five parts of the mechanism lie where the original keeps them
   (rooms 83, 148, 185, 255 and 56, one per sector) and the sector doors open
   after one, two, three and four parts, as the walkthrough shows.
 * The clock runs at 3× real time, so a two-hour mission is about forty minutes.
