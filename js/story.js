@@ -58,7 +58,7 @@ const STORY = {
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
   "STORY: DAN DARE": ["СЮЖЕТ: МЕНТ ДЭР"],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
-  "PRESS ANY KEY": ["НАЖМИ ЛЮБУЮ КЛАВИШУ"],
+  "PRESS SPACE": ["НАЖМИ ПРОБЕЛ"],
 };
 
 /** The lines to show: the original's, or the story's version of them when
