@@ -18,13 +18,13 @@ const [room, plan] = process.argv.slice(2);
     const goto = (cell) => { const tx = cell * 8; for (let i = 0; i < 600 && Math.abs(dan.x - tx) > 2; i++) { keys[K[dan.x < tx ? 'right' : 'left']] = true; tick(); if (!dan.onGround && !dan.onLift) { clear(); settle(); } } clear(); for (let i = 0; i < 6; i++) tick(); };
     const walk = (dir) => { const r0 = state.room; let lastX = dan.x, still = 0; for (let i = 0; i < 900; i++) { keys[K[dir]] = true; tick(); if (state.room !== r0) { clear(); settle(); return; } if (Math.abs(dan.x - lastX) < 0.5) { if (++still > 60) break; } else still = 0; lastX = dan.x; } clear(); };
     const lift = (dir) => { keys[K[dir]] = true; for (let i = 0; i < 6; i++) tick(); clear(); for (let i = 0; i < 600; i++) { tick(); if (i > 20 && dan.onGround && !dan.onLift) break; } settle(); };
-    const jump = (dir) => { keys[K[dir]] = true; for (let i = 0; i < 8; i++) tick(); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 90; i++) { tick(); if (i > 12 && dan.onGround) break; } clear(); settle(); };
+    const jump = (dir) => { keys[K[dir]] = true; for (let i = 0; i < 2; i++) tick(); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 90; i++) { tick(); if (i > 12 && dan.onGround) break; } clear(); settle(); };
     const r = ROOMS[room]; const p = widestPlatform(r); resetDan(p.x, p.y - DAN_H); enterRoom(room, p.x, p.y - DAN_H); dan.invuln = 1e9; settle();
     log.push('start ' + st());
     for (const step of plan.split(';')) {
       const [op, arg] = step.trim().split(/\s+/);
       if (op === 'walklog') { for (let i = 0; i < +arg; i++) { keys[K.right] = true; tick(); if (i % 2 === 0) log.push('   ' + i + ': ' + st() + ' x=' + dan.x.toFixed(1) + ' y=' + dan.y.toFixed(2) + ' vy ' + dan.vy.toFixed(1) + ' g ' + dan.onGround + ' treens ' + treens.filter((t) => !t.dead).map((t) => Math.round(t.x / 8) + ',' + (t.y + TREEN_H)).join(' ')); } clear(); }
-      if (op === 'jumplog') { keys[K[arg]] = true; for (let i = 0; i < 8; i++) tick(); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 60; i++) { tick(); if (i % 5 === 0) log.push('   ' + i + ': ' + st() + ' x=' + dan.x.toFixed(1) + ' y=' + dan.y.toFixed(1) + ' vy=' + dan.vy.toFixed(0) + ' g=' + dan.onGround + ' lift=' + !!dan.onLift + ' latch=' + dan.liftLatch); } clear(); }
+      if (op === 'jumplog') { keys[K[arg]] = true; for (let i = 0; i < 2; i++) tick(); keys.ArrowUp = true; for (let i = 0; i < 6; i++) tick(); keys.ArrowUp = false; for (let i = 0; i < 60; i++) { tick(); if (i % 5 === 0) log.push('   ' + i + ': ' + st() + ' x=' + dan.x.toFixed(1) + ' y=' + dan.y.toFixed(1) + ' vy=' + dan.vy.toFixed(0) + ' g=' + dan.onGround + ' lift=' + !!dan.onLift + ' latch=' + dan.liftLatch); } clear(); }
       if (op === 'walk') walk(arg); else if (op === 'goto') goto(+arg); else if (op === 'lift') lift(arg); else if (op === 'jump') jump(arg); else if (op === 'wait') { for (let i = 0; i < +arg; i++) tick(); }
       log.push(step.trim().padEnd(14) + ' -> ' + st());
     }

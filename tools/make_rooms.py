@@ -167,8 +167,8 @@ def main():
     ap.add_argument("--door", default="", help="a sector door as ROOM:SIDE[:SHUTFILE:OPENFILE],... - the cells of "
                          "the doorway that differ between the two dumps are the door, and the backdrop takes the "
                          "open ones; without dumps, the slab of the first door given for that side is put at the doorway")
-    ap.add_argument("--gun", default="", help="a floor gun as FILE:r0:r1:c0:c1 - its cells in a dump; every room is "
-                         "searched for it, it is wiped from the backdrop and the game draws it")
+    ap.add_argument("--objects", default="", help="the rooms' gun tables as read from the original (data/emu/guns.json): "
+                         "floor guns are lifted off the backdrops; every gun's place, span and wall colour go in the index")
     ap.add_argument("--arrow", default="", help="a lift's scrolling arrow cell as FILE:row:col; every dump is searched "
                          "for it in any phase, up or down")
     ap.add_argument("-o", "--out", default="assets/rooms.png")
@@ -233,30 +233,35 @@ def main():
         x, y = (i % per_row) * 240, (i // per_row) * 144
         sheet.paste(im, (x, y))
         index[str(n)] = [x, y]
-    # floor guns: found by their tiles, wiped from the backdrops, drawn by the game
-    guns, gun_img = {}, None
-    if args.gun:
-        f, r0, r1, c0, c1 = args.gun.split(":"); r0, r1, c0, c1 = int(r0), int(r1), int(c0), int(c1)
-        gt, ga = load(f)
-        pattern = {(r - r0, c - c0): gt[r, c].tobytes() for r in range(r0, r1) for c in range(c0, c1) if gt[r, c].any()}
-        gun_img = Image.fromarray(rgb(gt, ga, r0, r1, c0, c1))
+    # the guns, from the original's own object tables (data/emu/guns.json): a
+    # floor gun is lifted off its cells - the game draws it, and the hat it is
+    # crushed into; a wall or ceiling gun stays in the backdrop, and the game
+    # paints the wall's colour over it when it is shot
+    guns = {}
+    if args.objects:
+        table = json.load(open(args.objects))
         for n in rooms:
+            live = [g for g in table.get(str(n), []) if not g["dead"]]
+            if not live or str(n) not in index: continue
             path = os.path.join(args.screens, f"room_{n}.scr")
-            t, a = load(path); found = []
-            for r in range(3, 17):
-                for c in range(0, 32 - (c1 - c0) + 1):
-                    if all(t[r + dr, c + dc].tobytes() == b for (dr, dc), b in pattern.items()):
-                        found.append([(c - 1) * 8, (r - 1) * 8])
-                        for (dr, dc) in pattern:
-                            t[r + dr, c + dc] = 0
-                            src = next((cc for cc in (c - 1, c + c1 - c0, c - 2) if 0 <= cc < COLS and not t[r + dr, cc].any()), None)
-                            if src is not None: a[r + dr, c + dc] = a[r + dr, src]
-            if found:
-                guns[str(n)] = found
-                save(path, t, a)
-                x0, y0 = index[str(n)]
-                sheet.paste(Image.fromarray(rgb(t, a, 1, 19, 1, 31)), (x0, y0))
-        print(f"{sum(len(v) for v in guns.values())} floor guns in {len(guns)} rooms")
+            t, a = load(path); out = []
+            for g in live:
+                r, c, kind = g["y"] // 8, g["col"], g["type"]
+                w = 5 if kind == 0 else 2                      # the ceiling gun's visor spans five cells
+                fill = None
+                if kind == 3:
+                    for cc in range(c, c + 2): t[r, cc] = 0    # the black floor course shows through
+                else:
+                    side = c - 1 if c > 0 else c + w
+                    pa = a[r, side]
+                    fill = PALETTE[(pa >> 3) & 7]
+                    if pa & 0x40: fill = fill.replace("d8", "ff")
+                out.append([kind, (c - 1) * 8, (r - 1) * 8, w * 8, fill])
+            guns[str(n)] = out
+            save(path, t, a)
+            x0, y0 = index[str(n)]
+            sheet.paste(Image.fromarray(rgb(t, a, 1, 19, 1, 31)), (x0, y0))
+        print(f"{sum(len(v) for v in guns.values())} guns in {len(guns)} rooms")
     # lift arrows: the cell scrolls a pixel every four frames; any phase of it, up or down, marks one
     arrows = {}
     if args.arrow:
@@ -319,8 +324,8 @@ def main():
         tiles = to.copy(); attr = ao.copy()
         for (r, c), (t, a) in cells.items(): tiles[r, c] = t; attr[r, c] = a
         doors[f"{room}:{side}"] = {"cells": cells, "box": (r0, r1, c0, c1), "img": Image.fromarray(rgb(tiles, attr, r0, r1, c0, c1))}
-    door_index = {}; gun_index = None
-    if doors or gun_img:
+    door_index = {}
+    if doors:
         extra = Image.new("RGB", (sheet.width, 64), (0, 0, 0))
         x = 0
         for k, d in doors.items():
@@ -328,8 +333,6 @@ def main():
             extra.paste(im, (x, 0))
             door_index[k] = [x, sheet.height, im.width, im.height, (c0 - 1) * 8, (r0 - 1) * 8]   # in the sheet; where in the view
             x += im.width + 4
-        if gun_img:
-            extra.paste(gun_img, (x, 0)); gun_index = [x, sheet.height, gun_img.width, gun_img.height]; x += gun_img.width + 4
         full = Image.new("RGB", (sheet.width, sheet.height + 64), (0, 0, 0)); full.paste(sheet, (0, 0)); full.paste(extra, (0, sheet.height))
         sheet = full
         print(f"{len(door_index)} doors: {', '.join(door_index)}")
@@ -337,7 +340,7 @@ def main():
     with open(args.index, "w") as f:
         f.write("// generated by tools/make_rooms.py: where each room's backdrop lies in assets/rooms.png\n")
         f.write("window.ROOMS_SHEET = " + json.dumps({"image": "assets/rooms.png", "w": 240, "h": 144, "rooms": index, "doors": door_index,
-                                                     "guns": guns, "gun": gun_index, "arrows": arrows, "arrow": arrow_bits if args.arrow else None}) + ";\n")
+                                                     "guns": guns, "arrows": arrows, "arrow": arrow_bits if args.arrow else None}) + ";\n")
     print(f"{len(index)} rooms from {sum(len(v) for v in caps.values())} captures -> {args.out}")
 
 

@@ -28,6 +28,7 @@ const STORY = {
   "DAN IS NOW IN SECTOR #": ["МЕНТ ТЕПЕРЬ В КВАРТАЛЕ #"],
   "\"I SAY....IT'S A HOLOGRAM !\"": ["\"ГЛЯДИ-КА... ЭТО ГОЛОГРАММА !\""],
   "THE SELF DESTRUCT ROOM": ["СОРТИРОВОЧНАЯ СТАНЦИЯ"],
+  "DAN CAN CRUSH FLOOR GUNS": ["МЕНТ ДАВИТ НАПОЛЬНЫЕ ПУШКИ"],
   "WALK TO THE LEFT|TO FIT THE PART": ["ИДИ ВЛЕВО,", "ЧТОБЫ СДАТЬ ЯЩИК"],
   "NOW TAKE IT TO THE|SELF-DESTRUCT SYSTEM": ["ТЕПЕРЬ НЕСИ ЕГО", "НА СОРТИРОВКУ"],
   "PART # FITTED": ["ЯЩИК # СДАН"],
@@ -57,6 +58,7 @@ const STORY = {
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
   "STORY: DAN DARE": ["СЮЖЕТ: МЕНТ ДЭР"],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
+  "PRESS ANY KEY": ["НАЖМИ ЛЮБУЮ КЛАВИШУ"],
 };
 
 /** The lines to show: the original's, or the story's version of them when
