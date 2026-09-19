@@ -31,7 +31,7 @@ const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 // after a random eight to twenty cells, the streak fading over two frames.
 const FRAME = 1 / 50;          // the original's frame
 const FIRE_PERIOD = 6 * FRAME;
-const PART_FLASH = 18 * FRAME, PART_PULSE = 3 * FRAME;   // a part taken: the screen turns over three times, three frames on and three off
+const PART_PULSE = 4 / 50, PART_FLASH = 6 * PART_PULSE;   // a part taken: the screen turns over three times, four of the original's frames on and four off
 const LASER_STEP = 8;          // one cell a frame
 const LASER_TRAIL = 2;         // dashes left behind the head
 const LASER_MIN = 8, LASER_MAX = 20;   // cells a shot lives, chosen at random
@@ -402,6 +402,7 @@ const state = {
   takenItems: new Set(),   // the cups of energy drunk this game
   invert: 0,               // the screen inverted after a gun is shot, seconds left
   partFlash: 0,            // the screen turning over after a part is taken, seconds left
+  cues: [],                // words due later: {t, kind: "say" | "call", lines, secs}
   burst: 0,              // lift-transfer flash, seconds left
   flash: 0,              // the room's colours cycling after a guard is shot, seconds left
   phase: 0,
@@ -488,6 +489,15 @@ const TAUNTS = [
 function taunt() {
   call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
   state.nextTaunt = 45 + Math.random() * 60;
+}
+
+/** Words due in `t` seconds: a narration (say) or the Mekon's call. Kept as
+ *  data, not closures, so a rewind carries them. */
+function cue(t, kind, lines, secs) { state.cues.push({ t, kind, lines, secs }); }
+function runCues(dt) {
+  for (const c of state.cues) c.t -= dt;
+  for (const c of state.cues.filter((c) => c.t <= 0)) (c.kind === "call" ? call : say)(tx(c.lines), c.secs);
+  state.cues = state.cues.filter((c) => c.t > 0);
 }
 
 /** Narration box at the top of the play area; one box, one sentence. */
@@ -1016,11 +1026,13 @@ function updatePickups() {
       state.carrying = true;
       state.score += 500;
       beep(990, 0.2);
-      // as the original: the whole screen's colours turn over three times, the
-      // word comes where to take it - and the Mekon is on the link at once
+      // as filmed in the original: the whole screen's colours turn over three
+      // times (four frames on, four off), the word where to take it comes as
+      // the flashing ends and stays 3.3 s, and two seconds after it goes the
+      // Mekon is on the link for 3.5 s
       state.partFlash = PART_FLASH;
-      say(tx(["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"]), 2.5);
-      call(tx(["\"NO! PUT THAT DOWN!\""]), 3.6);
+      cue(PART_FLASH, "say", ["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"], 3.34);
+      cue(PART_FLASH + 3.34 + 2.0, "call", ["\"NO! PUT THAT DOWN!\""], 3.5);
     }
   }
   // the socket: walk to the left of the self-destruct room with a part
@@ -1537,6 +1549,7 @@ function frame(now) {
     if (state.flash > 0) state.flash -= dt;
     if (state.invert > 0) state.invert -= dt;
     if (state.partFlash > 0) state.partFlash -= dt;
+    runCues(dt);
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       beginEnding("lost");
@@ -1546,11 +1559,48 @@ function frame(now) {
     updateGuns(dt);
     updateLasers(dt);
     updatePickups();
+    if (tapped.Backspace) rewind(REWIND_SECS); else remember(dt);
   }
 
   draw();
   for (const k in tapped) delete tapped[k];
   requestAnimationFrame(frame);
+}
+
+/* Rewind: the whole of play is kept as a snapshot every half second for the
+   last ten, and Backspace puts the game back as it was five seconds ago -
+   to try a spot again without running the whole way back. */
+const REWIND_SECS = 5, REWIND_KEEP = 10, REWIND_STEP = 0.5;
+const history = [];        // [{age, snap}], oldest first
+let sinceSnap = REWIND_STEP;
+function snapshotPlay() {
+  return structuredClone({ dan, boss, treens, pickups, lasers, sdsParts, guns, gunShots, state });
+}
+function restorePlay(snap) {
+  const s = structuredClone(snap);
+  dan = s.dan; boss = s.boss; treens = s.treens; pickups = s.pickups; lasers = s.lasers; sdsParts = s.sdsParts;
+  guns = s.guns; gunShots = s.gunShots;
+  Object.assign(state, s.state);
+}
+function remember(dt) {
+  for (const h of history) h.age += dt;
+  sinceSnap += dt;
+  if (sinceSnap < REWIND_STEP) return;
+  sinceSnap = 0;
+  history.push({ age: 0, snap: snapshotPlay() });
+  while (history.length > 1 && history[0].age > REWIND_KEEP) history.shift();
+}
+function rewind(secs) {
+  if (!history.length) return;
+  // the newest snapshot at least `secs` old, else the oldest there is
+  let pick = history[0];
+  for (const h of history) if (h.age >= secs) pick = h;
+  restorePlay(pick.snap);
+  const back = pick.age;
+  for (const h of history) h.age -= back;              // time now runs from that moment again
+  while (history.length && history[history.length - 1].age < 0) history.pop();
+  sinceSnap = 0;
+  for (const k in keys) keys[k] = false;
 }
 
 resetDan(24, 40);

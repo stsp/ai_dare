@@ -138,6 +138,15 @@ and the level is built without them (`--fake-lifts`; a call made mid-ride over
 a real lift is moved down to the floor the ride starts from). Room 111, for
 one, has no lift at all.
 
+## Rewind
+
+Backspace puts the game back as it was five seconds ago: the whole of play
+(Dan, the guards, the guns and their shots, the cups and parts, the clock,
+the score, the messages due) is kept as a snapshot every half second for the
+last ten, and the newest one at least five seconds old is restored. Pressing
+again goes back further, to the oldest kept. It is there to try a spot
+again without the walk back.
+
 ## The guns
 
 The original keeps a table of each room's guns, and the game reads it from
