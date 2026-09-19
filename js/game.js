@@ -240,8 +240,9 @@ function spawnTreen(key, room) {
   const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
   const side = way[farSide] ? farSide : way[nearSide] && clear >= TREEN_BEHIND ? nearSide : null;
   if (!side) { state.treenClock = state.treenNext; return; }         // try again next frame
-  // he starts beyond the edge and runs in through the doorway, not from a cell inside it
-  const x = side === "right" ? VIEW_W : -TREEN_W;
+  // he steps in at the edge cell, whole, as the original's sprites do - under the
+  // door frame where the room has one - and runs in from there
+  const x = side === "right" ? VIEW_W - TREEN_W : 0;
   treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < TREEN_LIFT_CHANCE });
   if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
 }
@@ -1091,8 +1092,10 @@ function drawForeground(ctx, key) {
   const s = SHEETS.rooms, rows = state.backdrop && s.meta.solid && s.meta.solid[key];
   if (!rows) return;
   const [sx, sy] = s.meta.rooms[key];
-  const boxes = [[dan.x - 8, dan.y, DAN_W + 16, DAN_H]];
-  for (const t of treens) if (!t.dead || t.dying > 0) boxes.push([t.x - 6, t.y, TREEN_W + 12, TREEN_H]);
+  // the figures' full width, rifle and all: the drawn figure is wider than the
+  // hit box, and a rifle pushed into a wall goes behind it whole, not in part
+  const boxes = [[dan.x - 20, dan.y, DAN_W + 40, DAN_H]];
+  for (const t of treens) if (!t.dead || t.dying > 0) boxes.push([t.x - 10, t.y, TREEN_W + 20, TREEN_H]);
   const done = new Set();
   for (const [bx, by, bw, bh] of boxes) {
     const c0 = Math.max(0, Math.floor(bx / 8)), c1 = Math.min(29, Math.floor((bx + bw - 1) / 8));
