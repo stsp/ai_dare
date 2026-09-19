@@ -21,8 +21,16 @@ const JUMP_VY = -100;          // the original's jump: 10 px high, 0.4 s in the 
 const JUMP_VX = 140;            // ... and four or five cells along
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
-const LASER_SPEED = 210;
-const LASER_RANGE = 72;        // the laser is short-range
+// The rifle, as filmed in the original: a shot every six frames while the
+// button is held; each shot is a dash one cell wide that moves a cell a frame
+// and leaves the two previous dashes behind it, a 24-pixel streak; it dies
+// after a random eight to twenty cells, the streak fading over two frames.
+const FRAME = 1 / 50;          // the original's frame
+const FIRE_PERIOD = 6 * FRAME;
+const LASER_STEP = 8;          // one cell a frame
+const LASER_TRAIL = 2;         // dashes left behind the head
+const LASER_MIN = 8, LASER_MAX = 20;   // cells a shot lives, chosen at random
+const TREEN_LASER_CELLS = 9;
 const CLOCK_RATE = 3;          // game seconds per real second
 const START_TIME = 2 * 3600;
 const ESCAPE_ROOM = "75";       // Digby waits with the Anastasia here once the mechanism is armed
@@ -167,7 +175,9 @@ function makeTreens(key, room) {
   const dead = state.deadTreens.get(key) || new Set();   // a Treen shot stays shot
   const r = rng(hashKey(key));
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
-  const n = wide.length === 0 || (room.label || room.zone) === 4 ? 0 : Math.floor(r() * 3);   // the fourth sector is unguarded, as in the original
+  // the fourth sector is unguarded, as in the original, and so is the Mekon's hologram room
+  const unguarded = (room.label || room.zone) === 4 || (LEVEL.boss && LEVEL.boss.room === key);
+  const n = wide.length === 0 || unguarded ? 0 : Math.floor(r() * 3);
   const out = [];
   for (let i = 0; i < n; i++) {
     const p = wide[Math.floor(r() * wide.length)];
@@ -529,13 +539,16 @@ function updateDan(dt) {
 
   // --- fire: short range laser, kneeling shots come out low ---
   if (held.fire() && dan.fireCool <= 0) {
-    dan.fireCool = 0.32;
+    dan.fireCool = FIRE_PERIOD;
+    // the dash leaves the rifle's muzzle: 17 past the figure's middle, level with the barrel
+    const tip = dan.x + DAN_W / 2 + dan.face * 17;
     lasers.push({
-      x: dan.x + (dan.face > 0 ? DAN_W + 6 : -8),
-      y: dan.y + (dan.kneeling ? 22 : 13),
-      dir: dan.face, travelled: 0, friendly: true,
+      x: dan.face > 0 ? tip : tip - LASER_STEP,
+      y: dan.y + (dan.kneeling ? 20 : 13),
+      dir: dan.face, cells: LASER_MIN + Math.floor(Math.random() * (LASER_MAX - LASER_MIN + 1)),
+      trail: [], acc: 0, friendly: true,
     });
-    beep(880, 0.05);
+    zap();
   }
 
   moveBetweenRooms();
@@ -615,7 +628,7 @@ function updateTreens(dt) {
       t.dir = dir;
       lasers.push({
         x: t.x + (dir > 0 ? TREEN_W + 8 : -8), y: t.y + 14,
-        dir, travelled: 0, friendly: false,
+        dir, cells: TREEN_LASER_CELLS, trail: [], acc: 0, friendly: false,
       });
     }
 
@@ -627,32 +640,50 @@ function updateTreens(dt) {
   }
 }
 
+/** A shot's dash hits whatever it crosses; the dead shot's streak fades. */
+function laserHit(l) {
+  if (l.friendly) {
+    for (const t of treens) {
+      if (!t.dead && overlaps(l.x, l.y, LASER_STEP, 2, t.x, t.y, TREEN_W, TREEN_H)) {
+        t.dead = true;
+        t.dying = TREEN_DEATH;
+        state.flash = TREEN_DEATH;                 // the original flashes the whole room
+        if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
+        state.deadTreens.get(state.room).add(t.id);
+        l.cells = 0;
+        state.score += 75;
+        beep(160, 0.18, "sawtooth");
+      }
+    }
+  } else if (dan.invuln <= 0 && overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
+             !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
+    hurtDan(10);
+    l.cells = 0;
+  }
+}
+
 function updateLasers(dt) {
   for (const l of lasers) {
-    const step = LASER_SPEED * dt;
-    l.x += l.dir * step;
-    l.travelled += step;
-    if (l.friendly) {
-      for (const t of treens) {
-        if (!t.dead && overlaps(l.x, l.y, 4, 2, t.x, t.y, TREEN_W, TREEN_H)) {
-          t.dead = true;
-          t.dying = TREEN_DEATH;
-          state.flash = TREEN_DEATH;                 // the original flashes the whole room
-          if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
-          state.deadTreens.get(state.room).add(t.id);
-          l.travelled = 1e9;
-          state.score += 75;
-          beep(160, 0.18, "sawtooth");
+    if (l.acc === 0 && l.cells > 0) laserHit(l);   // the dash where it appeared
+    l.acc += dt;
+    while (l.acc >= FRAME) {                       // the original moves it once a frame
+      l.acc -= FRAME;
+      if (l.cells > 0) {
+        l.trail.unshift(l.x);
+        if (l.trail.length > LASER_TRAIL) l.trail.pop();
+        l.x += l.dir * LASER_STEP;
+        l.cells--;
+        if (l.x < 0 || l.x + LASER_STEP > VIEW_W) l.cells = 0;   // off the screen's edge
+        else {
+          laserHit(l);
+          if (l.cells === 0) l.trail.unshift(l.x);   // the last dash lingers like the others
         }
+      } else {
+        l.trail.pop();                             // the streak fades a dash a frame
       }
-    } else if (dan.invuln <= 0 && overlaps(l.x, l.y, 4, 2, dan.x, dan.y, DAN_W, DAN_H) &&
-               !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
-
-      hurtDan(10);
-      l.travelled = 1e9;
     }
   }
-  lasers = lasers.filter((l) => l.travelled < LASER_RANGE && l.x > -8 && l.x < VIEW_W + 8);
+  lasers = lasers.filter((l) => l.cells > 0 || l.trail.length);
 
   if (treens.length && treens.every((t) => t.dead)) {
     const key = state.room;
@@ -756,6 +787,34 @@ function beep(freq, dur, type) {
   } catch (e) { /* no audio available */ }
 }
 
+/** The rifle's report, as the original's beeper makes it: 72 toggles whose
+ *  half-period grows from about one to seven samples at 44.1 kHz, every sixth
+ *  a longer one - a falling chirp of seven and a half milliseconds. */
+let zapBuffer = null;
+function zap() {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!zapBuffer) {
+      const sr = actx.sampleRate;
+      const edges = [0];
+      for (let n = 0; n < 71; n++) edges.push(edges[n] + (n % 6 === 1 ? 2.4 + 0.22 * n : 1 + 0.075 * n));
+      const len = Math.ceil(edges[71] / 44100 * sr) + 1;
+      zapBuffer = actx.createBuffer(1, len, sr);
+      const d = zapBuffer.getChannelData(0);
+      let k = 0;
+      for (let i = 0; i < len; i++) {
+        while (k < 71 && i / sr * 44100 >= edges[k + 1]) k++;
+        d[i] = k % 2 ? 0.7 : -0.35;
+      }
+    }
+    const src = actx.createBufferSource(), g = actx.createGain();
+    src.buffer = zapBuffer;
+    g.gain.value = 0.12;
+    src.connect(g); g.connect(actx.destination);
+    src.start();
+  } catch (e) { /* no audio available */ }
+}
+
 // -------------------------------------------------------------------- drawing
 
 const canvas = document.getElementById("screen");
@@ -844,7 +903,7 @@ function danFrame() {
   if (dan.stun > 0) return "down";
   if (dan.onLift) return "lift";
   if (dan.kneeling) return "kneel";
-  if (dan.fireCool > 0.16 && dan.onGround) return "fire";
+  if (dan.fireCool > 0 && dan.onGround) return "fire";
   if (!dan.onGround && !dan.onLift) return "jump";
   if (Math.abs(dan.vx) > 1 && dan.onGround) return "run";
   return "stand";
@@ -895,8 +954,10 @@ function draw() {
                     { fire: t.fire > 0, armsUp: t.dead });
   }
   for (const l of lasers) {
-    ctx.fillStyle = l.friendly ? C.bwhite : C.bred;
-    ctx.fillRect(Math.round(l.x), Math.round(l.y), 4, 2);
+    ctx.fillStyle = l.friendly ? C.white : C.bred;
+    const y = Math.round(l.y);
+    if (l.cells > 0) ctx.fillRect(Math.round(l.x), y, LASER_STEP, 1);
+    for (const x of l.trail) ctx.fillRect(Math.round(x), y, LASER_STEP, 1);
   }
   if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
     const dx = Math.round(dan.x), dy = Math.round(dan.y);
