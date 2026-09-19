@@ -278,7 +278,7 @@ def main():
                 for r in range(3, 17):
                     for c in range(1, 31):
                         d = phases.get(t[r, c].tobytes())
-                        if d: seen[(r, c)] = [(c - 1) * 8, (r - 1) * 8, d]
+                        if d: seen[(r, c)] = [(c - 1) * 8, (r - 1) * 8, d, int(a[r, c])]   # and the cell's colours
             if seen: arrows[str(n)] = list(seen.values())
         print(f"{sum(len(v) for v in arrows.values())} lift arrows in {len(arrows)} rooms")
         arrow_bits = [int(v) for v in base]

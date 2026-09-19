@@ -16,6 +16,8 @@ const C = {
   yellow: "#d8d800", byellow: "#ffff00",
   white: "#d8d8d8", bwhite: "#ffffff",
 };
+// the Spectrum's colours by number, as the original's attribute bytes name them
+const PALETTE = [C.black, C.blue, C.red, C.magenta, C.green, C.cyan, C.yellow, C.white];
 
 // Sector palettes, keyed by the colour signature the extractor found in each
 // screen's floor band, so each area keeps the tint it has on the map.

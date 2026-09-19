@@ -23,7 +23,7 @@ const GRAVITY = 347;           // px/s^2: ten pixels up and down in 0.48 s
 const JUMP_VY = -83;
 const JUMP_TIME = 0.48;         // the arc: twelve frames up and twelve down
 const JUMP_VX = 83;            // five cells in the 0.48 s
-const LIFT_SPEED = 44;
+const LIFT_SPEED = 67;         // the original's grav-lift: four pixels every three frames
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 // The rifle, as filmed in the original: a shot every six frames while the
 // button is held; each shot is a dash one cell wide that moves a cell a frame
@@ -961,6 +961,25 @@ window.addEventListener("resize", fitCanvas);
 /** The markings by a lift: an arrow on the floor for each way it goes, over
  *  the cells it answers from. */
 function drawLiftMarks(ctx, key, room) {
+  // over the original's screen its own marks: the arrow cells beside each
+  // shaft, which scroll a pixel every four frames, down or up as the lift goes
+  const arrows = state.backdrop && window.ROOMS_SHEET && window.ROOMS_SHEET.arrows && window.ROOMS_SHEET.arrows[key];
+  if (arrows) {
+    const bits = window.ROOMS_SHEET.arrow;
+    const step = Math.floor(state.phase / (4 * FRAME));
+    for (const [x, y, dir, attr] of arrows) {
+      const paper = PALETTE[(attr >> 3) & 7], ink = PALETTE[attr & 7], bright = attr & 0x40;
+      ctx.fillStyle = bright ? paper.replace("d8", "ff") : paper;
+      ctx.fillRect(x, y, 8, 8);
+      ctx.fillStyle = bright ? ink.replace("d8", "ff") : ink;
+      for (let j = 0; j < 8; j++) {
+        // the pattern rolls down the cell, or, flipped, up it
+        const row = dir === "down" ? bits[(j - step) & 7] : bits[7 - ((j + step) & 7)];
+        for (let i = 0; i < 8; i++) if (row & (0x80 >> i)) ctx.fillRect(x + i, y + j, 1, 1);
+      }
+    }
+    return;
+  }
   const plats = platformsOf(room);
   for (const l of EXITS[key].lifts) {
     const [a, b] = liftSpan(room, l);
