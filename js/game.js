@@ -212,14 +212,21 @@ function makeTreens(key, room) {
 }
 
 function spawnTreen(key, room) {
-  const feet = dan.y + DAN_H;
-  const level = room.platforms.filter((p) => Math.abs(p.y * 8 - feet) < 6 && p.x1 - p.x0 >= 5);
+  const danFeet = dan.y + DAN_H;
+  const level = room.platforms.filter((p) => Math.abs(p.y * 8 - danFeet) < 6 && p.x1 - p.x0 >= 5);
   const p = level.length ? level.reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a)) : widestPlatformOf(room);
   if (!p) return;
   const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
   if (x1 <= x0) return;
-  // in from the edge away from Dan, running
-  const x = dan.x + DAN_W / 2 < VIEW_W / 2 ? Math.min(x1, VIEW_W - TREEN_W) : Math.max(x0, 0);
+  // in from an edge away from Dan, running - but only through a doorway on
+  // this floor, and never through a door that is shut
+  const e = EXITS[key], feet = p.y * 8;
+  const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
+  const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) };
+  const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
+  const side = way[farSide] ? farSide : way[farSide === "right" ? "left" : "right"] ? (farSide === "right" ? "left" : "right") : null;
+  if (!side) return;
+  const x = side === "right" ? Math.min(x1, VIEW_W - TREEN_W) : Math.max(x0, 0);
   treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0 });
   if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
 }
@@ -962,6 +969,12 @@ function drawGates(ctx, key, room) {
     .concat((LEVEL.doors || []).filter((d) => d.from === key));
   for (const l of gates) {
     const open = isOpen(l);
+    // over the original's screen the shut door is the original's own slab
+    const door = state.backdrop && SHEETS.rooms && SHEETS.rooms.meta.doors && SHEETS.rooms.meta.doors[key + ":" + l.kind];
+    if (door) {
+      if (!open) { const [sx, sy, w, h, x, y] = door; ctx.drawImage(SHEETS.rooms.img, sx, sy, w, h, x, y, w, h); }
+      continue;
+    }
     if (l.kind === "left" || l.kind === "right") {
       const floor = platformsOf(room).filter((p) => p.y > 40).reduce((a, b) => (b.y > a.y ? b : a), { y: VIEW_H - 16 }).y;
       const x = l.kind === "right" ? VIEW_W - 16 : 0, y = floor - 40;

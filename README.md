@@ -106,6 +106,7 @@ python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/g
 python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
     --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \
+    --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
 ```
 
