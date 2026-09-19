@@ -16,11 +16,11 @@ const { chromium } = require('playwright-core');
     const st = () => `${state.room}@${Math.round(dan.x / 8)},${Math.round(dan.y + DAN_H)}`;
     const settle = () => { for (let i = 0; i < 400; i++) { step1(1 / 60); if (dan.onGround && !dan.onLift && i > 10) break; } };
     const hole = (dir) => { if (!dan.onGround) return false; const ax = dan.x + (dir === 'right' || dir > 0 ? DAN_W + 4 : -4), feet = dan.y + DAN_H; if (ax < 0 || ax >= VIEW_W) return false; const under = platformsOf(currentRoom()).some((p) => Math.abs(p.y - feet) < 2 && ax >= p.x0 && ax < p.x1); return !under; };
-    const walk = (dir) => { const r0 = state.room; let lastX = dan.x, still = 0; for (let i = 0; i < 900; i++) { keys[K[dir]] = true; if (hole(dir) && !EXITS[r0].drops.length) { keys.ArrowUp = true; for (let k = 0; k < 6; k++) step1(1 / 60); keys.ArrowUp = false; for (let k = 0; k < 40 && !dan.onGround; k++) step1(1 / 60); } step1(1 / 60); if (state.room !== r0) { clear(); settle(); return true; } if (Math.abs(dan.x - lastX) < 0.5) { if (++still > 8 && guns.some((g) => !g.dead && g.type === GUN_FLOOR && Math.abs(g.x - dan.x) < 24)) { keys.ArrowUp = true; for (let k = 0; k < 6; k++) step1(1 / 60); keys.ArrowUp = false; for (let k = 0; k < 40 && !dan.onGround; k++) step1(1 / 60); still = 0; } else if (++still > 60) break; } else still = 0; lastX = dan.x; if (state.mode !== 'play') break; } clear(); return false; };
+    const walk = (dir) => { const r0 = state.room; let lastX = dan.x, still = 0; for (let i = 0; i < 900; i++) { keys[K[dir]] = true; if (hole(dir) && !EXITS[r0].drops.some((d) => d.to === window.__target)) { keys.ArrowUp = true; for (let k = 0; k < 6; k++) step1(1 / 60); keys.ArrowUp = false; for (let k = 0; k < 40 && !dan.onGround; k++) step1(1 / 60); } step1(1 / 60); if (state.room !== r0) { clear(); settle(); return true; } if (Math.abs(dan.x - lastX) < 0.5) { if (++still > 8 && guns.some((g) => !g.dead && g.type === GUN_FLOOR && Math.abs(g.x - dan.x) < 24)) { keys.ArrowUp = true; for (let k = 0; k < 6; k++) step1(1 / 60); keys.ArrowUp = false; for (let k = 0; k < 40 && !dan.onGround; k++) step1(1 / 60); still = 0; } else if (++still > 60) break; } else still = 0; lastX = dan.x; if (state.mode !== 'play') break; } clear(); return false; };
     const goto = (cell) => { const tx = cell * 8; let lastX = dan.x, still = 0; for (let i = 0; i < 600 && Math.abs(dan.x - tx) > 2; i++) { keys[K[dan.x < tx ? 'right' : 'left']] = true; if (Math.abs(dan.x - lastX) < 0.5 && ++still > 8 && guns.some((g) => !g.dead && g.type === GUN_FLOOR && Math.abs(g.x - dan.x) < 24)) { keys.ArrowUp = true; for (let k = 0; k < 6; k++) step1(1 / 60); keys.ArrowUp = false; for (let k = 0; k < 40 && !dan.onGround; k++) step1(1 / 60); still = 0; } lastX = dan.x; step1(1 / 60); } clear(); for (let i = 0; i < 6; i++) step1(1 / 60); };
     const jump = (dir) => { const tr = []; keys[K[dir]] = true; for (let i = 0; i < 2; i++) step1(1 / 60); tr.push(st() + (dan.onGround ? 'g' : '')); keys.ArrowUp = true; for (let i = 0; i < 6; i++) step1(1 / 60); tr.push(st()); keys.ArrowUp = false; for (let i = 0; i < 90; i++) { step1(1 / 60); if (i % 6 === 0) tr.push(st() + (dan.onGround ? 'g' : '')); if (i > 12 && dan.onGround) break; } clear(); settle(); log.push('   jump trace: ' + tr.join(' ')); };
     const lift = (dir) => { keys[K[dir]] = true; for (let i = 0; i < 6; i++) step1(1 / 60); clear(); for (let i = 0; i < 600; i++) { step1(1 / 60); if (i > 20 && dan.onGround && !dan.onLift) break; } settle(); };
-    const step = (name, fn, expect) => { fn(); const ok = expect ? String(state.room) === String(expect) : true; log.push(`${ok ? 'ok ' : 'XX '}${name.padEnd(28)} -> ${st()}${state.carrying ? ' carrying' : ''} fitted=${state.fitted}${state.mode !== 'play' ? ' MODE ' + state.mode : ''}`); return ok; };
+    const step = (name, fn, expect) => { window.__target = expect; fn(); const ok = expect ? String(state.room) === String(expect) : true; log.push(`${ok ? 'ok ' : 'XX '}${name.padEnd(28)} -> ${st()}${state.carrying ? ' carrying' : ''} fitted=${state.fitted}${state.mode !== 'play' ? ' MODE ' + state.mode : ''}`); return ok; };
     resetDan(24, 96); enterRoom('85', 24, 96); dan.invuln = 1e9; settle();
     const plan = [
       ['85: to cell 15', () => { goto(15); }, '85'],
@@ -28,8 +28,9 @@ const { chromium } = require('playwright-core');
       ['85: walk right', () => { walk('right'); }, '86'],
       ['86: walk right', () => walk('right'), '87'],
       ['87: walk right', () => walk('right'), '88'],
-      ['88: walk right (hole)', () => walk('right'), '120'],
-      ['120: walk right', () => walk('right'), '121'],
+      ['88: lift up from the floor', () => { const l = EXITS['88'].lifts.find((l) => l.kind === 'up' && l.feet === 128); goto(l.x0); lift('up'); }, '88'],   // as the walkthrough went: up, along the gallery into 89, and the lift down into 121
+      ['88: walk right (gallery)', () => walk('right'), '89'],
+      ['89: lift down at 19', () => { goto(19); lift('down'); }, '121'],
       ['121: walk left', () => walk('left'), '120'],
       ['120: walk left', () => walk('left'), '119'],
       ['119: walk left', () => walk('left'), '118'],
@@ -44,7 +45,7 @@ const { chromium } = require('playwright-core');
       ['150: lift up at 6', () => { goto(6); lift('up'); }, '150'],
       ['150: to 12, jump right', () => { goto(12); jump('right'); }, '150'],
       ['150: to 20, jump right', () => { goto(20); jump('right'); walk('right'); }, '151'],
-      ['151: walk right', () => walk('right'), '152'],
+      ['151: lift down at 20, walk right', () => { goto(20); lift('down'); walk('right'); }, '152'],   // the gallery ends in a wall: down to the floor first
       ['152: walk right', () => walk('right'), '153'],
       ['153: lift up at 20', () => { goto(20); lift('up'); }, '121'],
       ['121: lift up at 20 (to 89)', () => { goto(20); lift('up'); }, '89'],

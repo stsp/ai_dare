@@ -69,11 +69,14 @@ function platformsOf(room) {
 const WALL_CACHE = new Map();
 function wallsOf(key) {
   if (WALL_CACHE.has(key)) return WALL_CACHE.get(key);
+  // the original's own map of the cells that stop him (walls, steps, the
+  // shafts' stations), when the sheet carries it; the map's wall class otherwise
+  const block = window.ROOMS_SHEET && window.ROOMS_SHEET.block && window.ROOMS_SHEET.block[key];
   const cells = ROOMS[key].cells, out = [];
   for (let j = 0; j < RH; j++) {
     let run = null;
     for (let i = 0; i <= RW; i++) {
-      const wall = i < RW && cells.charCodeAt(j * RW + i) === 52;   // "4"
+      const wall = i < RW && (block ? !!(block[j] & (1 << i)) : cells.charCodeAt(j * RW + i) === 52);   // "4"
       if (wall && run === null) run = i;
       if (!wall && run !== null) { out.push({ x0: run * 8, y0: j * 8, x1: i * 8, y1: j * 8 + 8 }); run = null; }
     }
@@ -643,10 +646,10 @@ function updateDan(dt) {
     dan.vy += GRAVITY * dt;
     const h = dan.kneeling ? DAN_KNEEL_H : DAN_H;
     const yOff = DAN_H - h;
-    // Nothing inside a room stops Dan: he walks in front of the machinery
-    // and the panelling, as in the original. Only floors and ledges count,
-    // and a low step is walked straight up onto.
-    moveX(dan, dan.vx * dt, [], DAN_W, h, yOff);
+    // The original's walls, steps and lift stations stop him; the panelling
+    // and the machinery he walks in front of do not. His legs are left out of
+    // the test: a course he stands on runs through them.
+    moveX(dan, dan.vx * dt, wallsOf(state.room), DAN_W, h - 8, yOff);
     gunsBlockDan(h, yOff);                 // a floor gun is the one thing he walks into
     if (dan.onGround) {
       const feet = dan.y + DAN_H;
