@@ -211,7 +211,7 @@ function makeTreens(key, room) {
     const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
     if (x1 <= x0) continue;
     const x = x0 + r() * (x1 - x0);
-    if (Math.abs(x - dan.x) < 48 && Math.abs(p.y * 8 - TREEN_H - dan.y) < 24) continue;   // never on top of him
+    if (Math.abs(x - dan.x) < 80 && Math.abs(p.y * 8 - TREEN_H - dan.y) < 24) continue;   // never near him on his floor: he steps in with room to look about
     if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
     out.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0, lifts: r() < TREEN_LIFT_CHANCE });
   }
@@ -362,6 +362,7 @@ function enterRoom(key, x, y) {
   // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
   if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
+  if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }   // where he arrives: the guards keep clear of it
   treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   state.treenClock = 0;
   state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
@@ -1080,6 +1081,33 @@ window.addEventListener("resize", fitCanvas);
 
 /** The markings by a lift: an arrow on the floor for each way it goes, over
  *  the cells it answers from. */
+/** The cells the original draws in front of the figures - walls, walkways,
+ *  shafts, doorways, the guns - painted back over Dan and the guards where
+ *  they overlap them (the original's own flag map, packed in the sheet's index). */
+function drawForeground(ctx, key) {
+  const s = SHEETS.rooms, rows = state.backdrop && s.meta.solid && s.meta.solid[key];
+  if (!rows) return;
+  const [sx, sy] = s.meta.rooms[key];
+  const boxes = [[dan.x - 8, dan.y, DAN_W + 16, DAN_H]];
+  for (const t of treens) if (!t.dead || t.dying > 0) boxes.push([t.x - 6, t.y, TREEN_W + 12, TREEN_H]);
+  const done = new Set();
+  for (const [bx, by, bw, bh] of boxes) {
+    const c0 = Math.max(0, Math.floor(bx / 8)), c1 = Math.min(29, Math.floor((bx + bw - 1) / 8));
+    const r0 = Math.max(0, Math.floor(by / 8)), r1 = Math.min(17, Math.floor((by + bh - 1) / 8));
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        if (!(rows[r] & (1 << c))) continue;
+        const k = r * 32 + c;
+        if (done.has(k)) continue;
+        done.add(k);
+        // the guns the game draws itself, and the wall left where one was shot, stay as drawn
+        if (guns.some((g) => (g.dead || g.type === GUN_FLOOR) && c * 8 >= g.x && c * 8 < g.x + g.w && r * 8 >= g.y && r * 8 < g.y + g.h)) continue;
+        ctx.drawImage(s.img, sx + c * 8, sy + r * 8, 8, 8, c * 8, r * 8, 8, 8);
+      }
+    }
+  }
+}
+
 const LIFT_BUTTON = [0x00, 0x3c, 0x4e, 0x5e, 0x5e, 0x5e, 0x3c, 0x00];   // the round call button, as the original draws it
 /** Dan standing on the cells a lift answers from, at their floor. */
 function liftUnderDan(key, room) {
@@ -1221,9 +1249,7 @@ function draw() {
   state.backdrop = drawBackdrop(ctx, key);            // the original's own screen, when we have it
   if (!state.backdrop) drawRoom(ctx, LEVEL, key, room, state.phase * 12);
 
-  drawLiftMarks(ctx, key, room);
   drawGuns(ctx);
-  drawGates(ctx, key, room);
   if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase, state.backdrop);
 
   for (const p of pickups) {
@@ -1245,16 +1271,21 @@ function draw() {
     drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
                     { fire: !!t.fire, armsUp: t.dead });
   }
+  if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
+    const dx = Math.round(dan.x), dy = Math.round(dan.y);
+    const pose = danFrame();
+    drawDanFigure(ctx, dx, dy, DAN_W, DAN_H, pose === "run" ? "run" : pose, (dan.anim / 2) % 1, dan.face < 0);
+  }
+  // as in the original, the room stands in front of the figures: the walkways
+  // hide their feet, the shafts and doorways hide whoever passes through them
+  drawForeground(ctx, key);
+  drawLiftMarks(ctx, key, room);
+  drawGates(ctx, key, room);
   for (const l of lasers) {
     ctx.fillStyle = l.friendly ? C.white : C.bred;
     const y = Math.round(l.y);
     if (l.cells > 0) ctx.fillRect(Math.round(l.x), y, LASER_STEP, 1);
     for (const x of l.trail) ctx.fillRect(Math.round(x), y, LASER_STEP, 1);
-  }
-  if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
-    const dx = Math.round(dan.x), dy = Math.round(dan.y);
-    const pose = danFrame();
-    drawDanFigure(ctx, dx, dy, DAN_W, DAN_H, pose === "run" ? "run" : pose, (dan.anim / 2) % 1, dan.face < 0);
   }
 
   if (state.invert > 0) {
