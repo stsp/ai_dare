@@ -99,3 +99,5 @@ emulator page on `http://127.0.0.1:8802/`.
   `clearroom.js` shoots the guards of every floor of every room as they come
   and fails a floor where one is left alive off screen or inside a wall, or
   the room is never declared safe.
+  `finite.js` shoots only the first guard on every floor and counts who
+  else comes: a room's share is two in all, shot ones included.
