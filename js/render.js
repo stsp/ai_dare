@@ -147,6 +147,16 @@ function drawFieldCell(ctx, x, y) {
   ctx.fillRect(x, y, CELL, CELL);
 }
 
+/** The room as the original shows it: its screen, cleaned, from
+ *  assets/rooms.png. False until the sheet is loaded or for a room it lacks. */
+function drawBackdrop(ctx, key) {
+  const s = SHEETS.rooms;
+  if (!s || !s.meta || !s.meta.rooms[key]) return false;
+  const [sx, sy] = s.meta.rooms[key];
+  ctx.drawImage(s.img, sx, sy, s.meta.w, s.meta.h, 0, 0, s.meta.w, s.meta.h);
+  return true;
+}
+
 function drawRoom(ctx, level, key, room, phase) {
   const style = sectorStyle(level, room);
   const W = level.room.w, H = level.room.h;

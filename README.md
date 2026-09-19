@@ -79,22 +79,18 @@ A play-test harness walks the recreation the same way the survey walked the
 original, so a room the survey reached but the recreation cannot is caught
 before it ships.
 
-## Sprites
+## Rooms and sprites
 
-Dan is drawn from illustrations: the renders in the repository root (two
-running strides, a kneel, a jump and a firing stride, all in profile; the
-left-facing set is not used, since the game mirrors the frames itself).
-`tools/make_sprites.py` cuts each figure off its checkerboard, scales the set
-so a running Dan is 33 cells tall, packs them into `assets/dan.png` at the
-canvas's 3x scale, and writes `js/dan_sheet.js` with each frame's position and
-where Dan's body sits within it, so the hit box is centred on him rather than
-on the rifle. The game draws the frames 1:1, so they keep their line work.
+The rooms are drawn from the original's own screens. Every room was dumped
+many times by the emulator surveys, and again with Dan stepped and jumped
+about in it; `tools/make_rooms.py` takes, cell by cell, the value most dumps
+agree on, so Dan, the Treens and the message boxes fall away, wipes the parts
+of the mechanism, writes the cleaned screens back to `data/emu` and packs the
+play areas into `assets/rooms.png`. The game lays its own things over them:
+the lifts' marks, the doors, the parts, the pickups, the mechanism's lights.
 
-Five poses make a two-frame run cycle, a kneel, a jump and a muzzle flash
-while firing; there is no standing pose, so a still Dan holds the narrower
-stride. The Treens, the seated figure in the self-destruct room
-and the pickups are still the project's own single-colour bitmaps in
-`js/sprites.js`.
+Dan, the Treens and the Mekon are the project's own figures, drawn as
+vectors (`js/figures.js`), with Dan's head from the project's own renders.
 
 ## Tools
 
@@ -108,6 +104,9 @@ python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/g
     --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 --clear 143:13:22:6:14 \
     -o level.json                                            # -> level.json + js/level.js
 python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
+python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
+    --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \
+    -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
 ```
 
 ## Other departures

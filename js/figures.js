@@ -418,10 +418,27 @@ function drawPartBox(ctx, x, y) {
  *  as the emulator shows, its colour runs up the palette from black to white
  *  and back, a step every four frames, the ends held twice - a cycle of 64
  *  frames - and all the lit ones run together. The others stay green. */
-const SPHERES = [[-8, -76], [8, -76], [-16, -62], [0, -62], [16, -62]];
-function drawMechanism(ctx, cx, floor, fitted, phase) {
+const SPHERES = [[-8, -80.5], [8, -80.5], [-16, -64.5], [0, -64.5], [16, -64.5]];   // where the original's lie
+function drawMechanism(ctx, cx, floor, fitted, phase, spheresOnly) {
   const SPHERE_RUN = [C.black, C.bblue, C.bred, C.bmagenta, C.bgreen, C.bcyan, C.byellow, C.bwhite];   // the palette, 0..7
   const y = floor;
+  if (spheresOnly) {                                   // over the original's own screen: only the lights change
+    const step = Math.floor(phase * 50 / 4) % 16;
+    const run = SPHERE_RUN[step < 8 ? step : 15 - step];
+    SPHERES.forEach(([dx, dy], i) => {
+      const lit = i < fitted, sx = cx + dx, sy = y + dy;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.clip();
+      // the original's sphere: its dark side in green, its lit side white, a
+      // dither of black over both; a lit one runs the palette all over
+      ctx.fillStyle = lit ? run : C.bgreen; ctx.fillRect(sx - 8, sy - 8, 8, 16);
+      ctx.fillStyle = lit ? run : C.bwhite; ctx.fillRect(sx, sy - 8, 8, 16);
+      ctx.fillStyle = C.black;
+      for (let j = -8; j < 8; j++) for (let k = -8; k < 8; k++) if ((j + k) & 1) ctx.fillRect(sx + j, sy + k, 1, 1);
+      ctx.restore();
+    });
+    return;
+  }
   // the pipe frame
   ctx.fillStyle = C.bcyan;
   ctx.fillRect(cx - 38, y - 22, 76, 3); ctx.fillRect(cx - 38, y - 22, 3, 22); ctx.fillRect(cx + 35, y - 22, 3, 22);

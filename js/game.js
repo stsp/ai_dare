@@ -754,7 +754,7 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && !dan.onGround && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 8)) {   // he has to jump on it, as in the original
+    if (!p.taken && !dan.onGround && dan.vy > 0 && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 8)) {   // he has to come down on it, as in the original
       p.taken = true;
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
       state.score += 25;
@@ -765,7 +765,7 @@ function updatePickups() {
   for (const k of sdsParts) {
     // the parts come one at a time: the next is where the last fitted one led
     if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
-    if (!dan.onGround && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {   // jumped on, never just walked over
+    if (!dan.onGround && dan.vy > 0 && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {   // landed on, never just walked over
       k.taken = true;
       state.carrying = true;
       state.score += 500;
@@ -985,11 +985,12 @@ function draw() {
 
   const key = state.room;
   const room = currentRoom();
-  drawRoom(ctx, LEVEL, key, room, state.phase * 12);
+  state.backdrop = drawBackdrop(ctx, key);            // the original's own screen, when we have it
+  if (!state.backdrop) drawRoom(ctx, LEVEL, key, room, state.phase * 12);
 
   drawLiftMarks(ctx, key, room);
   drawGates(ctx, key, room);
-  if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase);
+  if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase, state.backdrop);
 
   for (const p of pickups) {
     if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),
@@ -998,7 +999,7 @@ function draw() {
   for (const k of sdsParts) {
     if (!k.taken && k.key === key && k.id === state.fitted) drawPartBox(ctx, Math.round(k.x), Math.round(k.y));
   }
-  if (boss) {
+  if (boss && !state.backdrop) {                      // the backdrop already holds the original's hologram
     boss.anim += 0.05;
     const bob = Math.round(Math.sin(boss.anim) * 2);
     drawMekonSeated(ctx, Math.round(boss.x), Math.round(boss.y + bob), 24, 30, boss.anim);
