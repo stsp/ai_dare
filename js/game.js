@@ -21,6 +21,7 @@ const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 const RUN_SPEED = 80;          // px/s
 const GRAVITY = 347;           // px/s^2: ten pixels up and down in 0.48 s
 const JUMP_VY = -83;
+const JUMP_TIME = 0.48;         // the arc: twelve frames up and twelve down
 const JUMP_VX = 83;            // five cells in the 0.48 s
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
@@ -269,6 +270,8 @@ const state = {
   treenSeq: 0,           // ids for the Treens that arrive, per game
   treenClock: 0, treenNext: 0,   // the next arrival
   deadTreens: new Map(),   // room -> which of its guards have been shot
+  deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
+  invert: 0,               // the screen inverted after a gun is shot, seconds left
   burst: 0,              // lift-transfer flash, seconds left
   flash: 0,              // the room's colours cycling after a guard is shot, seconds left
   phase: 0,
@@ -287,7 +290,7 @@ function resetDan(x, y) {
   dan = {
     x, y, vx: 0, vy: 0, face: 1,
     onGround: false, kneeling: false, turning: 0,
-    onLift: null, liftLatch: false, shaftFall: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0, stun: 0,
+    onLift: null, liftLatch: false, shaftFall: false, jumpT: 0, jumping: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0, stun: 0,
   };
 }
 
@@ -302,6 +305,8 @@ function enterRoom(key, x, y) {
   state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
   if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
   pickups = makePickups(key, room);
+  guns = makeGuns(key);
+  gunShots = [];
   lasers = [];
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
   dan.invuln = Math.max(dan.invuln, 0.8);
@@ -363,6 +368,7 @@ function startGame() {
   state.alerted = new Set();
   state.clearedRooms = new Set();
   state.deadTreens = new Map();
+  state.deadGuns = new Set();
   sdsParts = placeParts();
   state.fitted = 0;
   state.carrying = false;
@@ -394,14 +400,14 @@ function moveX(body, dx, walls, w, h, yOff) {
 }
 
 /** Move vertically; platforms catch a falling body at their top edge. */
-function moveY(body, dy, platforms, w, h, yOff) {
+function moveY(body, dy, platforms, w, h, yOff, reach = 0.5) {
   const prevBottom = body.y + yOff + h;
   body.y += dy;
   body.onGround = false;
   if (dy >= 0) {
     for (const p of platforms) {
       const bottom = body.y + yOff + h;
-      if (bottom >= p.y && prevBottom <= p.y + 0.5 &&       // once below a floor's top he is past it: no catching the far edge of a gap
+      if (bottom >= p.y && prevBottom <= p.y + reach &&     // once below a floor's top he is past it: no catching the far edge of a gap
           body.x + w > p.x0 && body.x < p.x1) {
         body.y = p.y - h - yOff;
         body.vy = 0;
@@ -460,7 +466,9 @@ function updateDan(dt) {
   const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell) &&
                                                  Math.abs(dan.y + DAN_H - l.feet) <= 14);
   if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
-  if (!dan.onLift && dan.onGround && !dan.liftLatch) {
+  // a lift answers only to Dan standing still: up while running is a jump,
+  // even between the rails (the original clears a gap beside a shaft that way)
+  if (!dan.onLift && dan.onGround && !dan.liftLatch && !held.left() && !held.right()) {
     const call = held.down() ? liftHere("down") : held.up() ? liftHere("up") : null;
     if (call) {
       // the stop is in the room the link leads to: here only for a ride
@@ -545,12 +553,19 @@ function updateDan(dt) {
     if (dan.onGround) {
       dan.vx = dir * RUN_SPEED;
       if (held.up() && !dan.liftLatch) {
+        const way = held.left() ? -1 : held.right() ? 1 : 0;   // the way he is pressed, turned or not
+        if (way) dan.face = way;
+        dan.turning = 0;
         dan.vy = JUMP_VY;
-        dan.vx = dir * JUMP_VX;   // straight up, or a diagonal hop
+        dan.vx = way * JUMP_VX;   // straight up, or a diagonal hop
+        dan.jumpT = JUMP_TIME;    // the arc is fixed: the keys do nothing until he lands
+        dan.jumping = true;
         dan.onGround = false;
       }
     } else {
-      if (dir !== 0) dan.vx = dir * JUMP_VX;
+      // in the air the original carries him through the jump's arc and no
+      // further: past it, or off a ledge, he drops straight down
+      if (dan.jumpT > 0) dan.jumpT -= dt; else dan.vx = 0;
     }
 
     dan.vy += GRAVITY * dt;
@@ -560,6 +575,7 @@ function updateDan(dt) {
     // and the panelling, as in the original. Only floors and ledges count,
     // and a low step is walked straight up onto.
     moveX(dan, dan.vx * dt, [], DAN_W, h, yOff);
+    gunsBlockDan(h, yOff);                 // a floor gun is the one thing he walks into
     if (dan.onGround) {
       const feet = dan.y + DAN_H;
       for (const p of platforms) {
@@ -572,7 +588,12 @@ function updateDan(dt) {
       const lowest = under.length ? Math.max(...under.map((p) => p.y)) : -1;
       catchers = platforms.filter((p) => p.y === lowest);
     }
-    moveY(dan, dan.vy * dt, catchers, DAN_W, h, yOff);
+    const feetBefore = dan.y + DAN_H;
+    // a jump lands on a ledge a course above where it started: the original
+    // moves him by cells and sets him down on whatever his last cell rests on
+    moveY(dan, dan.vy * dt, catchers, DAN_W, h, yOff, dan.jumping ? 9 : 0.5);
+    if (dan.onGround) dan.jumping = false;
+    if (dan.vy >= 0) gunsUnderDan(feetBefore);   // coming down on a floor gun crushes it
     if (dan.onGround) dan.shaftFall = false;
   }
 
@@ -720,7 +741,7 @@ function laserHit(l) {
       if (l.friendly) state.score += 75;
     }
   }
-  if (l.friendly) return;
+  if (l.friendly) { gunsShotBy(l); return; }
   if (overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
              !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
     // the beam strikes him: he flickers, and now and then the rattle of it sounds
@@ -1023,6 +1044,7 @@ function draw() {
   const scale = canvas.width / SCREEN_W;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
+  if (state.mode === "splash") return drawSplash(ctx);
   if (state.mode === "title") return drawMenu(ctx);
   if (state.mode === "options") return drawOptions(ctx);
   if (state.mode === "intro") return drawIntro(ctx);
@@ -1041,6 +1063,7 @@ function draw() {
   if (!state.backdrop) drawRoom(ctx, LEVEL, key, room, state.phase * 12);
 
   drawLiftMarks(ctx, key, room);
+  drawGuns(ctx);
   drawGates(ctx, key, room);
   if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase, state.backdrop);
 
@@ -1073,6 +1096,14 @@ function draw() {
     drawDanFigure(ctx, dx, dy, DAN_W, DAN_H, pose === "run" ? "run" : pose, (dan.anim / 2) % 1, dan.face < 0);
   }
 
+  if (state.invert > 0) {
+    // a gun shot: the original swaps every cell's ink and paper for a frame
+    ctx.save();
+    ctx.globalCompositeOperation = "difference";
+    ctx.fillStyle = C.bwhite;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
+  }
   if (state.flash > 0) {
     // a guard shot: the original cycles the whole room's colours for a moment
     ctx.fillStyle = [C.bmagenta, C.bred, C.bblue, C.bgreen][Math.floor(state.flash * 20) % 4];
@@ -1104,6 +1135,35 @@ function draw() {
 
   drawPanel(ctx, state);
 
+}
+
+/** The loading picture, after the original's: the plaque, Dan under it, the
+ *  Mekon beside him - assets/title.png, drawn at the canvas's full resolution
+ *  with the plaque lettered here so the story can rename it. */
+function drawSplash(ctx) {
+  const img = SHEETS.title && SHEETS.title.img;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.fillStyle = C.black;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const k = canvas.width / SCREEN_W;                // screen pixels per game pixel
+  if (img) ctx.drawImage(img, 0, 0, SCREEN_W * k, SCREEN_H * k);
+  // the plaque: 2..176 by 2..41 on the picture's 256x192
+  const [a, b] = [tx(["DAN DARE"])[0], tx(["PILOT OF THE FUTURE"])[0]];
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = C.byellow;
+  ctx.font = `italic 900 ${Math.round(22 * k)}px "Arial Black", Impact, "Liberation Sans", sans-serif`;
+  ctx.fillText(a, 89 * k, 27 * k, 168 * k);
+  ctx.font = `italic bold ${Math.round(8.5 * k)}px "Liberation Sans", Arial, sans-serif`;
+  ctx.fillText(b, 89 * k, 38 * k, 168 * k);
+  if (Math.floor(state.phase * 2) % 2) {
+    ctx.font = `bold ${Math.round(6 * k)}px "Liberation Sans", Arial, sans-serif`;
+    ctx.lineWidth = 3 * k / 4; ctx.strokeStyle = C.black; ctx.fillStyle = C.bwhite;
+    ctx.strokeText(tx(["PRESS ANY KEY"])[0], 60 * k, 184 * k);
+    ctx.fillText(tx(["PRESS ANY KEY"])[0], 60 * k, 184 * k);
+  }
+  ctx.restore();
 }
 
 function drawTitle() {
@@ -1152,7 +1212,9 @@ function frame(now) {
   last = now;
   state.phase += dt;
 
-  if (state.mode === "title") {
+  if (state.mode === "splash") {
+    if (Object.keys(tapped).length) { state.mode = "title"; menu.t = 0; }
+  } else if (state.mode === "title") {
     updateMenu(dt);
     if (tapped.Enter || tapped.Space) beginIntro();
     else if (tapped.Digit1) { state.mode = "options"; }
@@ -1170,12 +1232,14 @@ function frame(now) {
     if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.flash > 0) state.flash -= dt;
+    if (state.invert > 0) state.invert -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       beginEnding("lost");
     }
     updateDan(dt);
     updateTreens(dt);
+    updateGuns(dt);
     updateLasers(dt);
     updatePickups();
   }
@@ -1187,6 +1251,6 @@ function frame(now) {
 
 resetDan(24, 40);
 enterRoom(START.key, 24, 40);
-state.mode = "title";
+state.mode = "splash";
 state.story = loadStory();
 requestAnimationFrame(frame);

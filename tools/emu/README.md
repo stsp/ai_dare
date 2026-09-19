@@ -55,6 +55,15 @@ emulator page on `http://127.0.0.1:8802/`.
   a key script and logs room/x/y; `emu_grabroom2.js` walks him into the next
   room and dumps its screen; `emu_lifttrace.js` records a lift ride frame by
   frame. `scr2png.py IN.scr OUT.png` renders a dumped screen.
+* `emu_guns.js SNAPS.json OUT.json [ROOM...]` runs each room twice from its
+  snapshot with the same keys - the gun routine poked out, then put back -
+  and records every screen cell that differs: where the guns' shots go.
+  `emu_gunshoot.js SNAP NAME SCRIPT` drives Dan by a key script (`O:30` holds
+  O for thirty frames, `O+Q:6` both, `W:60` waits) with the guns live, saving
+  every second frame and logging the gun table at `0x62A5` (four bytes a gun:
+  y, column with the kind in its top bits, a pointer into the room's map) and
+  the three shot slots at `0x6299`. The surveys' snapshots carry the "no
+  guns" POKE, so both put the CALL back at 44413.
 * `merge_graphs.py OUT g1 g2 ...` merges surveys (nodes first-wins).
 * `run_fsnaps.sh START END INTERVAL DIR` plays the published RZX walkthrough
   in Fuse under Xvfb, saving a snapshot every INTERVAL seconds;

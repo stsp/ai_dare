@@ -88,10 +88,11 @@ agree on, so Dan, the Treens and the message boxes fall away, wipes the parts
 of the mechanism, writes the cleaned screens back to `data/emu` and packs the
 play areas into `assets/rooms.png`. The game lays its own things over them:
 the lifts' marks, the doors, the parts, the pickups, the mechanism's lights.
-`--door` cuts the door slabs out of shut-and-open pairs of screens, `--gun`
-finds the floor guns by their tiles, lifts them off the backdrops and keeps
-one as a sprite, and `--arrow` finds the lifts' scrolling arrow cells (in any
-of their eight phases) so the game can animate them.
+`--door` cuts the door slabs out of shut-and-open pairs of screens,
+`--objects` takes the original's gun tables, lifts the floor guns off the
+backdrops and records every gun's place, span and wall colour, and `--arrow`
+finds the lifts' scrolling arrow cells (in any of their eight phases) so the
+game can animate them.
 
 Dan, the Treens and the Mekon are the project's own figures, drawn as
 vectors (`js/figures.js`), with Dan's head from the project's own renders.
@@ -108,12 +109,44 @@ python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/g
     --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 --clear 143:13:22:6:14 \
     -o level.json                                            # -> level.json + js/level.js
 python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
+python3 tools/make_title.py                                 # the render -> assets/title.png
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
     --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \
     --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
-    --gun data/emu/masks/gun_118.scr:15:16:6:8 --arrow data/emu/masks/arrow_83.scr:12:23 \
+    --objects data/emu/guns.json --arrow data/emu/masks/arrow_83.scr:12:23 \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
 ```
+
+## The guns
+
+The original keeps a table of each room's guns, and the game reads it from
+the emulator (`data/emu/guns.json`, by `tools/emu/emu_guns.js` and the
+snapshots) into the room sheet's index. Three kinds, each doing what the
+original was filmed doing with its gun routine put back:
+
+* a floor gun stands in Dan's way and fires along the floor either way;
+  nothing he fires touches it, but coming down on it from above crushes it
+  into a hat, for 75 points;
+* a wall gun (a fist, facing left or right) fires the way it faces; one hit
+  from the rifle and it is gone, the wall bare where it hung;
+* a ceiling gun (a visor, high on the wall) fires down at a slant; it can be
+  shot only from a floor level with it - most cannot be - and leaves a ragged
+  hole in the wall.
+
+A shot moves a cell every three frames and ends at the screen's edge, in a
+floor or wall, or in Dan. Each frame the original rolls one chance in four of
+a shot and fires a gun picked at random. A gun destroyed flashes the screen
+inverted for a frame and plays the beeper burst the original plays; the
+bursts are synthesised from its sound records.
+
+## The title picture
+
+`assets/title.png` is laid out as the original's loading screen - the plaque
+top left, Dan under it, the Mekon beside him over a wall of blue panels - but
+drawn from the hi-res render in the repository root (`tools/make_title.py`
+cuts the two heads off the render's checkerboard). The game letters the
+plaque itself, so the story renames it, and shows the picture until a key is
+pressed.
 
 ## Other departures
 
