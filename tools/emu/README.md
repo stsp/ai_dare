@@ -64,6 +64,12 @@ emulator page on `http://127.0.0.1:8802/`.
   y, column with the kind in its top bits, a pointer into the room's map) and
   the three shot slots at `0x6299`. The surveys' snapshots carry the "no
   guns" POKE, so both put the CALL back at 44413.
+* `emu_liftcheck.js SNAP_INDEX OUT.json` tries every lift call the surveys
+  recorded: loads a snapshot with Dan on that floor, walks him to the cell,
+  presses Q or A and traces his y. A ride moves him 3-5 px a frame the way
+  the key says; anything else (a fall, no movement) is a call the survey
+  imagined. `data/emu/phantom_lifts.json` lists the calls found false, and
+  `build_level.py --fake-lifts` leaves them out of the level.
 * `merge_graphs.py OUT g1 g2 ...` merges surveys (nodes first-wins).
 * `run_fsnaps.sh START END INTERVAL DIR` plays the published RZX walkthrough
   in Fuse under Xvfb, saving a snapshot every INTERVAL seconds;

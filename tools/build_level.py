@@ -85,6 +85,9 @@ def main():
                     help="rooms to read off their own screen even where the map seems to match")
     ap.add_argument("--exclude", default="",
                     help="room numbers that are not rooms: the capture sequence, for one")
+    ap.add_argument("--fake-lifts", default="",
+                    help="lift calls the emulator showed to be no lift at all (tools/emu/emu_liftcheck.js): "
+                         "a JSON list of {from, kind, x0, feet}; those links are left out")
     ap.add_argument("-o", "--out", default="level.json")
     args = ap.parse_args()
 
@@ -820,6 +823,12 @@ def main():
         room, _, cell = spec.partition(":")
         if room in rooms:
             parts.append({"room": room, "x": int(cell)} if cell else {"room": room})
+    if args.fake_lifts:
+        # lift calls the emulator showed to be a jump or a fall at a gap's edge, not a lift
+        fake = {(f["from"], f["kind"], f["x0"], f["feet"]) for f in json.load(open(args.fake_lifts))}
+        before = len(links)
+        links = [l for l in links if (l["from"], l["kind"], l.get("x0"), l.get("feet")) not in fake]
+        print(f"{before - len(links)} phantom lift calls left out")
     level = {
         "source": geo.get("source"),
         "room": geo["room"],
