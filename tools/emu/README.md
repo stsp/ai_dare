@@ -43,6 +43,11 @@ emulator page on `http://127.0.0.1:8802/`.
 
 * `emu_floor.js DIR...` - the floor probe: walks Dan across every room of a
   survey and records where he stood and where he fell (`FLOOR_OUT`).
+* `emu_fire.js SNAP FRAMES NAME PRE HOLD` - films the rifle: holds fire for
+  FRAMES frames (after tapping PRE keys, e.g. `P:70,O:3`, and with HOLD keys
+  held, e.g. `A` to kneel) and saves every frame's screen and the beeper's
+  samples (`NAME_audio.f32`, 882 per frame); `fire_an.py NAME` reads the
+  bullet row, its cells frame by frame and where each shot stopped.
 * `emu_film2.js SNAP CELL SCRIPT EVERY NAME` - drives Dan from a snapshot by
   a key script and logs room/x/y; `emu_grabroom2.js` walks him into the next
   room and dumps its screen; `emu_lifttrace.js` records a lift ride frame by
