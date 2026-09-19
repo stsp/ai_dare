@@ -91,3 +91,8 @@ emulator page on `http://127.0.0.1:8802/`.
 * `emu_death.js SNAP CELL P|O NAME` walks Dan to a cell, faces him, and
   fires in bursts while dumping the screen every two frames - how a guard
   really dies (arms up, the room's colours cycling, gone in ten frames).
+* `shot.js ROOM CELL OUT.png [fire|kneel]` draws one frame of the game with
+  Dan put down at that cell (`FITTED=n` sets the parts fitted) and saves the
+  canvas at 4x: how a change looks is checked here, next to the original's
+  screen, before it is pushed. `treenwalls.js` runs every room's every floor
+  for twenty seconds of guards and reports any guard inside a wall.

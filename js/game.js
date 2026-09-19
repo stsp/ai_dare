@@ -141,7 +141,8 @@ function findStart() {
 const START = findStart();
 
 /** The parts of the self-destruct mechanism, where the original keeps them:
- *  on the floor of the rooms the survey found them in. */
+ *  on the floor of the rooms the survey found them in, at the cell its object
+ *  table gives the box (the fifth, in 185, at the cell it was taken from). */
 function placeParts() {
   return LEVEL.parts.map((p, i) => {
     const room = ROOMS[p.room];
@@ -222,6 +223,19 @@ function makeTreens(key, room) {
   return out;
 }
 
+/** The room's walls, steps and lift stations stop a guard as they stop Dan
+ *  (legs left out of the test, as with him); true when one has just done so. */
+function treenWalled(t, key) {
+  let hit = false;
+  for (const wl of wallsOf(key)) {
+    if (overlaps(t.x, t.y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
+      t.x = t.x + TREEN_W / 2 < (wl.x0 + wl.x1) / 2 ? wl.x0 - TREEN_W : wl.x1;
+      hit = true;
+    }
+  }
+  return hit;
+}
+
 function spawnTreen(key, room) {
   const danFeet = dan.y + DAN_H;
   const level = room.platforms.filter((p) => Math.abs(p.y * 8 - danFeet) < 6 && p.x1 - p.x0 >= 5);
@@ -233,7 +247,9 @@ function spawnTreen(key, room) {
   // this floor, and never through a door that is shut
   const e = EXITS[key], feet = p.y * 8;
   const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
-  const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) };
+  const y = p.y * 8 - TREEN_H;
+  const walled = (x) => wallsOf(key).some((wl) => overlaps(x, y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
+  const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !walled(0), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !walled(VIEW_W - TREEN_W) };
   const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
   const nearSide = farSide === "right" ? "left" : "right";
   // through the door behind Dan only once he is well into the room: never
@@ -268,7 +284,7 @@ function treenSeeksLift(t, key, room) {
 function treenToLift(t, dt) {
   const dx = t.lift.x - t.x;
   t.fire = false;
-  if (Math.abs(dx) > 2) { t.dir = dx > 0 ? 1 : -1; t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9; return; }
+  if (Math.abs(dx) > 2) { t.dir = dx > 0 ? 1 : -1; t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9; if (treenWalled(t, state.room)) t.lift = null; return; }   // a wall between him and the cells: he gives it up
   t.lift.wait -= dt;                                  // a moment on the cells before the field takes him
   if (t.lift.wait > 0) return;
   const l = t.lift.link;
@@ -681,8 +697,8 @@ function updateDan(dt) {
   // --- fire: short range laser, kneeling shots come out low ---
   if (held.fire() && dan.fireCool <= 0) {
     dan.fireCool = FIRE_PERIOD;
-    // the dash leaves the rifle's muzzle: 17 past the figure's middle, level with the barrel
-    const tip = dan.x + DAN_W / 2 + dan.face * 17;
+    // the dash leaves the gun's muzzle: 13 past the figure's middle, level with the barrel
+    const tip = dan.x + DAN_W / 2 + dan.face * 13;
     lasers.push({
       x: dan.face > 0 ? tip : tip - LASER_STEP,
       y: dan.y + (dan.kneeling ? 20 : 13),
@@ -793,6 +809,7 @@ function updateTreens(dt) {
       t.anim += dt * 9;
       t.x += t.dir * TREEN_RUN * dt;
     }
+    if (treenWalled(t, key) && !inRange) t.dir = -t.dir;    // the room's walls stop him as they stop Dan
     if (t.entering) {
       // in, and a few cells clear of the wall he came through, before he is one of the room's
       if (t.x >= t.x0 + TREEN_CLEAR && t.x + TREEN_W <= t.x1 + TREEN_W - TREEN_CLEAR) t.entering = false;
@@ -921,7 +938,7 @@ function updatePickups() {
   for (const k of sdsParts) {
     // the parts come one at a time: the next is where the last fitted one led
     if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
-    if (dan.landed && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {   // landed on, never just walked over
+    if (dan.landed && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 16, 16)) {   // landed on, never just walked over
       k.taken = true;
       state.carrying = true;
       state.score += 500;
@@ -1108,8 +1125,10 @@ function drawForeground(ctx, key) {
         const k = r * 32 + c;
         if (done.has(k)) continue;
         done.add(k);
-        // the guns the game draws itself, and the wall left where one was shot, stay as drawn
+        // the guns the game draws itself, and the wall left where one was shot, stay as drawn;
+        // so do the cells of a part's box, which is drawn after the figures, whole
         if (guns.some((g) => (g.dead || g.type === GUN_FLOOR) && c * 8 >= g.x && c * 8 < g.x + g.w && r * 8 >= g.y && r * 8 < g.y + g.h)) continue;
+        if (sdsParts.some((k) => k.key === key && c * 8 >= k.x && c * 8 < k.x + 16 && r * 8 >= k.y && r * 8 < k.y + 16)) continue;
         ctx.drawImage(s.img, sx + c * 8, sy + r * 8, 8, 8, c * 8, r * 8, 8, 8);
       }
     }
