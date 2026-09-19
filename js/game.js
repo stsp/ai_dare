@@ -289,11 +289,11 @@ function widestPlatformOf(room) {
   return wide.length ? wide.reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a)) : null;
 }
 
+/** The cups of energy where the original keeps them (its object tables, in
+ *  the room sheet's index); one taken stays taken for the game. */
 function makePickups(key, room) {
-  const r = rng(hashKey(key) ^ 0xa5a5);
-  if (r() > 0.35) return [];
-  const p = widestPlatform(room);
-  return [{ x: p.x + 12, y: p.y - 9, taken: false }];
+  const list = (window.ROOMS_SHEET && window.ROOMS_SHEET.items && window.ROOMS_SHEET.items[key]) || [];
+  return list.map(([x, y], i) => ({ id: key + ":" + i, x, y, taken: state.takenItems.has(key + ":" + i) }));
 }
 
 // --------------------------------------------------------------------- state
@@ -324,6 +324,7 @@ const state = {
   deadTreens: new Map(),   // room -> which of its guards have been shot
   deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
   pursuer: null,           // a guard riding the lift after Dan into the next room
+  takenItems: new Set(),   // the cups of energy drunk this game
   invert: 0,               // the screen inverted after a gun is shot, seconds left
   burst: 0,              // lift-transfer flash, seconds left
   flash: 0,              // the room's colours cycling after a guard is shot, seconds left
@@ -432,6 +433,7 @@ function startGame() {
   state.clearedRooms = new Set();
   state.deadTreens = new Map();
   state.deadGuns = new Set();
+  state.takenItems = new Set();
   sdsParts = placeParts();
   state.fitted = 0;
   state.carrying = false;
@@ -513,6 +515,7 @@ function updateDan(dt) {
   const room = currentRoom();
   const platforms = platformsOf(room);
 
+  dan.landed = false;
   if (dan.hurt > 0) dan.hurt -= dt;
   if (dan.stun > 0) { dan.stun -= dt; dan.vx = 0; }   // out cold in the cell: nothing answers the keys
   if (dan.invuln > 0) dan.invuln -= dt;
@@ -651,10 +654,11 @@ function updateDan(dt) {
       const lowest = under.length ? Math.max(...under.map((p) => p.y)) : -1;
       catchers = platforms.filter((p) => p.y === lowest);
     }
-    const feetBefore = dan.y + DAN_H;
+    const feetBefore = dan.y + DAN_H, airborne = !dan.onGround;
     // a jump lands on a ledge a course above where it started: the original
     // moves him by cells and sets him down on whatever his last cell rests on
     moveY(dan, dan.vy * dt, catchers, DAN_W, h, yOff, dan.jumping ? 9 : 0.5);
+    dan.landed = airborne && dan.onGround;      // this is the frame he comes down
     if (dan.onGround) dan.jumping = false;
     if (dan.vy >= 0) gunsUnderDan(feetBefore);   // coming down on a floor gun crushes it
     if (dan.onGround) dan.shaftFall = false;
@@ -851,7 +855,7 @@ function updateLasers(dt) {
   }
   lasers = lasers.filter((l) => l.cells > 0 || l.trail.length);
 
-  if ((state.deadTreens.get(state.room) || new Set()).size >= TREEN_MAX) {   // two shot here: the room is safe
+  if ((state.deadTreens.get(state.room) || new Set()).size >= TREEN_MAX && !treens.some((t) => !t.dead)) {   // two shot here and none left: the room is safe
     const key = state.room;
     if (!state.clearedRooms.has(key)) {
       state.clearedRooms.add(key);
@@ -893,8 +897,9 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && !dan.onGround && dan.vy > 0 && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 8)) {   // he has to come down on it, as in the original
+    if (!p.taken && dan.landed && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 16)) {   // taken as he lands on it, at the bottom of the jump
       p.taken = true;
+      state.takenItems.add(p.id);
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
       state.score += 25;
       beep(660, 0.12);
@@ -904,7 +909,7 @@ function updatePickups() {
   for (const k of sdsParts) {
     // the parts come one at a time: the next is where the last fitted one led
     if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
-    if (!dan.onGround && dan.vy > 0 && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {   // landed on, never just walked over
+    if (dan.landed && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {   // landed on, never just walked over
       k.taken = true;
       state.carrying = true;
       state.score += 500;
@@ -960,6 +965,9 @@ let zapBuffer = null;
 /** The original's beeper bursts, from its five-byte sound records: its
  *  routine steps a bit pattern round, holding each edge for a count that
  *  drifts by a step after so many toggles. [hold, outer, step, inner, bits] */
+// the cup of energy, as the original draws it: a cell wide, two tall
+const CUP_BITS = ["........", "...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........",
+                  ".#..###.", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........"];
 const BURSTS = {
   treenHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
   treenGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
@@ -1194,8 +1202,10 @@ function draw() {
   if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase, state.backdrop);
 
   for (const p of pickups) {
-    if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),
-                             { main: C.bcyan, shade: C.cyan, light: C.bwhite });
+    if (!p.taken) {                              // the original's cup: white on its own black cell
+      ctx.fillStyle = C.black; ctx.fillRect(Math.round(p.x), Math.round(p.y), 8, 16);
+      drawBits(ctx, CUP_BITS, Math.round(p.x), Math.round(p.y), [C.bwhite]);
+    }
   }
   for (const k of sdsParts) {
     if (!k.taken && k.key === key && k.id === state.fitted) drawPartBox(ctx, Math.round(k.x), Math.round(k.y));
