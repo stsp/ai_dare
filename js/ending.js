@@ -120,8 +120,9 @@ function drawPlaque(ctx, p) {
   ctx.fillStyle = paper; ctx.fillRect(p.x + 1, p.y + 1, PLAQUE_W - 2, PLAQUE_H - 2);
   ctx.fillStyle = ink;   ctx.fillRect(p.x + 3, p.y + 3, PLAQUE_W - 6, PLAQUE_H - 6);
   ctx.fillStyle = paper; ctx.fillRect(p.x + 4, p.y + 4, PLAQUE_W - 8, PLAQUE_H - 8);
-  drawText(ctx, "GAME", p.x + (PLAQUE_W - textWidth("GAME")) / 2, p.y + 8, ink);
-  drawText(ctx, "OVER", p.x + (PLAQUE_W - textWidth("OVER")) / 2, p.y + 17, ink);
+  const [a, b] = tx(["GAME", "OVER"]);
+  drawText(ctx, a, p.x + (PLAQUE_W - textWidth(a)) / 2, p.y + 8, ink);
+  drawText(ctx, b, p.x + (PLAQUE_W - textWidth(b)) / 2, p.y + 17, ink);
 }
 
 function drawEnding(ctx) {
@@ -135,12 +136,12 @@ function drawEnding(ctx) {
     drawStarfield(ctx, "getaway");
     drawEndingCity(ctx, Math.floor(e.t * 72));
     drawShip(ctx, 62, 82 + Math.round(Math.sin(e.t * 3) * 1.5), e.t);
-    drawMessage(ctx, ["DAN AND DIGBY MAKE A GETAWAY!"], true);
+    drawMessage(ctx, tx(["DAN AND DIGBY MAKE A GETAWAY!"]), true);
   } else if (e.phase === "countdown" || e.phase === "blast") {
     drawStarfield(ctx, "space");
     if (e.phase === "countdown") {
       drawGlobe(ctx, GLOBE.x, GLOBE.y, GLOBE.r, false);
-      drawMessage(ctx, [COUNTDOWN[Math.min(4, Math.floor(e.t / 0.4))]], true);
+      drawMessage(ctx, tx([COUNTDOWN[Math.min(4, Math.floor(e.t / 0.4))]]), true);
     } else {
       if (e.t < 0.25) drawGlobe(ctx, GLOBE.x, GLOBE.y, GLOBE.r + e.t * 20, true);
       for (const s of e.sparks) {
@@ -149,10 +150,10 @@ function drawEnding(ctx) {
       }
     }
   } else if (e.phase === "knighthood") {
-    drawMessage(ctx, ["WELL DONE SIR! THIS COULD", "GET YOU YOUR KNIGHTHOOD!"], true);
+    drawMessage(ctx, tx(["WELL DONE SIR! THIS COULD", "GET YOU YOUR KNIGHTHOOD!"]), true);
   } else if (e.phase === "banner") {
     drawStarfield(ctx, "space");
-    const a = "OUT OF TIME", b = "THE ASTEROID HITS EARTH";
+    const a = tx(["OUT OF TIME"])[0], b = tx(["THE ASTEROID HITS EARTH"])[0];
     drawText(ctx, a, (VIEW_W - textWidth(a)) / 2, 56, C.byellow);
     drawText(ctx, b, (VIEW_W - textWidth(b)) / 2, 70, C.bwhite);
   } else if (e.phase === "plaques") {
