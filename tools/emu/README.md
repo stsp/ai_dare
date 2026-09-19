@@ -104,3 +104,6 @@ emulator page on `http://127.0.0.1:8802/`.
   `stranded.js` puts Dan on one floor and a guard on another with no lift
   between, on every such pair in every room, and checks that the guard runs
   out and one comes in on Dan's floor.
+  `takepart.js OUT` has Dan jump onto the part in room 83 and saves the
+  frame of the pickup (the screen turned over), the gap between pulses, and
+  the messages with the Mekon on the viewer a moment later.
