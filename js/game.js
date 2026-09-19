@@ -219,7 +219,6 @@ const state = {
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
-  hologramSeen: false,
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
   taunts: 0, nextTaunt: 40,   // the Mekon's calls
@@ -271,10 +270,7 @@ function enterRoom(key, x, y) {
   }
   // the Mekon's hologram: he waits on his dais in one room of the fifth sector
   boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
-  if (boss && !state.hologramSeen) {
-    state.hologramSeen = true;
-    say(["\"I SAY....IT'S A HOLOGRAM !\""], 3);
-  }
+  if (boss) say(["\"I SAY....IT'S A HOLOGRAM !\""], 3);   // every time he walks in, as in the original
   if (key === SDS_ROOM) {
     say(["THE SELF DESTRUCT ROOM"], 2.5);
     if (state.carrying) note(["WALK TO THE LEFT", "TO FIT THE PART"], 3);
