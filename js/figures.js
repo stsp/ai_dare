@@ -311,29 +311,47 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.fillStyle = DAN_FIG.tunicLight;
   ctx.fillRect(-0.6 + lean, top + 0.8, 1.6, 0.7);       // shoulder flash
   leg(0.4, stride, false);
-  // the far arm, behind the near one, reaching to the rifle's fore-end
+  // the far arm, behind the near one, reaching to the gun's fore-end
   const sx = 0.4 + lean, sy = top + 1.6;                // the shoulder
   const gy = top + 6;
   ctx.save();
-  if (lift) { ctx.translate(sx, sy); ctx.rotate(0.95); ctx.translate(-sx, -sy); }   // arms and rifle swung down at his side
+  if (lift) { ctx.translate(sx, sy); ctx.rotate(0.95); ctx.translate(-sx, -sy); }   // arms and gun swung down at his side
   figShape(ctx, DAN_FIG.tunicShade, (c) => {
-    c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 10, gy - 0.2);
-    c.lineTo(sx + 10, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
+    c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 8.4, gy - 0.2);
+    c.lineTo(sx + 8.4, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
   });
-  // the rifle, held out level
-  figShape(ctx, DAN_FIG.gunShade, (c) => {
-    c.moveTo(-3 + lean, gy); c.lineTo(17 + lean, gy); c.lineTo(17 + lean, gy + 1.5);
-    c.lineTo(5.5 + lean, gy + 1.5); c.lineTo(5.5 + lean, gy + 3.2); c.lineTo(2.5 + lean, gy + 3.2);
-    c.lineTo(2.5 + lean, gy + 1.5); c.lineTo(-1 + lean, gy + 1.5); c.lineTo(-3 + lean, gy + 3);
+  // a submachine gun, held out level: a skeleton stock behind, a boxy
+  // receiver with sights, a pistol grip and a curved magazine hanging under
+  // it, a short barrel out front
+  const g = lean;
+  figShape(ctx, DAN_FIG.gunShade, (c) => {                          // stock: a bar back to the butt plate
+    c.moveTo(-1 + g, gy + 0.3); c.lineTo(-4.4 + g, gy + 0.3); c.lineTo(-4.4 + g, gy - 0.3); c.lineTo(-5.2 + g, gy - 0.3);
+    c.lineTo(-5.2 + g, gy + 2.6); c.lineTo(-4.4 + g, gy + 2.6); c.lineTo(-4.4 + g, gy + 1.2); c.lineTo(-1 + g, gy + 1.2);
   }, 0.5);
+  figShape(ctx, DAN_FIG.gun, (c) => {                               // receiver and barrel
+    c.moveTo(-1.6 + g, gy - 0.5); c.lineTo(9 + g, gy - 0.5); c.lineTo(9 + g, gy + 0.2); c.lineTo(12.3 + g, gy + 0.2);
+    c.lineTo(12.3 + g, gy + 1.3); c.lineTo(9 + g, gy + 1.3); c.lineTo(9 + g, gy + 2); c.lineTo(-1.6 + g, gy + 2);
+  }, 0.5);
+  ctx.fillStyle = DAN_FIG.gunShade;
+  ctx.fillRect(-1.6 + g, gy + 1.3, 10.6, 0.7);                     // the receiver's underside
+  ctx.fillRect(-0.6 + g, gy - 1.3, 0.8, 0.8);                      // rear sight
+  ctx.fillRect(8 + g, gy - 1.3, 0.7, 0.8);                         // front sight
+  ctx.fillRect(12.2 + g, gy, 1, 1.5);                              // muzzle
   ctx.fillStyle = DAN_FIG.gunLight;
-  ctx.fillRect(-2 + lean, gy + 0.3, 18, 0.6);
+  ctx.fillRect(-1.2 + g, gy - 0.2, 10, 0.5);                       // light along the top of the receiver
+  figShape(ctx, DAN_FIG.gunShade, (c) => {                          // pistol grip, raked back
+    c.moveTo(4.4 + g, gy + 2); c.lineTo(6.2 + g, gy + 2); c.lineTo(5.6 + g, gy + 5); c.lineTo(3.7 + g, gy + 5);
+  }, 0.5);
+  figShape(ctx, DAN_FIG.gunShade, (c) => {                          // the magazine, curving forward
+    c.moveTo(7 + g, gy + 2); c.lineTo(8.8 + g, gy + 2); c.lineTo(9.6 + g, gy + 5.4); c.quadraticCurveTo(9.8 + g, gy + 7, 8.6 + g, gy + 7.2);
+    c.lineTo(7.4 + g, gy + 7); c.quadraticCurveTo(7.6 + g, gy + 4.6, 7 + g, gy + 2);
+  }, 0.5);
   ctx.fillStyle = DAN_FIG.glow;
-  ctx.fillRect(15.6 + lean, gy + 0.2, 1.8, 1.2);
+  ctx.fillRect(12.4 + g, gy + 0.3, 1, 1);                          // the muzzle's charge
   if (pose === "fire") {                              // the shot leaving the muzzle
     ctx.fillStyle = DAN_FIG.flash;
     ctx.beginPath();
-    ctx.moveTo(17.5 + lean, gy + 0.8); ctx.lineTo(22 + lean, gy - 1.5); ctx.lineTo(20.5 + lean, gy + 0.8); ctx.lineTo(22 + lean, gy + 3);
+    ctx.moveTo(13.4 + g, gy + 0.8); ctx.lineTo(17.5 + g, gy - 1.5); ctx.lineTo(16 + g, gy + 0.8); ctx.lineTo(17.5 + g, gy + 3);
     ctx.closePath(); ctx.fill();
   }
   // the near arm: down from the shoulder to the elbow, forward to the grip
@@ -341,8 +359,8 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
     c.moveTo(sx - 1.4, sy); c.lineTo(sx + 1, sy - 0.4); c.lineTo(sx + 3.4, gy - 0.2); c.lineTo(sx + 5, gy);
     c.lineTo(sx + 5, gy + 1.8); c.lineTo(sx + 2.6, gy + 1.8); c.lineTo(sx + 0.2, sy + 2.6);
   });
-  figEllipse(ctx, DAN_FIG.skin, sx + 5.2, gy + 0.9, 1.6, 1.2, 0.5);    // the near hand at the grip
-  figEllipse(ctx, DAN_FIG.skin, sx + 10.4, gy + 0.7, 1.5, 1.1, 0.5);   // the far hand on the fore-end
+  figEllipse(ctx, DAN_FIG.skin, sx + 4.8, gy + 2.2, 1.5, 1.2, 0.5);    // the near hand on the pistol grip
+  figEllipse(ctx, DAN_FIG.skin, sx + 8.4, gy + 1.6, 1.5, 1.1, 0.5);    // the far hand at the magazine's front
   ctx.restore();
   // head: the rendered one (assets/dan_head.png, cut from the run frame) on
   // a short neck; drawn by hand only until it has loaded
@@ -398,17 +416,30 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
 
 
 /** A part of the self-destruct mechanism as the original shows it on the
- *  floor: a small white box with a slot in its face and a chevroned cyan edge,
- *  12 wide and 16 tall, its right side in shadow. */
+ *  floor: its own two cells (data/emu/masks/part_148.scr, cells 6-7 of rows
+ *  14-15), a chevroned cyan edge and a bright white box with a slot in its
+ *  face, on black. */
+const PART_BITS = [
+  "................",
+  "..#...########..",
+  ".#...#.########.",
+  "......########..",
+  ".#............#.",
+  ".#...#.########.",
+  ".#....##.....##.",
+  ".#...#.#.###.##.",
+  ".#....##.....##.",
+  ".#...#.#.....##.",
+  "......########..",
+  ".#............#.",
+  ".....#.#######..",
+  "................",
+  "................",
+  "................",
+];
 function drawPartBox(ctx, x, y) {
-  ctx.fillStyle = C.black;  ctx.fillRect(x, y, 12, 16);
-  ctx.fillStyle = C.bwhite; ctx.fillRect(x + 2, y + 1, 8, 14);
-  ctx.fillStyle = C.black;  ctx.fillRect(x + 3, y + 6, 6, 4);          // the slot
-  ctx.fillStyle = C.bwhite; ctx.fillRect(x + 4, y + 7, 4, 1);
-  ctx.fillStyle = C.bcyan;                                            // the chevroned edge
-  for (let j = 0; j < 16; j += 2) ctx.fillRect(x + (j % 4 ? 1 : 0), y + j, 1, 1);
-  ctx.fillStyle = C.cyan;   ctx.fillRect(x + 2, y + 1, 1, 14);
-  ctx.fillStyle = C.white;  ctx.fillRect(x + 9, y + 1, 1, 14);          // the lit rim
+  ctx.fillStyle = C.black; ctx.fillRect(x, y, 16, 16);
+  drawBits(ctx, PART_BITS, x, y, [C.cyan, C.bwhite]);
 }
 
 /** The self-destruct mechanism in its room: five dished spheres, two over
