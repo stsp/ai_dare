@@ -111,7 +111,11 @@ python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/
 
 ## Other departures
 
-* Guards, pickups and key placement are procedural, from a seeded hash of each
+* No room has Treens when Dan walks in: after a few seconds one arrives, then
+  another, never more than two. In most rooms he materialises on Dan's floor
+  well away from him; on the surface and in the hologram room they only run in
+  from the far edge. He closes to a few cells and pauses before firing. The
+  fourth sector is unguarded. Pickups are procedural, from a seeded hash of each
   room. The five parts of the mechanism lie where the original keeps them
   (rooms 83, 148, 185, 255 and 56, one per sector) and the sector doors open
   after one, two, three and four parts, as the walkthrough shows.

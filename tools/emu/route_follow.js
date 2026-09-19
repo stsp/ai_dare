@@ -121,7 +121,9 @@ const fitted0 = +(process.argv[3] || 0);
         const c = Math.round(part.x / 8), feet = dan.y + DAN_H, cx = dan.x / 8;
         const plat = ROOMS[from].platforms.find((p) => Math.abs(p.y * 8 - feet) < 2 && cx >= p.x0 - 1 && cx <= p.x1 + 1);
         if (plat && c > plat.x1) jumpFrom(plat.x1 - 1, 'right'); else if (plat && c < plat.x0) jumpFrom(plat.x0 + 1, 'left');
-        goto(c); jumpFrom(c + 1, 'left');
+        // it is taken on the way down, so the jump must end on it: five cells is a jump's reach
+        goto(c); const plat2 = ROOMS[from].platforms.find((p) => Math.abs(p.y * 8 - (dan.y + DAN_H)) < 2 && c >= p.x0 - 1 && c <= p.x1 + 1);
+        if (plat2 && c + 5 <= plat2.x1) jumpFrom(c + 5, 'left'); else jumpFrom(c - 5, 'right');
       }
       if (from === SDS_ROOM && state.carrying) { goto(2); for (let k = 0; k < 60; k++) tick(); }
       // captured on purpose: the walkthrough let the guards take Dan to the cells
