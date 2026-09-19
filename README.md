@@ -111,12 +111,12 @@ python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/
 
 ## Other departures
 
-* No room has Treens when Dan walks in: after a few seconds one arrives, then
-  another, never more than two. In most rooms he materialises on Dan's floor
-  well away from him; on the surface and in the hologram room they only run in
-  from the far edge. He closes to a few cells and pauses before firing. The
-  fourth sector is unguarded. Pickups are procedural, from a seeded hash of each
-  room. The five parts of the mechanism lie where the original keeps them
+* In most rooms some Treens are already about when Dan walks in, placed by a
+  seeded hash of the room; on the surface and in the hologram room there are
+  none to start with. Every so often, while fewer than two are about, one runs
+  in from the edge away from Dan at the original's pace, closes to a few cells
+  and pauses before firing. The fourth sector is unguarded. Pickups are
+  procedural, from a seeded hash of each room. The five parts of the mechanism lie where the original keeps them
   (rooms 83, 148, 185, 255 and 56, one per sector) and the sector doors open
   after one, two, three and four parts, as the walkthrough shows.
 * The clock runs at 3× real time, so a two-hour mission is about forty minutes.
