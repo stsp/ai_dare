@@ -395,3 +395,71 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   }, 0.45);
   ctx.restore();
 }
+
+
+/** A part of the self-destruct mechanism as the original shows it on the
+ *  floor: a small white box with a slot in its face and a chevroned cyan edge,
+ *  12 wide and 16 tall, its right side in shadow. */
+function drawPartBox(ctx, x, y) {
+  ctx.fillStyle = C.black;  ctx.fillRect(x, y, 12, 16);
+  ctx.fillStyle = C.bwhite; ctx.fillRect(x + 2, y + 1, 8, 14);
+  ctx.fillStyle = C.black;  ctx.fillRect(x + 3, y + 6, 6, 4);          // the slot
+  ctx.fillStyle = C.bwhite; ctx.fillRect(x + 4, y + 7, 4, 1);
+  ctx.fillStyle = C.bcyan;                                            // the chevroned edge
+  for (let j = 0; j < 16; j += 2) ctx.fillRect(x + (j % 4 ? 1 : 0), y + j, 1, 1);
+  ctx.fillStyle = C.cyan;   ctx.fillRect(x + 2, y + 1, 1, 14);
+  ctx.fillStyle = C.white;  ctx.fillRect(x + 9, y + 1, 1, 14);          // the lit rim
+}
+
+/** The self-destruct mechanism in its room: five dished spheres, two over
+ *  three, on stalks above three yellow boxes with grilles, all on a frame of
+ *  cyan pipes with two striped columns. Fitted parts turn their spheres from
+ *  green to white, in order: top left, top right, then the bottom row; while
+ *  one is being fitted the lit ones flash through the colours. */
+const SPHERES = [[-8, -76], [8, -76], [-16, -62], [0, -62], [16, -62]];
+function drawMechanism(ctx, cx, floor, fitted, flash, phase) {
+  const y = floor;
+  // the pipe frame
+  ctx.fillStyle = C.bcyan;
+  ctx.fillRect(cx - 38, y - 22, 76, 3); ctx.fillRect(cx - 38, y - 22, 3, 22); ctx.fillRect(cx + 35, y - 22, 3, 22);
+  ctx.fillRect(cx - 38, y - 8, 12, 3); ctx.fillRect(cx + 26, y - 8, 12, 3);
+  ctx.fillStyle = C.cyan;
+  ctx.fillRect(cx - 38, y - 20, 76, 1); ctx.fillRect(cx - 37, y - 22, 1, 22); ctx.fillRect(cx + 36, y - 22, 1, 22);
+  // the striped columns
+  for (const x of [cx - 14, cx + 6]) {
+    ctx.fillStyle = C.bgreen; ctx.fillRect(x, y - 30, 8, 30);
+    ctx.fillStyle = C.bwhite; ctx.fillRect(x + 2, y - 30, 1, 30); ctx.fillRect(x + 5, y - 30, 1, 30);
+    ctx.fillStyle = C.green;  ctx.fillRect(x + 7, y - 30, 1, 30);
+  }
+  // the three boxes with their grilles
+  for (let i = 0; i < 3; i++) {
+    const x = cx - 24 + i * 16;
+    ctx.fillStyle = C.yellow;  ctx.fillRect(x, y - 44, 16, 14);
+    ctx.fillStyle = C.byellow; ctx.fillRect(x + 1, y - 43, 14, 12);
+    ctx.fillStyle = C.black;   ctx.fillRect(x + 4, y - 40, 8, 6);
+    ctx.fillStyle = C.byellow; ctx.fillRect(x + 5, y - 38, 6, 1); ctx.fillRect(x + 5, y - 36, 6, 1);
+    ctx.fillStyle = C.yellow;  ctx.fillRect(x + 1, y - 31, 14, 1);
+  }
+  // the stalks
+  for (const x of [cx - 16, cx, cx + 16]) {
+    ctx.fillStyle = C.bgreen; ctx.fillRect(x - 2, y - 56, 4, 12);
+    ctx.fillStyle = C.bwhite; ctx.fillRect(x - 1, y - 56, 1, 12);
+  }
+  // the spheres, dished: a colour with a darker weave over it
+  const cycle = [C.bmagenta, C.bred, C.bblue, C.byellow];
+  SPHERES.forEach(([dx, dy], i) => {
+    const lit = i < fitted;
+    const col = lit && flash > 0 ? cycle[Math.floor(phase * 5 + i) % 4] : lit ? C.bwhite : C.bgreen;
+    const sx = cx + dx, sy = y + dy;
+    ctx.fillStyle = C.black;
+    ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(sx, sy, 6, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    for (let j = -6; j < 6; j++) for (let k = -6; k < 6; k++) if ((j + k) & 1) ctx.fillRect(sx + j, sy + k, 1, 1);
+    ctx.restore();
+    ctx.fillStyle = C.bwhite; ctx.fillRect(sx - 3, sy - 4, 2, 1);        // the glint
+  });
+}

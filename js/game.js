@@ -39,6 +39,7 @@ const TREEN_STAND_OFF = 4 * 8;     // and walks no closer than this
 const HIT_RATTLE_EVERY = 0.6, HIT_ENERGY = 3;
 const CLOCK_RATE = 3;          // game seconds per real second
 const START_TIME = 2 * 3600;
+const SDS_X = 144;              // the mechanism stands mid-room, where the map shows its silhouette
 const ESCAPE_ROOM = "75";       // Digby waits with the Anastasia here once the mechanism is armed
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
@@ -138,7 +139,7 @@ function placeParts() {
   return LEVEL.parts.map((p, i) => {
     const room = ROOMS[p.room];
     const floor = room.platforms.reduce((a, b) => (b.y > a.y ? b : a));
-    return { id: i, key: p.room, x: (p.x ?? 4) * 8, y: floor.y * 8 - 10, taken: false };
+    return { id: i, key: p.room, x: (p.x ?? 4) * 8, y: floor.y * 8 - 16, taken: false };
   });
 }
 
@@ -223,6 +224,7 @@ const state = {
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
   cheat: {},             // doors | parts | time, typed as codes; they last the session
+  fitFlash: 0,           // the mechanism flashing after a part goes in
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
@@ -757,7 +759,7 @@ function updatePickups() {
   for (const k of sdsParts) {
     // the parts come one at a time: the next is where the last fitted one led
     if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
-    if (overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 8, 8)) {
+    if (overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 12, 16)) {
       k.taken = true;
       state.carrying = true;
       state.score += 500;
@@ -769,6 +771,7 @@ function updatePickups() {
   if (key === SDS_ROOM && state.carrying && dan.x <= 32 && dan.onGround) {
     state.carrying = false;
     state.fitted++;
+    state.fitFlash = 1.6;                      // the mechanism's spheres flash through the colours
     state.score += 1000;
     beep(1320, 0.4, "triangle");
     if (state.fitted >= 5) {
@@ -980,16 +983,14 @@ function draw() {
 
   drawLiftMarks(ctx, key, room);
   drawGates(ctx, key, room);
+  if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.fitFlash, state.phase);
 
   for (const p of pickups) {
     if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),
                              { main: C.bcyan, shade: C.cyan, light: C.bwhite });
   }
   for (const k of sdsParts) {
-    if (!k.taken && k.key === key && k.id === state.fitted) {
-      drawSprite(ctx, "key", Math.round(k.x), Math.round(k.y),
-                 { main: C.byellow, shade: C.red, light: C.bwhite });
-    }
+    if (!k.taken && k.key === key && k.id === state.fitted) drawPartBox(ctx, Math.round(k.x), Math.round(k.y));
   }
   if (boss) {
     boss.anim += 0.05;
@@ -1107,6 +1108,7 @@ function frame(now) {
     if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.flash > 0) state.flash -= dt;
+    if (state.fitFlash > 0) state.fitFlash -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       beginEnding("lost");
