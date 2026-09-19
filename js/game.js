@@ -197,8 +197,11 @@ const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one run
 const TREEN_FIRST = [0.4, 2.2];   // and sooner still into a room that was empty when Dan walked in
 const TREEN_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
 const TREEN_BEHIND = 64;         // how far into the room Dan must be before one follows him in through his own door
+const TREEN_BEHIND_TIME = 4;     // seconds after he steps in that this holds; later a guard may come in at his back
 const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Dan
 const TREEN_CHASE = 3;           // seconds a guard counts as giving chase after he last had Dan in range
+const TREEN_LEAVE = 1.5;         // seconds a guard stranded on another floor waits before he runs out to come in on Dan's
+const TREEN_RETURN = [0.8, 2.0]; // and how soon after that he is in again
 const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
 // where none is about when Dan walks in, and they only run in after him:
@@ -253,21 +256,20 @@ function spawnTreen(key, room) {
   // Dan's own floor first, widest first; another floor when no doorway on his lets one in
   const level = wide.filter((p) => Math.abs(p.y * 8 - danFeet) < 6).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   const others = wide.filter((p) => !level.includes(p)).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
-  const e = EXITS[key];
   for (const p of [...level, ...others]) {
     const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
     // in from an edge away from Dan, running - but only through a doorway on
     // that floor, never through a door that is shut, nor through a wall
-    const feet = p.y * 8, y = feet - TREEN_H;
-    const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
-    const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !treenInWall(key, 0, y), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !treenInWall(key, VIEW_W - TREEN_W, y) };
+    const y = p.y * 8 - TREEN_H;
+    const way = waysOnto(key, p);
     const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
     const nearSide = farSide === "right" ? "left" : "right";
     // through the door behind Dan only once he is well into the room: never
     // straight at his back as he steps in
     const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
     const onHisFloor = level.includes(p);
-    const side = way[farSide] ? farSide : way[nearSide] && (clear >= TREEN_BEHIND || !onHisFloor) ? nearSide : null;
+    const justIn = state.roomAge < TREEN_BEHIND_TIME;                 // the rule is for the moment he steps in, not for ever
+    const side = way[farSide] ? farSide : way[nearSide] && (clear >= TREEN_BEHIND || !onHisFloor || !justIn) ? nearSide : null;
     if (!side) continue;
     // he steps in at the edge cell, whole, as the original's sprites do - under the
     // door frame where the room has one - and runs in from there
@@ -283,18 +285,48 @@ function spawnTreen(key, room) {
  *  on the guard's floor that stops at Dan's, and he heads for it; Dan riding
  *  out of the room while the guard is giving chase, and he follows him onto
  *  it, to arrive behind him in the next room. */
-function treenSeeksLift(t, key, room) {
+function liftToDan(t, key) {
   const feet = t.y + TREEN_H;
   const onHisFloor = (l) => l.feet != null && Math.abs(l.feet - feet) <= 14 &&
                             l.x0 * 8 >= t.x0 - 8 && (l.x1 + 1) * 8 <= t.x1 + TREEN_W + 8;   // its cells on his beat
-  let link = null;
-  if (dan.onLift && dan.onLift.link && t.chase > 0 && onHisFloor(dan.onLift.link)) link = dan.onLift.link;   // after him
-  else if (dan.onGround) {
-    const danFeet = dan.y + DAN_H;
-    if (Math.abs(danFeet - feet) >= 12) link = EXITS[key].lifts.find((l) => l.to === key && l.stop != null && onHisFloor(l) && Math.abs(l.stop - danFeet) <= 14) || null;
-  }
+  if (dan.onLift && dan.onLift.link && t.chase > 0 && onHisFloor(dan.onLift.link)) return dan.onLift.link;   // after him
+  if (!dan.onGround) return null;
+  const danFeet = dan.y + DAN_H;
+  if (Math.abs(danFeet - feet) < 12) return null;
+  return EXITS[key].lifts.find((l) => l.to === key && l.stop != null && onHisFloor(l) && Math.abs(l.stop - danFeet) <= 14) || null;
+}
+function treenSeeksLift(t, key, room) {
+  const link = liftToDan(t, key);
   if (!link) return;
   t.lift = { link, x: ((link.x0 + link.x1 + 1) / 2) * 8 - TREEN_W / 2, wait: 0.3 + Math.random() * 1.2 };
+}
+
+/** A guard on another floor than Dan, with no lift on his beat to bring him
+ *  down or up: after a moment he runs off his floor through the nearer open
+ *  edge and is out of the room, and one comes in again where Dan is (the
+ *  spawner sends the room's next guard onto Dan's floor). Returns the edge he
+ *  is leaving by, or null when his floor has none he can walk off. */
+function treenLeaves(t, key) {
+  const tried = t.noWay || new Set();                 // edges a wall has already turned him back from
+  const left = t.x0 <= 0 && !treenInWall(key, 0, t.y) && !tried.has("left");
+  const right = t.x1 + TREEN_W >= VIEW_W && !treenInWall(key, VIEW_W - TREEN_W, t.y) && !tried.has("right");
+  if (!left && !right) return null;
+  if (left && right) return t.x + TREEN_W / 2 < VIEW_W / 2 ? "left" : "right";
+  return left ? "left" : "right";
+}
+/** The edges of a floor a guard can step in through: a doorway on that floor
+ *  (its link, or one with no floor recorded) whose door is open, and no wall
+ *  where he would stand. */
+function waysOnto(key, p) {
+  const e = EXITS[key], feet = p.y * 8, y = feet - TREEN_H;
+  const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
+  return { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !treenInWall(key, 0, y),
+           right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !treenInWall(key, VIEW_W - TREEN_W, y) };
+}
+/** Whether a guard could come in on the floor Dan stands on. */
+function wayToDan(key, room) {
+  const danFeet = dan.y + DAN_H;
+  return room.platforms.some((p) => p.x1 - p.x0 >= 5 && Math.abs(p.y * 8 - danFeet) < 6 && (({ left, right }) => left || right)(waysOnto(key, p)));
 }
 function treenToLift(t, dt) {
   const dx = t.lift.x - t.x;
@@ -365,6 +397,7 @@ const state = {
   deadTreens: new Map(),   // room -> which of its guards have been shot
   deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
   pursuer: null,           // a guard riding the lift after Dan into the next room
+  roomAge: 0,              // seconds since Dan stepped into this room
   takenItems: new Set(),   // the cups of energy drunk this game
   invert: 0,               // the screen inverted after a gun is shot, seconds left
   burst: 0,              // lift-transfer flash, seconds left
@@ -401,6 +434,7 @@ function enterRoom(key, x, y) {
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }   // where he arrives: the guards keep clear of it
   treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
   state.treenClock = 0;
+  state.roomAge = 0;
   const wait = treens.length ? TREEN_AGAIN : TREEN_FIRST;
   state.treenNext = wait[0] + Math.random() * (wait[1] - wait[0]);
   if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
@@ -783,6 +817,7 @@ function moveBetweenRooms() {
 
 function updateTreens(dt) {
   const key = state.room, room = currentRoom();
+  state.roomAge += dt;
   // the next one arrives when his time comes, unless the room is unguarded,
   // cleared, or has had its share: a room's guards are TREEN_MAX in all, the
   // ones shot here counted, so one left standing never brings another
@@ -804,6 +839,25 @@ function updateTreens(dt) {
     const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0 && !t.entering;   // not from the doorway
     if (inRange) t.chase = TREEN_CHASE; else if (t.chase > 0) t.chase -= dt;
     if (t.lifts && !inRange) treenSeeksLift(t, key, room);
+    // on another floor than Dan and no lift to him: he leaves, to come in where Dan is
+    // (only when one could come in on Dan's floor; else he keeps his beat)
+    if (!level && !t.entering && dan.onGround && !(t.lifts && liftToDan(t, key)) && wayToDan(key, room)) {
+      const danFeet = dan.y + DAN_H;
+      if (t.apartFrom !== danFeet) { t.apartFrom = danFeet; t.apart = 0; t.noWay = new Set(); }   // Dan on a new floor: a fresh try
+      t.apart += dt;
+      if (t.apart >= TREEN_LEAVE && !t.leaving) t.leaving = treenLeaves(t, key);
+    } else { t.apart = 0; t.apartFrom = null; t.leaving = null; }
+    if (t.leaving) {
+      t.fire = false; t.dir = t.leaving === "left" ? -1 : 1;
+      t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9;
+      if (treenWalled(t, key)) { (t.noWay = t.noWay || new Set()).add(t.leaving); t.leaving = null; }   // a wall on the way out: the other edge, or he stays
+      if (t.x + TREEN_W <= 0 || t.x >= VIEW_W) {                       // out of the room; his place is taken where Dan is
+        t.dead = true; t.gone = true;
+        state.treenClock = 0;
+        state.treenNext = TREEN_RETURN[0] + Math.random() * (TREEN_RETURN[1] - TREEN_RETURN[0]);
+      }
+      continue;
+    }
     t.react = inRange ? t.react + dt : 0;        // he takes a moment before he opens fire
     const engaged = inRange && t.react >= TREEN_REACT;
     t.fire = engaged;

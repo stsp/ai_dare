@@ -101,3 +101,6 @@ emulator page on `http://127.0.0.1:8802/`.
   the room is never declared safe.
   `finite.js` shoots only the first guard on every floor and counts who
   else comes: a room's share is two in all, shot ones included.
+  `stranded.js` puts Dan on one floor and a guard on another with no lift
+  between, on every such pair in every room, and checks that the guard runs
+  out and one comes in on Dan's floor.
