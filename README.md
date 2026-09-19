@@ -88,6 +88,10 @@ agree on, so Dan, the Treens and the message boxes fall away, wipes the parts
 of the mechanism, writes the cleaned screens back to `data/emu` and packs the
 play areas into `assets/rooms.png`. The game lays its own things over them:
 the lifts' marks, the doors, the parts, the pickups, the mechanism's lights.
+`--door` cuts the door slabs out of shut-and-open pairs of screens, `--gun`
+finds the floor guns by their tiles, lifts them off the backdrops and keeps
+one as a sprite, and `--arrow` finds the lifts' scrolling arrow cells (in any
+of their eight phases) so the game can animate them.
 
 Dan, the Treens and the Mekon are the project's own figures, drawn as
 vectors (`js/figures.js`), with Dan's head from the project's own renders.
@@ -107,6 +111,7 @@ python3 tools/make_sprites.py                               # renders in ./ -> a
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
     --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \
     --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
+    --gun data/emu/masks/gun_118.scr:15:16:6:8 --arrow data/emu/masks/arrow_83.scr:12:23 \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
 ```
 

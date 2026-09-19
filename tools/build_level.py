@@ -602,6 +602,13 @@ def main():
         for t in sorted(targets, key=str):
             b, feet = t if isinstance(t, tuple) else (t, None)
             if via == "drop":
+                # the recorder only saw where Dan came to rest, and a fall can
+                # pass straight through a room: on the map every room drops
+                # into the one directly beneath it (the next row of 32), so
+                # that is where the hole leads whenever that room is in the level
+                below = str(int(a) + 32)
+                if below in rooms and below != b:
+                    b = below
                 holes = rooms[a]["holes"] or [[0, TW]]
                 for x0, x1 in holes:          # holes end exclusive, zones inclusive
                     links.append({"from": a, "to": b, "kind": "drop", "x0": x0, "x1": x1 - 1})
