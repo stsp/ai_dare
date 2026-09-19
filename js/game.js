@@ -1075,6 +1075,13 @@ window.addEventListener("resize", fitCanvas);
 
 /** The markings by a lift: an arrow on the floor for each way it goes, over
  *  the cells it answers from. */
+const LIFT_BUTTON = [0x00, 0x3c, 0x4e, 0x5e, 0x5e, 0x5e, 0x3c, 0x00];   // the round call button, as the original draws it
+/** Dan standing on the cells a lift answers from, at their floor. */
+function liftUnderDan(key, room) {
+  if (!dan.onGround) return false;
+  const cell = Math.floor((dan.x + DAN_W / 2) / 8), feet = dan.y + DAN_H;
+  return EXITS[key].lifts.some((l) => inLiftZone(room, l, cell) && Math.abs(feet - l.feet) <= 14);
+}
 function drawLiftMarks(ctx, key, room) {
   // over the original's screen its own marks: the arrow cells beside each
   // shaft, which scroll a pixel every four frames, down or up as the lift goes
@@ -1092,6 +1099,19 @@ function drawLiftMarks(ctx, key, room) {
         const row = dir === "down" ? bits[(j - step) & 7] : bits[7 - ((j + step) & 7)];
         for (let i = 0; i < 8; i++) if (row & (0x80 >> i)) ctx.fillRect(x + i, y + j, 1, 1);
       }
+    }
+    // the stations' call buttons: while Dan stands on a lift's cells or rides, the
+    // original cycles their ink through magenta, red and blue every four frames
+    const buttons = window.ROOMS_SHEET.buttons && window.ROOMS_SHEET.buttons[key];
+    if (buttons && (dan.onLift || liftUnderDan(key, room))) {
+      const inks = [C.bmagenta, C.bred, C.bblue];
+      buttons.forEach(([x, y, attr], i) => {
+        const paper = PALETTE[(attr >> 3) & 7];
+        ctx.fillStyle = attr & 0x40 ? paper.replace("d8", "ff") : paper;
+        ctx.fillRect(x, y, 8, 8);
+        ctx.fillStyle = inks[(step * 7 + i * 3 + ((step >> 2) & 1)) % 3];
+        for (let j = 0; j < 8; j++) for (let k = 0; k < 8; k++) if (LIFT_BUTTON[j] & (0x80 >> k)) ctx.fillRect(x + k, y + j, 1, 1);
+      });
     }
     return;
   }

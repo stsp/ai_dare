@@ -91,9 +91,11 @@ into `assets/rooms.png`. The game lays its own things over them:
 the lifts' marks, the doors, the parts, the pickups, the mechanism's lights.
 `--door` cuts the door slabs out of shut-and-open pairs of screens,
 `--objects` takes the original's gun tables, lifts the floor guns off the
-backdrops and records every gun's place, span and wall colour, and `--arrow`
+backdrops and records every gun's place, span and wall colour, `--arrow`
 finds the lifts' scrolling arrow cells (in any of their eight phases) so the
-game can animate them.
+game can animate them, and `--button` finds the call buttons beside them,
+whose colours the game cycles while a lift is called or moving, as the
+original does.
 
 Dan, the Treens and the Mekon are the project's own figures, drawn as
 vectors (`js/figures.js`), with Dan's head from the project's own renders.
@@ -114,7 +116,7 @@ python3 tools/make_title.py                                 # the render -> asse
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
     --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \
     --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
-    --objects data/emu/guns.json --arrow data/emu/masks/arrow_83.scr:12:23 \
+    --objects data/emu/guns.json --button data/emu/room_146.scr:4:16 --arrow data/emu/masks/arrow_83.scr:12:23 \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
 ```
 
