@@ -1,7 +1,7 @@
 // Play the sector-2 route of the original's walkthrough in the recreation, step by step, reporting where it breaks.
 const { chromium } = require('playwright-core');
 (async () => {
-  const browser = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const page = await browser.newPage({ viewport: { width: 800, height: 620 } });
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto('http://127.0.0.1:8801/index.html'); await page.waitForTimeout(600);
@@ -53,7 +53,7 @@ const { chromium } = require('playwright-core');
       ['88: walk left', () => walk('left'), '87'],
       ['87: walk left', () => walk('left'), '86'],
       ['86: walk left', () => walk('left'), '85'],
-      ['85: to cell 24, jump left', () => { goto(24); jump('left'); }, '85'],
+      ['85: to cell 22, jump left', () => { goto(22); jump('left'); }, '85'],
       ['85: walk left', () => walk('left'), '84'],
       ['84: walk left', () => walk('left'), '83'],
       ['83: lift down at 19', () => { goto(19); lift('down'); }, '115'],
