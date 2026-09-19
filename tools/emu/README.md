@@ -48,6 +48,9 @@ emulator page on `http://127.0.0.1:8802/`.
   held, e.g. `A` to kneel) and saves every frame's screen and the beeper's
   samples (`NAME_audio.f32`, 882 per frame); `fire_an.py NAME` reads the
   bullet row, its cells frame by frame and where each shot stopped.
+* `run_rzx_audio.sh` - plays the walkthrough recording in Fuse with SDL's disk
+  audio driver, so the beeper lands in `rzx_audio.raw` (16-bit stereo, 44.1 kHz,
+  paced by `SDL_DISKAUDIODELAY` so the timeline matches the video's).
 * `emu_film2.js SNAP CELL SCRIPT EVERY NAME` - drives Dan from a snapshot by
   a key script and logs room/x/y; `emu_grabroom2.js` walks him into the next
   room and dumps its screen; `emu_lifttrace.js` records a lift ride frame by

@@ -14,6 +14,13 @@ const COUNTDOWN = ["FIVE", "FOUR", "THREE", "TWO", "ONE"];
 const PLAQUE_COLOURS = [[C.byellow, C.bred], [C.bcyan, C.bblue], [C.bgreen, C.black], [C.white, C.bmagenta]];
 const PLAQUE_W = 48, PLAQUE_H = 32, PLAQUES_PER_SECOND = 36;
 const GLOBE = { x: 120, y: 74, r: 8 };
+// The beeper through the ending, as the recording has it: the rifle's chirp
+// and the beam's rattle again, at these moments of each phase.
+const ENDING_SOUNDS = {
+  getaway: [[0, () => rattle(35)], [0.105, () => zap()], [0.225, () => zap()]],
+  blast: [[0, () => zap()], [0.095, () => rattle(30)], [0.4, () => zap()], [1.85, () => zap()], [2.2, () => zap()], [2.235, () => rattle(30)], [2.36, () => zap()]],
+  plaques: [[0.5, () => zap()], [0.62, () => zap()], [1.55, () => rattle(65)], [2.55, () => zap()], [2.67, () => zap()], [2.7, () => rattle(30)]],
+};
 
 let ending = null;
 
@@ -22,7 +29,7 @@ function beginEnding(outcome) {
   state.msgTop = state.msgBottom = null;
   ending = {
     outcome, phase: outcome === "won" ? "getaway" : "banner", t: 0,
-    sparks: [], plaques: [], due: 0, bursts: 0, r: rng((Date.now() & 0xffff) ^ 0xe11d),
+    sparks: [], plaques: [], due: 0, bursts: 0, r: rng((Date.now() & 0xffff) ^ 0xe11d), played: new Set(),
   };
 }
 
@@ -38,9 +45,13 @@ function updateEnding(dt) {
   const e = ending;
   if (!e) return;
   e.t += dt;
+  for (const [at, fn] of ENDING_SOUNDS[e.phase] || []) {
+    const key = e.phase + at;
+    if (e.t >= at && !e.played.has(key)) { e.played.add(key); fn(); }
+  }
   if (e.phase === "blast") {
     // the asteroid goes up first, then two lesser bursts out of the cloud
-    const at = [[0, 0, 0, 170, 42], [1.0, 12, 16, 60, 30], [1.5, -14, -8, 60, 30]];
+    const at = [[0, 0, 0, 170, 42], [1.5, 12, 16, 60, 30], [2.2, -14, -8, 60, 30]];
     while (e.bursts < at.length && e.t >= at[e.bursts][0]) {
       const [, dx, dy, n, v] = at[e.bursts++];
       endingBurst(e, GLOBE.x + dx, GLOBE.y + dy, n, v);
@@ -161,9 +172,9 @@ const CHEATS = {
   TIME:  () => { state.cheat.time = true; note(["CHEAT: THE CLOCK STOPS"], 3); },
 };
 let cheatTyped = "";
-function typeCheat(key) {
-  if (!key || key.length !== 1) return;
-  cheatTyped = (cheatTyped + key.toUpperCase()).slice(-8);
+function typeCheat(code) {                // the key's code, so any keyboard layout will do
+  if (!code || !/^Key[A-Z]$/.test(code)) return;
+  cheatTyped = (cheatTyped + code[3]).slice(-8);
   for (const code in CHEATS) if (cheatTyped.endsWith(code)) { CHEATS[code](); cheatTyped = ""; }
 }
 function cheatsOn() { return Object.keys(state.cheat).filter((k) => state.cheat[k]).map((k) => k.toUpperCase()); }

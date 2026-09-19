@@ -30,7 +30,13 @@ const FIRE_PERIOD = 6 * FRAME;
 const LASER_STEP = 8;          // one cell a frame
 const LASER_TRAIL = 2;         // dashes left behind the head
 const LASER_MIN = 8, LASER_MAX = 20;   // cells a shot lives, chosen at random
-const TREEN_LASER_CELLS = 9;
+// A Treen who reaches Dan's level closes to a few cells, stands and fires a
+// shot every three frames while Dan is before him - the dashes run together
+// into a beam - and the rattle of it striking Dan sounds now and then.
+const TREEN_FIRE_PERIOD = 3 * FRAME;
+const TREEN_FIRE_RANGE = 14 * 8;   // he opens fire from this far
+const TREEN_STAND_OFF = 4 * 8;     // and walks no closer than this
+const HIT_RATTLE_EVERY = 0.6, HIT_ENERGY = 3;
 const CLOCK_RATE = 3;          // game seconds per real second
 const START_TIME = 2 * 3600;
 const ESCAPE_ROOM = "75";       // Digby waits with the Anastasia here once the mechanism is armed
@@ -384,7 +390,7 @@ addEventListener("keydown", (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   if (!keys[e.code]) tapped[e.code] = true;
   keys[e.code] = true;
-  typeCheat(e.key);
+  typeCheat(e.code);
 });
 addEventListener("keyup", (e) => { keys[e.code] = false; });
 
@@ -406,6 +412,7 @@ function updateDan(dt) {
   if (dan.stun > 0) { dan.stun -= dt; dan.vx = 0; }   // out cold in the cell: nothing answers the keys
   if (dan.invuln > 0) dan.invuln -= dt;
   if (dan.fireCool > 0) dan.fireCool -= dt;
+  if (dan.rattle > 0) dan.rattle -= dt;
 
   // --- grav-lift: stand on the marked cells and press up or down. One press
   //     rides to the next floor, in this room or the next; keeping the key
@@ -611,24 +618,31 @@ function updateTreens(dt) {
   for (const t of treens) {
     if (t.dying > 0) t.dying -= dt;              // his last moment after the shot that got him
     if (t.dead) continue;
-    if (t.fire > 0) t.fire -= dt;
-    t.anim += dt * 5;
-    t.x += t.dir * 22 * dt;
-    if (t.x <= t.x0) { t.x = t.x0; t.dir = 1; }
-    if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; t.dir = -1; }
-
-    t.cool -= dt;
     const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
-    if (t.cool <= 0 && level) {
-      t.cool = 1.4 + Math.random();
-      t.fire = 0.22;
-      const dir = dan.x > t.x ? 1 : -1;
-      t.dir = dir;
-      lasers.push({
-        x: t.x + (dir > 0 ? TREEN_W + 8 : -8), y: t.y + 14,
-        dir, cells: TREEN_LASER_CELLS, trail: [], acc: 0, friendly: false,
-      });
+    const dx = (dan.x + DAN_W / 2) - (t.x + TREEN_W / 2);
+    const engaged = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0;
+    t.fire = engaged;
+    if (engaged) {
+      t.dir = dx > 0 ? 1 : -1;
+      if (Math.abs(dx) > TREEN_STAND_OFF) { t.x += t.dir * 22 * dt; t.anim += dt * 5; }
+      t.shot = (t.shot || 0) + dt;
+      while (t.shot >= TREEN_FIRE_PERIOD) {
+        t.shot -= TREEN_FIRE_PERIOD;
+        const tip = t.x + TREEN_W / 2 + t.dir * 13;         // the rifle's muzzle
+        lasers.push({
+          x: t.dir > 0 ? tip : tip - LASER_STEP, y: t.y + 13,
+          dir: t.dir, cells: LASER_MIN + Math.floor(Math.random() * (LASER_MAX - LASER_MIN + 1)),
+          trail: [], acc: 0, friendly: false,
+        });
+        zap();
+      }
+    } else {
+      t.shot = 0;
+      t.anim += dt * 5;
+      t.x += t.dir * 22 * dt;
     }
+    if (t.x <= t.x0) { t.x = t.x0; if (!engaged) t.dir = 1; }
+    if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!engaged) t.dir = -1; }
 
     if (dan.invuln <= 0 && !dan.onLift && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
       hurtDan(18);
@@ -653,9 +667,16 @@ function laserHit(l) {
         beep(160, 0.18, "sawtooth");
       }
     }
-  } else if (dan.invuln <= 0 && overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
+  } else if (overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
              !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
-    hurtDan(10);
+    // the beam strikes him: he flickers, and now and then the rattle of it sounds
+    dan.hurt = Math.max(dan.hurt, 0.25);
+    if (!(dan.rattle > 0)) {
+      dan.rattle = HIT_RATTLE_EVERY;
+      state.energy -= HIT_ENERGY;
+      rattle();
+      if (state.energy <= 0) capture();
+    }
     l.cells = 0;
   }
 }
@@ -813,6 +834,34 @@ function zap() {
   } catch (e) { /* no audio available */ }
 }
 
+/** The beam striking Dan, as the original's beeper rattles it: runs of seven
+ *  toggles in the ratio 2:1:2:3:2:1:2 at a random pitch, a pause between them,
+ *  for about a tenth of a second. */
+function rattle(ms) {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const sr = actx.sampleRate, edges = [0];
+    let total = 0;
+    while (total < (ms || 80) * 44.1) {
+      const k = 2 + Math.random() * 43;
+      for (const m of [2, 1, 2, 3, 2, 1, 2]) { edges.push(edges[edges.length - 1] + m * k); total += m * k; }
+      const gap = 25 + Math.random() * 100;
+      edges.push(edges[edges.length - 1] + gap); total += gap;
+    }
+    const len = Math.ceil(total / 44100 * sr) + 1;
+    const buf = actx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    let k = 0;
+    for (let i = 0; i < len; i++) {
+      while (k < edges.length - 1 && i / sr * 44100 >= edges[k + 1]) k++;
+      d[i] = k % 2 ? 0.7 : -0.35;
+    }
+    const src = actx.createBufferSource(), g = actx.createGain();
+    src.buffer = buf; g.gain.value = 0.12;
+    src.connect(g); g.connect(actx.destination);
+    src.start();
+  } catch (e) { /* no audio available */ }
+}
+
 // -------------------------------------------------------------------- drawing
 
 const canvas = document.getElementById("screen");
@@ -950,7 +999,7 @@ function draw() {
   for (const t of treens) {
     if (t.dead && !(t.dying > 0)) continue;
     drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
-                    { fire: t.fire > 0, armsUp: t.dead });
+                    { fire: !!t.fire, armsUp: t.dead });
   }
   for (const l of lasers) {
     ctx.fillStyle = l.friendly ? C.white : C.bred;
