@@ -413,11 +413,14 @@ function drawPartBox(ctx, x, y) {
 
 /** The self-destruct mechanism in its room: five dished spheres, two over
  *  three, on stalks above three yellow boxes with grilles, all on a frame of
- *  cyan pipes with two striped columns. Fitted parts turn their spheres from
- *  green to white, in order: top left, top right, then the bottom row; while
- *  one is being fitted the lit ones flash through the colours. */
+ *  cyan pipes with two striped columns. A fitted part lights its sphere, in
+ *  order: top left, top right, then the bottom row. A lit sphere never rests:
+ *  as the emulator shows, its colour runs up the palette from black to white
+ *  and back, a step every four frames, the ends held twice - a cycle of 64
+ *  frames - and all the lit ones run together. The others stay green. */
 const SPHERES = [[-8, -76], [8, -76], [-16, -62], [0, -62], [16, -62]];
-function drawMechanism(ctx, cx, floor, fitted, flash, phase) {
+function drawMechanism(ctx, cx, floor, fitted, phase) {
+  const SPHERE_RUN = [C.black, C.bblue, C.bred, C.bmagenta, C.bgreen, C.bcyan, C.byellow, C.bwhite];   // the palette, 0..7
   const y = floor;
   // the pipe frame
   ctx.fillStyle = C.bcyan;
@@ -446,10 +449,11 @@ function drawMechanism(ctx, cx, floor, fitted, flash, phase) {
     ctx.fillStyle = C.bwhite; ctx.fillRect(x - 1, y - 56, 1, 12);
   }
   // the spheres, dished: a colour with a darker weave over it
-  const cycle = [C.bmagenta, C.bred, C.bblue, C.byellow];
+  const step = Math.floor(phase * 50 / 4) % 16;
+  const run = SPHERE_RUN[step < 8 ? step : 15 - step];
   SPHERES.forEach(([dx, dy], i) => {
     const lit = i < fitted;
-    const col = lit && flash > 0 ? cycle[Math.floor(phase * 5 + i) % 4] : lit ? C.bwhite : C.bgreen;
+    const col = lit ? run : C.bgreen;
     const sx = cx + dx, sy = y + dy;
     ctx.fillStyle = C.black;
     ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill();
