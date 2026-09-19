@@ -224,7 +224,6 @@ const state = {
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
   cheat: {},             // doors | parts | time, typed as codes; they last the session
-  fitFlash: 0,           // the mechanism flashing after a part goes in
   msgBottom: null,       // second box, as the original uses for asides
   messageTimer: 0,
   sectorSeen: new Set(),
@@ -771,7 +770,6 @@ function updatePickups() {
   if (key === SDS_ROOM && state.carrying && dan.x <= 32 && dan.onGround) {
     state.carrying = false;
     state.fitted++;
-    state.fitFlash = 1.6;                      // the mechanism's spheres flash through the colours
     state.score += 1000;
     beep(1320, 0.4, "triangle");
     if (state.fitted >= 5) {
@@ -983,7 +981,7 @@ function draw() {
 
   drawLiftMarks(ctx, key, room);
   drawGates(ctx, key, room);
-  if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.fitFlash, state.phase);
+  if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase);
 
   for (const p of pickups) {
     if (!p.taken) drawSprite(ctx, "energy", Math.round(p.x), Math.round(p.y),
@@ -1108,7 +1106,6 @@ function frame(now) {
     if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.flash > 0) state.flash -= dt;
-    if (state.fitFlash > 0) state.fitFlash -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       beginEnding("lost");
