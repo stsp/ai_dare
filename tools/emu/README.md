@@ -96,3 +96,6 @@ emulator page on `http://127.0.0.1:8802/`.
   canvas at 4x: how a change looks is checked here, next to the original's
   screen, before it is pushed. `treenwalls.js` runs every room's every floor
   for twenty seconds of guards and reports any guard inside a wall.
+  `clearroom.js` shoots the guards of every floor of every room as they come
+  and fails a floor where one is left alive off screen or inside a wall, or
+  the room is never declared safe.

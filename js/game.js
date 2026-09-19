@@ -217,6 +217,7 @@ function makeTreens(key, room) {
     if (x1 <= x0) continue;
     const x = x0 + r() * (x1 - x0);
     if (Math.abs(x - dan.x) < 80 && Math.abs(p.y * 8 - TREEN_H - dan.y) < 24) continue;   // never near him on his floor: he steps in with room to look about
+    if (treenInWall(key, x, p.y * 8 - TREEN_H)) continue;                                 // nor inside a wall
     if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
     out.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0, lifts: r() < TREEN_LIFT_CHANCE });
   }
@@ -233,35 +234,46 @@ function treenWalled(t, key) {
       hit = true;
     }
   }
+  // pushed off the screen by a wall at the edge: he is out of the room, not
+  // a guard lying in wait behind it (who would keep the room from ever being safe)
+  if (hit && (t.x < 0 || t.x + TREEN_W > VIEW_W)) { t.dead = true; t.gone = true; }
   return hit;
+}
+/** Whether a guard standing at (x, y) would be inside one of the room's walls. */
+function treenInWall(key, x, y) {
+  return wallsOf(key).some((wl) => overlaps(x, y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
 }
 
 function spawnTreen(key, room) {
   const danFeet = dan.y + DAN_H;
-  const level = room.platforms.filter((p) => Math.abs(p.y * 8 - danFeet) < 6 && p.x1 - p.x0 >= 5);
-  const p = level.length ? level.reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a)) : widestPlatformOf(room);
-  if (!p) return;
-  const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
-  if (x1 <= x0) return;
-  // in from an edge away from Dan, running - but only through a doorway on
-  // this floor, and never through a door that is shut
-  const e = EXITS[key], feet = p.y * 8;
-  const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
-  const y = p.y * 8 - TREEN_H;
-  const walled = (x) => wallsOf(key).some((wl) => overlaps(x, y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
-  const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !walled(0), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !walled(VIEW_W - TREEN_W) };
-  const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
-  const nearSide = farSide === "right" ? "left" : "right";
-  // through the door behind Dan only once he is well into the room: never
-  // straight at his back as he steps in
-  const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
-  const side = way[farSide] ? farSide : way[nearSide] && clear >= TREEN_BEHIND ? nearSide : null;
-  if (!side) { state.treenClock = state.treenNext; return; }         // try again next frame
-  // he steps in at the edge cell, whole, as the original's sprites do - under the
-  // door frame where the room has one - and runs in from there
-  const x = side === "right" ? VIEW_W - TREEN_W : 0;
-  treens.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < TREEN_LIFT_CHANCE });
-  if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
+  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5 && p.x1 * 8 - TREEN_W > p.x0 * 8);
+  // Dan's own floor first, widest first; another floor when no doorway on his lets one in
+  const level = wide.filter((p) => Math.abs(p.y * 8 - danFeet) < 6).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
+  const others = wide.filter((p) => !level.includes(p)).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
+  const e = EXITS[key];
+  for (const p of [...level, ...others]) {
+    const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
+    // in from an edge away from Dan, running - but only through a doorway on
+    // that floor, never through a door that is shut, nor through a wall
+    const feet = p.y * 8, y = feet - TREEN_H;
+    const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
+    const way = { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !treenInWall(key, 0, y), right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !treenInWall(key, VIEW_W - TREEN_W, y) };
+    const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
+    const nearSide = farSide === "right" ? "left" : "right";
+    // through the door behind Dan only once he is well into the room: never
+    // straight at his back as he steps in
+    const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
+    const onHisFloor = level.includes(p);
+    const side = way[farSide] ? farSide : way[nearSide] && (clear >= TREEN_BEHIND || !onHisFloor) ? nearSide : null;
+    if (!side) continue;
+    // he steps in at the edge cell, whole, as the original's sprites do - under the
+    // door frame where the room has one - and runs in from there
+    const x = side === "right" ? VIEW_W - TREEN_W : 0;
+    treens.push({ id: state.treenSeq++, x, y, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < TREEN_LIFT_CHANCE });
+    if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
+    return;
+  }
+  state.treenClock = state.treenNext;         // no way in just now: try again next frame
 }
 
 /** A guard who uses the lifts: Dan on another floor of this room, and a lift

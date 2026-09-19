@@ -11,10 +11,11 @@ const { chromium } = require('playwright-core');
     const bad = [], seen = { rooms: 0, spawned: 0 };
     for (const key of ROOM_IDS) {
       const r = ROOMS[key];
+      if (key === ESCAPE_ROOM) continue;                       // stepping in there ends the game
       const plats = r.platforms.filter((p) => p.x1 - p.x0 >= 5);
       for (const p of plats) {
         const cx = Math.round((p.x0 + p.x1) / 2) * 8;
-        resetDan(cx, p.y * 8 - DAN_H); enterRoom(key, cx, p.y * 8 - DAN_H); dan.invuln = 1e9; dan.energy = 999;
+        state.mode = 'play'; treens = []; state.pursuer = null; resetDan(cx, p.y * 8 - DAN_H); enterRoom(key, cx, p.y * 8 - DAN_H); dan.invuln = 1e9; dan.energy = 999;
         state.clearedRooms.delete(key);
         seen.rooms++;
         for (let i = 0; i < 20 * 60; i++) {
