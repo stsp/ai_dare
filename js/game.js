@@ -31,6 +31,7 @@ const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 // after a random eight to twenty cells, the streak fading over two frames.
 const FRAME = 1 / 50;          // the original's frame
 const FIRE_PERIOD = 6 * FRAME;
+const PART_FLASH = 18 * FRAME, PART_PULSE = 3 * FRAME;   // a part taken: the screen turns over three times, three frames on and three off
 const LASER_STEP = 8;          // one cell a frame
 const LASER_TRAIL = 2;         // dashes left behind the head
 const LASER_MIN = 8, LASER_MAX = 20;   // cells a shot lives, chosen at random
@@ -400,6 +401,7 @@ const state = {
   roomAge: 0,              // seconds since Dan stepped into this room
   takenItems: new Set(),   // the cups of energy drunk this game
   invert: 0,               // the screen inverted after a gun is shot, seconds left
+  partFlash: 0,            // the screen turning over after a part is taken, seconds left
   burst: 0,              // lift-transfer flash, seconds left
   flash: 0,              // the room's colours cycling after a guard is shot, seconds left
   phase: 0,
@@ -1014,7 +1016,11 @@ function updatePickups() {
       state.carrying = true;
       state.score += 500;
       beep(990, 0.2);
+      // as the original: the whole screen's colours turn over three times, the
+      // word comes where to take it - and the Mekon is on the link at once
+      state.partFlash = PART_FLASH;
       say(tx(["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"]), 2.5);
+      call(tx(["\"NO! PUT THAT DOWN!\""]), 3.6);
     }
   }
   // the socket: walk to the left of the self-destruct room with a part
@@ -1424,6 +1430,14 @@ function draw() {
 
   drawPanel(ctx, state);
 
+  if (state.partFlash > 0 && Math.floor((PART_FLASH - state.partFlash) / PART_PULSE) % 2 === 0) {
+    // a part taken: every cell's ink and paper turned over, panel and all, in pulses
+    ctx.save();
+    ctx.globalCompositeOperation = "difference";
+    ctx.fillStyle = C.bwhite;
+    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+    ctx.restore();
+  }
 }
 
 /** The loading picture, after the original's: the plaque, Dan under it, the
@@ -1522,6 +1536,7 @@ function frame(now) {
     if (state.burst > 0) state.burst -= dt;
     if (state.flash > 0) state.flash -= dt;
     if (state.invert > 0) state.invert -= dt;
+    if (state.partFlash > 0) state.partFlash -= dt;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
       beginEnding("lost");
