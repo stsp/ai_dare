@@ -15,10 +15,13 @@ const LEVEL = window.DANDARE_LEVEL;
 const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 
 // --- tuning ---------------------------------------------------------------
-const RUN_SPEED = 72;          // px/s, as measured in the original
-const GRAVITY = 500;
-const JUMP_VY = -100;          // the original's jump: 10 px high, 0.4 s in the air
-const JUMP_VX = 140;            // ... and four or five cells along
+// Measured in the emulator: Dan runs a cell in four and a half frames; his
+// jump rises ten pixels over twelve frames and lands twelve frames later,
+// five cells on, and holding the key changes nothing.
+const RUN_SPEED = 80;          // px/s
+const GRAVITY = 347;           // px/s^2: ten pixels up and down in 0.48 s
+const JUMP_VY = -83;
+const JUMP_VX = 83;            // five cells in the 0.48 s
 const LIFT_SPEED = 44;
 const TURN_TIME = 0.12;        // Dan turns on the spot before running back
 // The rifle, as filmed in the original: a shot every six frames while the
