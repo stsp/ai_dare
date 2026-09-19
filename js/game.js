@@ -178,28 +178,41 @@ const PRISONS = placePrisons();
 
 // ------------------------------------------------------------------ entities
 
-function makeTreens(key, room) {
-  const dead = state.deadTreens.get(key) || new Set();   // a Treen shot stays shot
-  const r = rng(hashKey(key));
-  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
-  // the fourth sector is unguarded, as in the original, and so is the Mekon's hologram room
-  const unguarded = (room.label || room.zone) === 4 || (LEVEL.boss && LEVEL.boss.room === key);
-  const n = wide.length === 0 || unguarded ? 0 : Math.floor(r() * 3);
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const p = wide[Math.floor(r() * wide.length)];
-    const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
-    if (x1 <= x0) continue;
-    const x = x0 + r() * (x1 - x0);
-    // keep guards apart: two drawn on top of each other read as one broken sprite
-    if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
-    out.push({
-      id: i, x, y: p.y * 8 - TREEN_H,
-      x0, x1, dir: r() < 0.5 ? -1 : 1,
-      cool: r() * 2, anim: 0, dead: dead.has(i),
-    });
+/** Where the Treens come from. No room has them when Dan walks in: after a
+ *  while one arrives, then another - never more than two at once. In most
+ *  rooms he materialises on Dan's floor, well away from him; on the surface
+ *  and in the Mekon's hologram room they only ever run in from the far edge.
+ *  The fourth sector is unguarded, as in the original. */
+const TREEN_MAX = 2, TREEN_FIRST = [3, 7], TREEN_AGAIN = [8, 16];   // seconds
+const TREEN_FORM = 0.7, TREEN_REACT = 0.6;                          // materialising; the pause before he fires
+function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
+function entryOnlyRoom(key, room) { return room.sector === 0 || (LEVEL.boss && LEVEL.boss.room === key); }
+
+function spawnTreen(key, room) {
+  const feet = dan.y + DAN_H;
+  const level = room.platforms.filter((p) => Math.abs(p.y * 8 - feet) < 6 && p.x1 - p.x0 >= 5);
+  const p = level.length ? level.reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a)) : widestPlatformOf(room);
+  if (!p) return;
+  const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
+  if (x1 <= x0) return;
+  const t = { id: state.treenSeq++, x: x0, y: p.y * 8 - TREEN_H, x0, x1, dir: 1, anim: 0, dead: false, form: 0, react: 0 };
+  if (entryOnlyRoom(key, room)) {
+    t.x = dan.x + DAN_W / 2 < VIEW_W / 2 ? Math.min(x1, VIEW_W - TREEN_W) : Math.max(x0, 0);   // in from the far edge
+  } else {
+    const far = [];
+    for (let x = x0; x <= x1; x += 8) if (Math.abs(x - dan.x) >= 64) far.push(x);
+    if (!far.length) return;
+    t.x = far[Math.floor(Math.random() * far.length)];
+    t.form = TREEN_FORM;                                    // he takes shape where he stands
   }
-  return out;
+  t.dir = dan.x > t.x ? 1 : -1;
+  treens.push(t);
+  if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
+}
+
+function widestPlatformOf(room) {
+  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
+  return wide.length ? wide.reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a)) : null;
 }
 
 function makePickups(key, room) {
@@ -232,6 +245,8 @@ const state = {
   viewerTimer: 0, viewerStatic: 0,
   taunts: 0, nextTaunt: 40,   // the Mekon's calls
   clearedRooms: new Set(),
+  treenSeq: 0,           // ids for the Treens that arrive, per game
+  treenClock: 0, treenNext: 0,   // the next arrival
   deadTreens: new Map(),   // room -> which of its guards have been shot
   burst: 0,              // lift-transfer flash, seconds left
   flash: 0,              // the room's colours cycling after a guard is shot, seconds left
@@ -261,16 +276,13 @@ function enterRoom(key, x, y) {
   // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
   if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
-  treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
+  treens = [];                                              // none about when he walks in
+  state.treenClock = 0;
+  state.treenNext = TREEN_FIRST[0] + Math.random() * (TREEN_FIRST[1] - TREEN_FIRST[0]);
   pickups = makePickups(key, room);
   lasers = [];
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
   dan.invuln = Math.max(dan.invuln, 0.8);
-  treens = treens.filter((t) => Math.abs(t.x - dan.x) > 28 || Math.abs(t.y - dan.y) > 24);
-  if (treens.some((t) => !t.dead) && !state.alerted.has(key)) {
-    state.alerted.add(key);
-    say(tx(["INTRUDER ALERT !"]), 2.5);
-  }
   const zone = room.label || room.zone;                    // the number the original announces
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
@@ -617,17 +629,30 @@ function moveBetweenRooms() {
 // -------------------------------------------------------------- Treen update
 
 function updateTreens(dt) {
+  const key = state.room, room = currentRoom();
+  // the next one arrives when his time comes, unless the room is unguarded, cleared, or full
+  if (!unguardedRoom(key, room) && !state.clearedRooms.has(key) && treens.filter((t) => !t.dead).length < TREEN_MAX) {
+    state.treenClock += dt;
+    if (state.treenClock >= state.treenNext) {
+      state.treenClock = 0;
+      state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
+      spawnTreen(key, room);
+    }
+  }
   for (const t of treens) {
     if (t.dying > 0) t.dying -= dt;              // his last moment after the shot that got him
     if (t.dead) continue;
+    if (t.form > 0) { t.form -= dt; continue; }  // still taking shape
     const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
     const dx = (dan.x + DAN_W / 2) - (t.x + TREEN_W / 2);
-    const engaged = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0;
+    const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0;
+    t.react = inRange ? t.react + dt : 0;        // he takes a moment before he opens fire
+    const engaged = inRange && t.react >= TREEN_REACT;
     t.fire = engaged;
-    if (engaged) {
+    if (inRange) {
       t.dir = dx > 0 ? 1 : -1;
       if (Math.abs(dx) > TREEN_STAND_OFF) { t.x += t.dir * 22 * dt; t.anim += dt * 5; }
-      t.shot = (t.shot || 0) + dt;
+      t.shot = engaged ? (t.shot || 0) + dt : 0;
       while (t.shot >= TREEN_FIRE_PERIOD) {
         t.shot -= TREEN_FIRE_PERIOD;
         const tip = t.x + TREEN_W / 2 + t.dir * 13;         // the rifle's muzzle
@@ -643,10 +668,10 @@ function updateTreens(dt) {
       t.anim += dt * 5;
       t.x += t.dir * 22 * dt;
     }
-    if (t.x <= t.x0) { t.x = t.x0; if (!engaged) t.dir = 1; }
-    if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!engaged) t.dir = -1; }
+    if (t.x <= t.x0) { t.x = t.x0; if (!inRange) t.dir = 1; }
+    if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!inRange) t.dir = -1; }
 
-    if (dan.invuln <= 0 && !dan.onLift && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
+    if (dan.invuln <= 0 && !dan.onLift && !(t.form > 0) && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
       hurtDan(18);
       dan.vx = (dan.x < t.x ? -1 : 1) * 90;
       dan.vy = -70;
@@ -712,7 +737,7 @@ function updateLasers(dt) {
   }
   lasers = lasers.filter((l) => l.cells > 0 || l.trail.length);
 
-  if (treens.length && treens.every((t) => t.dead)) {
+  if ((state.deadTreens.get(state.room) || new Set()).size >= TREEN_MAX) {   // two shot here: the room is safe
     const key = state.room;
     if (!state.clearedRooms.has(key)) {
       state.clearedRooms.add(key);
@@ -1006,6 +1031,12 @@ function draw() {
   }
   for (const t of treens) {
     if (t.dead && !(t.dying > 0)) continue;
+    if (t.form > 0) {                                     // materialising: a flicker of green that fills his shape
+      const r = rng(Math.floor(state.phase * 30) + t.id * 977), fill = 1 - t.form / TREEN_FORM;
+      ctx.fillStyle = C.bgreen;
+      for (let i = 0; i < 60 * fill + 6; i++) ctx.fillRect(Math.round(t.x + r() * TREEN_W), Math.round(t.y + r() * TREEN_H), 1, 1);
+      continue;
+    }
     drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
                     { fire: !!t.fire, armsUp: t.dead });
   }
