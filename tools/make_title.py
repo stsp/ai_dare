@@ -103,7 +103,13 @@ def main():
     rx0, ry0, rx1, ry1 = 120 * K, 3 * K, 253 * K, 189 * K
     right = tech_wall(rx1 - rx0, ry1 - ry0)
     mk = fit(mekon, rx1 - rx0, int((ry1 - ry0) * 1.02))
-    right.paste(mk, ((rx1 - rx0 - mk.width) // 2, ry1 - ry0 - mk.height), mk)
+    mx, my = (rx1 - rx0 - mk.width) // 2, ry1 - ry0 - mk.height
+    # the shadow he throws on the wall, as in the original: his silhouette in
+    # black, cast to the right and down
+    shade = Image.new("RGBA", mk.size, (0, 0, 0, 0))
+    shade.putalpha(mk.getchannel("A").filter(ImageFilter.GaussianBlur(1.5)))
+    right.paste(shade, (mx + 11 * K, my + 6 * K), shade)
+    right.paste(mk, (mx, my), mk)
     page.paste(right, (rx0, ry0))
 
     # Dan's panel, left, under the plaque
