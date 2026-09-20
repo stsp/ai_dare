@@ -138,6 +138,13 @@ and the level is built without them (`--fake-lifts`; a call made mid-ride over
 a real lift is moved down to the floor the ride starts from). Room 111, for
 one, has no lift at all.
 
+## The title screen
+
+The original's title is framed to the screen's foot, with a line of its
+credits and hellos running along the bottom at four pixels a frame; the
+words are read out of its memory (at 0xCC98). With the story switched to the
+policeman's, the line tells of the post instead.
+
 ## Rewind
 
 Backspace puts the game back as it was five seconds ago: the whole of play

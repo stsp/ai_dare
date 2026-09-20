@@ -80,6 +80,10 @@ function drawGuns(ctx) {
   }
   ctx.fillStyle = C.bgreen;
   for (const s of gunShots) {
+    // a visor's shot sets off inside the visor's own cells, two in and on its
+    // top row, and the original shows it only once it is out below them
+    const g = s.by;
+    if (g.type === GUN_CEILING && s.x < g.x + g.w && s.x + 8 > g.x && s.y < g.y + g.h) continue;
     if (s.dy === 0) ctx.fillRect(s.x, s.y, s.len, 1);
     else for (let i = 0; i < 8; i++) ctx.fillRect(s.x + (s.dx > 0 ? i : 6 - i), s.y + i, 2, 1);   // a slanting dash, a cell tall
   }

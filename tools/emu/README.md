@@ -111,3 +111,6 @@ emulator page on `http://127.0.0.1:8802/`.
   its end, two seconds of quiet, then the Mekon for 3.5 s. `rewindtest.js`
   walks Dan for eight seconds, presses Backspace, and checks he and all else
   are as they were five seconds before.
+* `titlescroll.js` boots the original past its loading picture and measures
+  the title screen's running line frame by frame (four pixels a frame).
+  `gunshot255.js OUT` films a ceiling gun firing in the game's room 255.
