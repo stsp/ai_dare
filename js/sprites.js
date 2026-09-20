@@ -25,7 +25,7 @@ function loadSheet(name, meta) {
 }
 loadSheet("ai", window.AI_SHEET);
 loadSheet("ai_head", window.AI_SHEET && window.AI_SHEET.head);   // his head alone, for the drawn figure to wear
-loadSheet("rooms", window.ROOMS_SHEET);   // the rooms as the original draws them, cleaned of sprites
+// the rooms are not a picture: js/tiles.js builds SHEETS.rooms out of the tile set
 loadSheet("title", { image: "assets/title.png" });   // the loading picture, from the render
 // the plaque's lettering: a bold slab serif, as the original's, with the Cyrillic the story needs
 try { new FontFace("Plaque", "url(assets/plaque.ttf)").load().then((f) => document.fonts.add(f)); } catch (e) { /* the browser's serif will do */ }
