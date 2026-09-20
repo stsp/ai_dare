@@ -140,7 +140,7 @@ one, has no lift at all.
 ## The title screen
 
 The original's title is framed to the screen's foot, with a line of its
-credits and hellos running along the bottom at four pixels a frame; the
+credits and hellos running along the bottom at two thirds of the original's four pixels a frame; the
 words are read out of its memory (at 0xCC98). With the story switched to the
 policeman's, the line tells of the post instead.
 
