@@ -1109,7 +1109,7 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, 8, 16)) {   // taken as he lands on it, at the bottom of the jump
+    if (!p.taken && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, 8, 16)) {   // a cup is drunk on the way past, not landed on like a part
       p.taken = true;
       state.takenItems.add(p.id);
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
