@@ -25,12 +25,12 @@ door, `PARTS` fits all five parts and starts the eleven-minute countdown,
 
 ## The mission
 
-The Mekon's hollowed-out asteroid is on a collision course with Earth. Ai has
+The alien boss's hollowed-out asteroid is on a collision course with Earth. Ai has
 two hours to find the five SDS keys — one in each colour-coded sector — and
 carry them to the self-destruct room.
 
 As in the original there are no lives: running out of energy gets Ai captured
-and dumped in a cell, costing ten minutes off the clock. Treens patrol and
+and dumped in a cell, costing ten minutes off the clock. His guards patrol and
 shoot; clear a room and it stays safe. Kneeling ducks their fire and gets Ai
 under low headers. Grav-lift shafts carry him between floors — press left or
 right to step off one.
@@ -83,7 +83,7 @@ before it ships.
 The rooms are drawn from the original's own screens. Every room was dumped
 many times by the emulator surveys, and again with Ai stepped and jumped
 about in it; `tools/make_rooms.py` takes, cell by cell, the value most dumps
-agree on, so Ai, the Treens and the message boxes fall away, wipes the parts
+agree on, so Ai, the guards and the message boxes fall away, wipes the parts
 of the mechanism, writes the cleaned screens back to `data/emu` and packs the
 play areas (the original's rows 0-17, so its floor courses meet the level's)
 into `assets/rooms.png`. The game lays its own things over them:
@@ -101,7 +101,7 @@ game can animate them, and `--button` finds the call buttons beside them,
 which blink while a lift is moving as the original's do: the two take turns,
 magenta and red, swapping every four frames, both blue as the ride begins.
 
-Ai, the Treens and the Mekon are the project's own figures, drawn as
+Ai, the guards and the alien boss are the project's own figures, drawn as
 vectors (`js/figures.js`), with Ai's head from the project's own renders.
 
 ## Tools
@@ -178,7 +178,7 @@ bursts are synthesised from its sound records.
 ## The title picture
 
 `assets/title.png` is laid out as the original's loading screen - the plaque
-top left, Ai under it, the Mekon beside him over a wall of blue panels - but
+top left, Ai under it, the alien boss beside him over a wall of blue panels - but
 drawn from the hi-res render in the repository root (`tools/make_title.py`
 cuts the two heads off the render's checkerboard). The game letters the
 plaque itself in a bold slab serif (`assets/plaque.ttf`, DejaVu Serif Bold,
@@ -187,7 +187,7 @@ space, enter or escape is pressed.
 
 ## Other departures
 
-* In most rooms some Treens are already about when Ai walks in, placed by a
+* In most rooms some guards are already about when Ai walks in, placed by a
   seeded hash of the room; on the screen he lands on and in the hologram room
   there are none to start with. Within a couple of seconds of his arrival in
   an empty room, or a few seconds otherwise, while fewer than two are about,

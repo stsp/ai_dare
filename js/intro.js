@@ -16,8 +16,8 @@ const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhi
 /* The line that runs along the foot of the title screen: the tale of the
    mission, or the story's tale of the post. */
 const MARQUEE = {
-  dare: "THE MEKON'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS TREENS GUARD EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      ONE HOUR.      NO ONE ELSE IS COMING.        ",
-  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      СКЕЛЕТ МЕКОН, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      ДАН ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+  dare: "THE ALIEN'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS GANG GUARDS EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      ONE HOUR.      NO ONE ELSE IS COMING.        ",
+  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      БАНДИТ-ПРИШЕЛЕЦ, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      ДАН ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
 };
 const MARQUEE_SPEED = 4 * 50 / 1.5;       // pixels a second: the original's four a frame, slowed by half again to be read
 const MARQUEE_K = 2;                      // the big face, two pixels to one
