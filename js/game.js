@@ -642,9 +642,14 @@ function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
 
 /** Move a body horizontally, stopping at walls. */
 function moveX(body, dx, walls, w, h, yOff) {
+  const was = body.x;
   body.x += dx;
   for (const wl of walls) {
     if (overlaps(body.x, body.y + yOff, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
+      // a jump that carries his head up beside a wall already stands in it
+      // before this step: the original lets the arc finish, it does not
+      // throw him back out of a doorway he is halfway through
+      if (overlaps(was, body.y + yOff, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) continue;
       body.x = dx > 0 ? wl.x0 - w : wl.x1;
       body.vx = 0;
     }
