@@ -50,6 +50,7 @@ const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
 const AI_W = 10, AI_H = 32, AI_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
+const AI_WALL_W = 8;             // the original walks him through gaps one cell wide - the cells' doorways
 const GUARD_W = 10, GUARD_H = 32;
 const FIG_OVER = 8;              // how far a drawn figure rises above its box: the guards' hats, Ai's cap
 const GUARD_DEATH = 0.2;         // seconds a shot guard stands with his arms up before he is gone, the room flashing
@@ -169,18 +170,43 @@ function highestPlatform(room) {
   return { x: (p.x0 + p.x1) * 4, y: p.y * 8 };
 }
 
+/** The sector a room announces itself as: its label where one was given,
+ *  else its zone. The labels are what the panel counts and what the doors
+ *  open on, so everything the player is told goes by them. */
+function sectorOf(room) { return room.label || room.zone; }
+
 /** Prison cells: the rooms the original puts a captured Ai in, one per
- *  sector; a sector without one of its own uses the nearest behind it. */
+ *  sector; a sector without one of its own uses the nearest behind it.
+ *  Keyed by sector, not by zone: one zone can carry two sectors, and then
+ *  the later one has its own cell that the zone alone would miss. */
 function placePrisons() {
   const out = new Map();
-  const cells = (LEVEL.prisons || []).map((k) => ({ key: k, zone: ROOMS[k].zone }));
-  for (const zone of new Set(PLAYABLE.map((item) => item.room.zone))) {
-    // the cells are listed sector by sector: this sector's, else the last
-    // sector's behind him - never one beyond a door he has not opened
-    const own = cells[Math.min(zone, cells.length) - 1];
-    if (own) out.set(zone, own.key);
+  const cells = (LEVEL.prisons || []).map((k) => ({ key: k, sector: sectorOf(ROOMS[k]) }))
+                                     .sort((a, b) => a.sector - b.sector);
+  for (const sector of new Set(PLAYABLE.map((item) => sectorOf(item.room)))) {
+    // his own sector's cell, else the last one behind him - never one beyond
+    // a door he has not opened
+    const own = cells.filter((c) => c.sector <= sector).pop() || cells[0];
+    if (own) out.set(sector, own.key);
   }
   return out;
+}
+
+/** Where a captured Ai is put down: inside the cell, not on its roof. A cell
+ *  is a box at one side of the room - a roof high up, a floor under it - and
+ *  the roof is the room's topmost ledge, so he goes on the highest floor
+ *  beneath it, in the part of it the roof covers. Put on the roof he is
+ *  stuck: it is a ledge with nothing adjoining, and some sectors could not
+ *  be played on from there. */
+function prisonFloor(room) {
+  const ps = room.platforms.filter((p) => p.x1 - p.x0 >= 2);
+  if (!ps.length) return widestPlatform(room);
+  const roof = ps.reduce((a, b) => (b.y < a.y ? b : a));
+  const under = ps.filter((p) => p.y > roof.y && p.x1 > roof.x0 && p.x0 < roof.x1);
+  const floor = under.length ? under.reduce((a, b) => (b.y < a.y ? b : a)) : roof;
+  const x0 = Math.max(floor.x0, roof.x0), x1 = Math.min(floor.x1, roof.x1);
+  const x = (x0 + x1) * 4 - AI_W / 2;                       // the middle of the span the roof covers
+  return { x: Math.max(0, Math.min(VIEW_W - AI_W, x)), y: floor.y * 8 };
 }
 
 const SDS_ROOM = LEVEL.slot;
@@ -800,8 +826,9 @@ function updateAi(dt) {
     const yOff = AI_H - h;
     // The original's walls, steps and lift stations stop him; the panelling
     // and the machinery he walks in front of do not. His legs are left out of
-    // the test: a course he stands on runs through them.
-    moveX(ai, ai.vx * dt, wallsOf(state.room), AI_W, h - 8, yOff);
+    // the test: a course he stands on runs through them. He is a cell wide
+    // against a wall, so a gap of one cell - a cell's doorway - lets him out.
+    moveX(ai, ai.vx * dt, wallsOf(state.room), AI_WALL_W, h - 8, yOff);
     gunsBlockAi(h, yOff);                 // a floor gun is the one thing he walks into
     if (ai.onGround) {
       const feet = ai.y + AI_H;
@@ -1068,8 +1095,8 @@ function capture() {
   state.energy = ENERGY_MAX;
   state.timeLeft -= CAPTURE_PENALTY;
   state.score = Math.max(0, state.score - 200);
-  const cell = PRISONS.get(currentRoom().zone) || START.key;
-  const p = highestPlatform(ROOMS[cell]);
+  const cell = PRISONS.get(sectorOf(currentRoom())) || START.key;
+  const p = prisonFloor(ROOMS[cell]);
   resetAi(p.x, p.y - AI_H);
   enterRoom(cell, p.x, p.y - AI_H);
   say(tx(["AI FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
