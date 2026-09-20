@@ -64,7 +64,7 @@ const PLAYABLE = ROOM_IDS.map((key) => ({ key, room: ROOMS[key] }));
 /** Platforms Ai can stand on, as pixel spans. */
 function platformsOf(room) {
   return room.platforms.map((p) => ({
-    y: p.y * 8, x0: p.x0 * 8, x1: p.x1 * 8,
+    y: p.y * 8, x0: p.x0 * 8, x1: p.x1 * 8, landing: !!p.landing,
   }));
 }
 
@@ -833,6 +833,7 @@ function updateAi(dt) {
     if (ai.onGround) {
       const feet = ai.y + AI_H;
       for (const p of platforms) {
+        if (p.landing) continue;               // the lift's car at its stop is not a kerb: he floated up onto it in mid air
         if (ai.x + AI_W > p.x0 && ai.x < p.x1 && feet > p.y && feet - p.y <= 17) ai.y = p.y - AI_H;   // a kerb of two courses is walked up
       }
     }
