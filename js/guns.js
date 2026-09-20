@@ -12,8 +12,8 @@
      dash the way it faces from the row below its top; a hit from Ai's rifle
      removes it and the wall is left bare;
    - a ceiling gun (a visor high on the wall) fires a dash down at a slant;
-     shot - only from a floor level with it, so most cannot be - it leaves a
-     ragged hole in the wall.
+     shot - only from a floor level with it, so most cannot be - what is left
+     of it is its own drawing with most of its pixels blown out of it.
 
    Any of them is destroyed by one hit, with the whole screen inverted for a
    frame. Each frame the original rolls one chance in four of a shot, picks
@@ -31,7 +31,11 @@ const GUN_CRUSH_SCORE = 75;
 const GUN_BITS = {
   gun: ["################", "................", "..#...########..", "....#..#.#.#.#..", ".#...##########.", ".....########...", "................", "................"],
   hat: ["................", "................", "..#...#.##......", "##..#..#.#.#.###", ".#...##########.", "......#.###.....", "#..##.......##..", "................"],
-  hole: ["..#.....####....#####...................", ".....#..#########....#.....##.....#.....", "#..######..####.......#####..#........#.",
+  // a visor that has been shot out: not a hole drawn over the wall but what is
+  // left of the visor itself - the original keeps only the pixels marked here,
+  // which is how its own screens show a shot one (rooms 189, 190 and 221 were
+  // dumped that way, and they are this mask over the visor, exactly)
+  shot: ["..#.....####....#####...................", ".....#..#########....#.....##.....#.....", "#..######..####.......#####..#........#.",
          "..#.##.##.........###........##.#.#.....", ".#.###..##......#######.......##.#.#..#.", "..####...#...#############.....##.#.....",
          ".####......################...####.#....", "..###.....#################..##.#.#.....", "..#####..###################.##..#.#..#.",
          ".####....###################..###.#.#...", ".###.....#.#################....##.##...", "..##......##.###############.....##..#..",
@@ -65,6 +69,40 @@ function drawBits(ctx, rows, x, y, colours) {
   }
 }
 
+/* A visor Ai has shot, drawn out of its own cells: the original does not wipe
+   the wall and paint a hole over it - it blows most of the visor's pixels out
+   and leaves the rest standing, in the cells' own colours. Painting one flat
+   colour over the whole gun instead, as this used to, showed a black rectangle
+   wherever the cell beside the gun happened to be black - which is what the
+   original's own screens of a shot visor (rooms 189, 190 and 221 were dumped
+   that way) say it never does. A fist is another matter: its cells are drawn
+   in the wall's colour on black, so what is left when it goes is the bare
+   wall beside it, which the gun table carries. */
+function drawShotGun(ctx, g) {
+  const key = state.room, r0 = Math.round(g.y / 8), c0 = Math.round(g.x / 8);
+  const cells = g.type === GUN_CEILING && roomCell(key, r0, c0);
+  if (!cells) {                                     // a fist, or the tiles not up yet
+    ctx.fillStyle = g.fill || C.black;
+    ctx.fillRect(g.x, g.y, g.w, g.h);
+    return;
+  }
+  for (let r = 0; r < g.h / 8; r++) {
+    for (let c = 0; c < g.w / 8; c++) {
+      const x = g.x + c * 8, y = g.y + r * 8;
+      const cell = roomCell(key, r0 + r, c0 + c);
+      ctx.fillStyle = cell.paper;
+      ctx.fillRect(x, y, 8, 8);
+      ctx.fillStyle = cell.ink;
+      for (let j = 0; j < 8; j++) {
+        const row = GUN_BITS.shot[r * 8 + j];
+        for (let i = 0; i < 8; i++) {
+          if (cell.bits[j * 8 + i] && row[c * 8 + i] === "#") ctx.fillRect(x + i, y + j, 1, 1);
+        }
+      }
+    }
+  }
+}
+
 function drawGuns(ctx) {
   for (const g of guns) {
     if (g.type === GUN_FLOOR) {
@@ -72,10 +110,7 @@ function drawGuns(ctx) {
       if (!g.dead) drawBits(ctx, GUN_BITS.gun, g.x, g.y, [C.green, C.bcyan]);
       else drawBits(ctx, GUN_BITS.hat, g.x, g.y, [C.green, C.cyan]);
     } else if (g.dead && state.backdrop) {
-      // the wall is painted over it: bare where a fist was, holed where a visor was
-      ctx.fillStyle = g.fill || C.black;
-      ctx.fillRect(g.x, g.y, g.w, g.h);
-      if (g.type === GUN_CEILING) drawBits(ctx, GUN_BITS.hole, g.x, g.y, [C.black]);
+      drawShotGun(ctx, g);
     }
   }
   ctx.fillStyle = C.bgreen;

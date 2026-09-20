@@ -17,6 +17,8 @@ load, so its graphics are a set of tiles, not 121 pictures.
 assets/rooms.png, cell by cell.
 """
 import argparse, glob, json, os, re, sys
+from collections import defaultdict
+
 import numpy as np
 from PIL import Image
 
@@ -39,6 +41,16 @@ def load_scr(path):
         tiles[y // 8, :, y % 8] = np.frombuffer(d[row * 32:row * 32 + 32], dtype=np.uint8)
     attr = np.frombuffer(d[6144:6912], dtype=np.uint8).reshape(ROWS, COLS).copy()
     return tiles, attr
+
+
+def save_scr(path, tiles, attr):
+    """The screen back in the Spectrum's own order."""
+    out = bytearray(6912)
+    for y in range(192):
+        row = (y & 0xC0) | ((y & 7) << 3) | ((y & 0x38) >> 3)
+        out[row * 32:row * 32 + 32] = tiles[y // 8, :, y % 8].tobytes()
+    out[6144:6912] = attr.astype(np.uint8).tobytes()
+    open(path, "wb").write(bytes(out))
 
 
 def cell_rgb(bits, attr):
@@ -98,6 +110,52 @@ def enc_colours(grid, palette):
     return ["".join(ALPHA[palette[v]] for v in row) for row in grid]
 
 
+def repair_ceiling_guns(rooms, meta, args, sheet):
+    """A ceiling gun the surveys caught already shot.
+
+    Every ceiling gun in the original is one drawing, five cells by two, and
+    the gun table says which of them are live. Three rooms were dumped after
+    Ai had shot theirs, so their cleaned screens hold what is left of a visor
+    instead of the visor - and the game, which draws a live gun from the
+    backdrop, showed a shot one standing. The visor the other rooms agree on
+    goes back over them; the cells' colours, which are the same everywhere,
+    are left as they are. The repaired screens are written back to
+    data/emu and the room repainted in the packed sheet, so both still say
+    what the tiles do."""
+    shape = defaultdict(list)
+    for n, lst in (meta.get("guns") or {}).items():
+        if n not in rooms: continue
+        for type_, x, y, w, fill in lst:
+            if type_ != 0: continue
+            r, c = y // 8, x // 8
+            shape[tuple(rooms[n][r + dr][c + dc][0] for dr in (0, 1) for dc in range(w // 8))].append((n, r, c, w // 8))
+    if len(shape) < 2: return
+    visor, _ = max(shape.items(), key=lambda kv: len(kv[1]))
+    repaired = False
+    for bits, guns in shape.items():
+        if bits == visor: continue
+        for n, r, c, w in guns:
+            for i, (dr, dc) in enumerate((dr, dc) for dr in (0, 1) for dc in range(w)):
+                rooms[n][r + dr][c + dc] = (visor[i], rooms[n][r + dr][c + dc][1])
+            print(f"room {n}: a ceiling gun at {c},{r} was dumped shot; the visor is put back")
+            # the cleaned screen and the packed sheet, so they still agree
+            path = os.path.join(args.screens, f"room_{n}.scr")
+            t, a = load_scr(path)
+            for dr in (0, 1):
+                for dc in range(w):
+                    t[VIEW_R0 + r + dr, VIEW_C0 + c + dc] = np.frombuffer(
+                        rooms[n][r + dr][c + dc][0], dtype=np.uint8)
+            save_scr(path, t, a)
+            sx, sy = meta["rooms"][n]
+            for dr in (0, 1):
+                for dc in range(w):
+                    b, at = rooms[n][r + dr][c + dc]
+                    sheet[sy + (r + dr) * 8:sy + (r + dr) * 8 + 8,
+                          sx + (c + dc) * 8:sx + (c + dc) * 8 + 8] = cell_rgb(np.frombuffer(b, dtype=np.uint8), at)
+            repaired = True
+    if repaired: Image.fromarray(sheet).save(args.sheet, optimize=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screens", default="data/emu", help="where the cleaned room_N.scr are")
@@ -107,10 +165,12 @@ def main():
     ap.add_argument("--layouts", default="js/rooms_tiles.js")
     ap.add_argument("--per-row", type=int, default=16, help="tiles across the tile sheet")
     ap.add_argument("--check", action="store_true", help="rebuild every room from the tiles and compare with the sheet")
+    ap.add_argument("--no-repair-guns", dest="repair_guns", action="store_false",
+                    help="leave a ceiling gun a survey caught already shot as the dump has it")
     args = ap.parse_args()
 
     meta = read_index(args.index)
-    sheet = np.asarray(Image.open(args.sheet).convert("RGB"))
+    sheet = np.array(Image.open(args.sheet).convert("RGB"))
 
     # every cell of every room, as the original's screens have it
     rooms, known = {}, {}
@@ -126,6 +186,7 @@ def main():
                 known.setdefault(cell_rgb(np.frombuffer(bits, dtype=np.uint8), attr).tobytes(),
                                  (np.frombuffer(bits, dtype=np.uint8), attr))
     if not rooms: raise SystemExit(f"no room screens in {args.screens}")
+    if args.repair_guns: repair_ceiling_guns(rooms, meta, args, sheet)
     # the door slabs the game lays over a doorway while the door holds: they
     # are in the packed sheet only, cut from the original's two dumps
     for path in sorted(glob.glob(os.path.join(args.screens, "doors", "room_*.scr"))):
