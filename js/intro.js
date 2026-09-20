@@ -14,10 +14,11 @@ const MENU_PAGES = [
 const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhite];
 
 /* The line that runs along the foot of the title screen: the tale of the
-   mission, or the story's tale of the post. */
+   mission, or the story's tale of the mail rocket held on the skeleton's
+   cosmodrome. */
 const MARQUEE = {
   dare: "THE ALIEN'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS GANG GUARDS EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      TWO HOURS.      NO ONE ELSE IS COMING.        ",
-  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      БАНДИТ-ПРИШЕЛЕЦ, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+  postal: "ПОЧТОВАЯ РАКЕТА ШЛА НА МАРС, ПОКА ЕЁ НЕ ПЕРЕХВАТИЛ СКЕЛЕТ И НЕ ЗАСТАВИЛ СЕСТЬ НА СВОЙ КОСМОДРОМ.      ПЯТЬ ЯЩИКОВ С ПОЧТОЙ ЕГО ПАЦАНЫ РАСТАЩИЛИ ПО ПЯТИ СЕКТОРАМ И СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, СНЕСТИ ИХ В ГРУЗОВОЙ ОТСЕК И ОТПРАВИТЬ РАКЕТУ ДАЛЬШЕ.      ДВА ЧАСА.      ПОМОЩИ НЕ БУДЕТ.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
 };
 const MARQUEE_SPEED = 4 * 50 / 1.5;       // pixels a second: the original's four a frame, slowed by half again to be read
 const MARQUEE_K = 2;                      // the big face, two pixels to one
