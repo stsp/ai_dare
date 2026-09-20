@@ -12,7 +12,7 @@
  * The skeleton comes on the link to say what the boxes really held, and then
  * Mars goes up. */
 
-const ENDING_PHASES = { getaway: 2.4, countdown: 2.0, skeleton: SKELETON_CALL.reduce((t, p) => t + p[1], 0), blast: 3.4, knighthood: 2.0, banner: 2.6, plaques: 3.2 };
+const ENDING_PHASES = { getaway: 2.4, countdown: 2.0, skeleton: SKELETON_CALL.reduce((t, p) => t + p[1], 0), blast: 3.4, knighthood: 2.0, banner: 2.6, plaques: 5.2 };
 const ENDING_NEXT = { getaway: "countdown", countdown: "blast", skeleton: "blast", blast: "knighthood", knighthood: "plaques", banner: "plaques", plaques: null };
 /** The postal story tells the end differently: the skeleton on the link in
  *  place of the countdown, and Mars where the asteroid hung. */
@@ -32,15 +32,25 @@ function skeletonPage(t) {
 const COUNTDOWN = ["FIVE", "FOUR", "THREE", "TWO", "ONE"];
 const PLAQUE_COLOURS = [[C.byellow, C.bred], [C.bcyan, C.bblue], [C.bgreen, C.black], [C.white, C.bmagenta]];
 const PLAQUE_W = 48, PLAQUE_H = 32, PLAQUES_PER_SECOND = 36;
+// they pile up for this long, then let go, one after another, and come down
+// swinging like leaves
+const PLAQUE_PILE = 2.0, PLAQUE_LOOSE = 1.0, PLAQUE_FALL = 110, PLAQUE_PULL = 90;
 const GLOBE = { x: 120, y: 74, r: 8 };
-// The beeper through the ending, as the recording has it: the rifle's chirp
-// and the beam's rattle again, at these moments of each phase.
+// The beeper through the ending: the engines' roll as the ship goes up, the
+// link's interference, and the world bursting - each burst one sound, not a
+// spatter of rifle shots. The countdown and the plaques are silent, and
+// whatever is still sounding is cut when the plaques come.
 const ENDING_SOUNDS = {
-  getaway: [[0, () => rattle(35)], [0.105, () => zap()], [0.225, () => zap()]],
-  blast: [[0, () => zap()], [0.095, () => rattle(30)], [0.4, () => zap()], [1.85, () => zap()], [2.2, () => zap()], [2.235, () => rattle(30)], [2.36, () => zap()]],
-  plaques: [[0.5, () => zap()], [0.62, () => zap()], [1.55, () => rattle(65)], [2.55, () => zap()], [2.67, () => zap()], [2.7, () => rattle(30)]],
-  skeleton: [[0, () => rattle(40)], [3.0, () => zap()], [6.8, () => rattle(70)]],
+  getaway: [[0, (e) => keep(e, boom(1.9, true))]],
+  skeleton: [[0, () => rattle(40)]],
+  blast: [[0, (e) => keep(e, boom(2.2))], [1.5, (e) => keep(e, boom(0.8))], [2.2, (e) => keep(e, boom(0.8))]],
 };
+/** Hold on to a sound so the ending can cut it short. */
+function keep(e, src) { if (src) e.sounds.push(src); return src; }
+function hush(e) {
+  for (const src of e.sounds) { try { src.stop(); } catch (err) { /* already done */ } }
+  e.sounds = [];
+}
 
 let ending = null;
 
@@ -49,7 +59,7 @@ function beginEnding(outcome) {
   state.msgTop = state.msgBottom = null;
   ending = {
     outcome, phase: outcome === "won" ? "getaway" : "banner", t: 0,
-    sparks: [], plaques: [], due: 0, bursts: 0, r: rng((Date.now() & 0xffff) ^ 0xe11d), played: new Set(),
+    sparks: [], plaques: [], due: 0, bursts: 0, r: rng((Date.now() & 0xffff) ^ 0xe11d), played: new Set(), sounds: [],
   };
 }
 
@@ -67,7 +77,7 @@ function updateEnding(dt) {
   e.t += dt;
   for (const [at, fn] of ENDING_SOUNDS[e.phase] || []) {
     const key = e.phase + at;
-    if (e.t >= at && !e.played.has(key)) { e.played.add(key); fn(); }
+    if (e.t >= at && !e.played.has(key)) { e.played.add(key); fn(e); }
   }
   if (e.phase === "blast") {
     // the asteroid goes up first, then two lesser bursts out of the cloud
@@ -83,16 +93,31 @@ function updateEnding(dt) {
     }
     e.sparks = e.sparks.filter((s) => s.life > 0);
   } else if (e.phase === "plaques") {
-    e.due += dt * PLAQUES_PER_SECOND;
-    while (e.plaques.length < e.due) {
-      e.plaques.push({
-        x: Math.floor(e.r() * (VIEW_W + 16)) - 12, y: Math.floor(e.r() * (VIEW_H + 12)) - 8,
-        c: Math.floor(e.r() * PLAQUE_COLOURS.length),
-      });
+    if (e.t < PLAQUE_PILE) {
+      e.due += dt * PLAQUES_PER_SECOND;
+      while (e.plaques.length < e.due) {
+        e.plaques.push({
+          x: Math.floor(e.r() * (VIEW_W + 16)) - 12, y: Math.floor(e.r() * (VIEW_H + 12)) - 8,
+          c: Math.floor(e.r() * PLAQUE_COLOURS.length),
+          let: PLAQUE_PILE + e.r() * PLAQUE_LOOSE,     // when this one lets go
+          w: 2.2 + e.r() * 1.6, ph: e.r() * 6.3, a: 5 + e.r() * 9, vy: 0, sway: 0, rot: 0,
+        });
+      }
+    } else {
+      for (const p of e.plaques) {
+        if (e.t < p.let) continue;
+        const u = e.t - p.let;
+        p.vy = Math.min(PLAQUE_FALL, p.vy + PLAQUE_PULL * dt);
+        p.y += p.vy * dt;
+        p.sway = Math.sin(u * p.w + p.ph) * p.a;      // the swing, side to side
+        p.rot = Math.sin(u * p.w + p.ph) * 0.45;      // and the turn that goes with it
+      }
+      if (e.plaques.every((p) => p.y > VIEW_H + 4)) { e.t = ENDING_PHASES.plaques; }
     }
   }
   if (e.t >= ENDING_PHASES[e.phase] || tapped.Escape) {
     const next = tapped.Escape ? null : endingNext(e.phase);
+    if (!next || next === "plaques") hush(e);          // nothing sounds over the plaques
     if (!next) { ending = null; state.mode = "title"; menu.t = 0; return; }
     e.phase = next; e.t = 0;
   }
@@ -159,13 +184,18 @@ function drawLink(ctx, x, y, s, t) {
 
 function drawPlaque(ctx, p) {
   const [paper, ink] = PLAQUE_COLOURS[p.c];
-  ctx.fillStyle = ink;   ctx.fillRect(p.x, p.y, PLAQUE_W, PLAQUE_H);
-  ctx.fillStyle = paper; ctx.fillRect(p.x + 1, p.y + 1, PLAQUE_W - 2, PLAQUE_H - 2);
-  ctx.fillStyle = ink;   ctx.fillRect(p.x + 3, p.y + 3, PLAQUE_W - 6, PLAQUE_H - 6);
-  ctx.fillStyle = paper; ctx.fillRect(p.x + 4, p.y + 4, PLAQUE_W - 8, PLAQUE_H - 8);
+  ctx.save();
+  ctx.translate(p.x + (p.sway || 0) + PLAQUE_W / 2, p.y + PLAQUE_H / 2);
+  if (p.rot) ctx.rotate(p.rot);
+  ctx.translate(-PLAQUE_W / 2, -PLAQUE_H / 2);
+  ctx.fillStyle = ink;   ctx.fillRect(0, 0, PLAQUE_W, PLAQUE_H);
+  ctx.fillStyle = paper; ctx.fillRect(1, 1, PLAQUE_W - 2, PLAQUE_H - 2);
+  ctx.fillStyle = ink;   ctx.fillRect(3, 3, PLAQUE_W - 6, PLAQUE_H - 6);
+  ctx.fillStyle = paper; ctx.fillRect(4, 4, PLAQUE_W - 8, PLAQUE_H - 8);
   const [a, b] = tx(["GAME", "OVER"]);
-  drawText(ctx, a, p.x + (PLAQUE_W - textWidth(a)) / 2, p.y + 8, ink);
-  drawText(ctx, b, p.x + (PLAQUE_W - textWidth(b)) / 2, p.y + 17, ink);
+  drawText(ctx, a, (PLAQUE_W - textWidth(a)) / 2, 8, ink);
+  drawText(ctx, b, (PLAQUE_W - textWidth(b)) / 2, 17, ink);
+  ctx.restore();
 }
 
 function drawEnding(ctx) {
