@@ -1,4 +1,4 @@
-// every room: Dan on each platform, 20 s of guards coming and going; report any live guard overlapping a wall
+// every room: Ai on each platform, 20 s of guards coming and going; report any live guard overlapping a wall
 const { chromium } = require('playwright-core');
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });

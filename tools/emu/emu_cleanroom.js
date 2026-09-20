@@ -1,4 +1,4 @@
-// Dump every room five times with Dan a few cells apart, so a cell-wise vote
+// Dump every room five times with Ai a few cells apart, so a cell-wise vote
 // can drop him: node emu_cleanroom.js room_snaps.json OUTDIR
 const { boot, OUT } = require('./emu_lib');
 const fs = require('fs');

@@ -1,4 +1,4 @@
-// Dan walks for eight seconds; Backspace; he must be where he was five seconds before, and everything else with him
+// Ai walks for eight seconds; Backspace; he must be where he was five seconds before, and everything else with him
 const { chromium } = require('playwright-core');
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });

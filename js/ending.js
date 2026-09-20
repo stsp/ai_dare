@@ -1,6 +1,6 @@
 /* The ending, as the original plays it (filmed from the walkthrough
- * recording): the Anastasia flies off over the city, which scrolls away
- * beneath her, under "DAN AND DIGBY MAKE A GETAWAY!"; the asteroid hangs in
+ * recording): the ship flies off over the city, which scrolls away
+ * beneath her, under "AI DARE MAKES A GETAWAY!"; the asteroid hangs in
  * space while a box counts FIVE, FOUR, THREE, TWO, ONE; it flashes and bursts
  * into a cloud of white and cyan sparks, with two lesser bursts after it;
  * "WELL DONE SIR! THIS COULD GET YOU YOUR KNIGHTHOOD!" on black; then GAME
@@ -136,7 +136,7 @@ function drawEnding(ctx) {
     drawStarfield(ctx, "getaway");
     drawEndingCity(ctx, Math.floor(e.t * 72));
     drawShip(ctx, 62, 82 + Math.round(Math.sin(e.t * 3) * 1.5), e.t);
-    drawMessage(ctx, tx(["DAN AND DIGBY MAKE A GETAWAY!"]), true);
+    drawMessage(ctx, tx(["AI DARE MAKES A GETAWAY!"]), true);
   } else if (e.phase === "countdown" || e.phase === "blast") {
     drawStarfield(ctx, "space");
     if (e.phase === "countdown") {

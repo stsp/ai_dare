@@ -1,9 +1,9 @@
-// Verify every lift call the surveys recorded: from a snapshot of the room with Dan on that floor, walk
+// Verify every lift call the surveys recorded: from a snapshot of the room with Ai on that floor, walk
 // him to the call's cell, press up or down, and watch his height. A grav-lift carries him steadily;
 // a jump peaks ten pixels up and comes back; a fall needs no key at all. Calls that do not ride are
 // phantoms - a jump or a fall at a gap's edge that the survey took for a ride.
 //   node emu_liftcheck.js SNAP_INDEX.json OUT.json [--place]   (DANDARE_WORK holds the snapshots; level.json in cwd)
-// With --place, the calls no walk could reach are retried with Dan put straight on the cell (his x and y poked).
+// With --place, the calls no walk could reach are retried with Ai put straight on the cell (his x and y poked).
 const { boot, OUT, POKES } = require('./emu_lib');
 const fs = require('fs');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1] };
@@ -60,7 +60,7 @@ const PLACE = process.argv.includes('--place');
     let snaps = (index[l.from] || []).filter(([f, x, y]) => Math.abs(y + 5 - feet) <= 6);
     if (PLACE) snaps = index[l.from] || [];
     if (!snaps.length) { results[k] = { verdict: 'no snapshot on that floor' }; continue; }
-    // the snapshot with Dan nearest the cell
+    // the snapshot with Ai nearest the cell
     snaps.sort((a, b) => Math.abs(a[1] - l.x0) - Math.abs(b[1] - l.x0));
     await E.loadFile(snaps[0][0], PLACE ? { ...POKES, 0xC012: feet - 5, 0xC013: l.x0 } : POKES);
     const r = await E.page.evaluate(([cell, key, walk]) => __try(cell, key, walk), [l.x0, KEYS[l.kind === 'up' ? 'Q' : 'A'], { P: KEYS.P, O: KEYS.O }]);

@@ -14,15 +14,15 @@ extended, but they need two things that are not in this repository:
 
 `emu_lib.js` boots the page under Playwright, restores a snapshot, and drives
 the emulator frame by frame through the worker - far faster than real time -
-with the two Multiface POKEs published for the Virgin release (infinite
+with the two Multiface POKEs published for the game (infinite
 energy, no wall guns) applied so a survey is not cut short by capture.
 
 `emu_bfs.js` is the survey: from the start it tries, in every room reached,
 walking off either edge and holding up or down on every one of the thirty
 cells (a grav-lift answers only from a couple of cells just left of its
-rails). Every move that changed the room, or the floor Dan stood on, is an
+rails). Every move that changed the room, or the floor Ai stood on, is an
 edge; every room's screen is dumped as `room_N.scr`. The game keeps its
-room number at `0x6297`, Dan's position at `0xC012` (y) and `0xC013` (x, in
+room number at `0x6297`, Ai's position at `0xC012` (y) and `0xC013` (x, in
 cells), found by watching which bytes follow the keys.
 
     DANDARE_WORK=work node tools/emu/emu_bfs.js start.json
@@ -41,7 +41,7 @@ current directory) and the browser from `CHROME`; the game is expected on
 `http://127.0.0.1:8801/` (the repository root served as is) and the
 emulator page on `http://127.0.0.1:8802/`.
 
-* `emu_floor.js DIR...` - the floor probe: walks Dan across every room of a
+* `emu_floor.js DIR...` - the floor probe: walks Ai across every room of a
   survey and records where he stood and where he fell (`FLOOR_OUT`).
 * `emu_fire.js SNAP FRAMES NAME PRE HOLD` - films the rifle: holds fire for
   FRAMES frames (after tapping PRE keys, e.g. `P:70,O:3`, and with HOLD keys
@@ -51,24 +51,24 @@ emulator page on `http://127.0.0.1:8802/`.
 * `run_rzx_audio.sh` - plays the walkthrough recording in Fuse with SDL's disk
   audio driver, so the beeper lands in `rzx_audio.raw` (16-bit stereo, 44.1 kHz,
   paced by `SDL_DISKAUDIODELAY` so the timeline matches the video's).
-* `emu_film2.js SNAP CELL SCRIPT EVERY NAME` - drives Dan from a snapshot by
+* `emu_film2.js SNAP CELL SCRIPT EVERY NAME` - drives Ai from a snapshot by
   a key script and logs room/x/y; `emu_grabroom2.js` walks him into the next
   room and dumps its screen; `emu_lifttrace.js` records a lift ride frame by
   frame. `scr2png.py IN.scr OUT.png` renders a dumped screen.
 * `emu_guns.js SNAPS.json OUT.json [ROOM...]` runs each room twice from its
   snapshot with the same keys - the gun routine poked out, then put back -
   and records every screen cell that differs: where the guns' shots go.
-  `emu_gunshoot.js SNAP NAME SCRIPT` drives Dan by a key script (`O:30` holds
+  `emu_gunshoot.js SNAP NAME SCRIPT` drives Ai by a key script (`O:30` holds
   O for thirty frames, `O+Q:6` both, `W:60` waits) with the guns live, saving
   every second frame and logging the gun table at `0x62A5` (four bytes a gun:
   y, column with the kind in its top bits, a pointer into the room's map) and
   the three shot slots at `0x6299`. The surveys' snapshots carry the "no
   guns" POKE, so both put the CALL back at 44413.
 * `emu_liftcheck.js SNAP_INDEX OUT.json` tries every lift call the surveys
-  recorded: loads a snapshot with Dan on that floor, walks him to the cell,
+  recorded: loads a snapshot with Ai on that floor, walks him to the cell,
   presses Q or A and traces his y. A ride moves him 3-5 px a frame the way
   the key says; anything else (a fall, no movement) is a call the survey
-  imagined. `--place` retries the calls no walk could reach with Dan's x and y
+  imagined. `--place` retries the calls no walk could reach with Ai's x and y
   poked onto the cell; put down in the air he lands first, and the result
   says which floor the key was pressed on. `data/emu/phantom_lifts.json` lists the calls found false, and
   `build_level.py --fake-lifts` leaves them out of the level.
@@ -82,17 +82,17 @@ emulator page on `http://127.0.0.1:8802/`.
   against the game's own engine in a headless browser: every lift ride, the
   sector-2 loop, the whole recorded route, and a single walk.
 * `hoptest.js ROOM 'walk right;goto 21;lift up;jump left'` runs primitive
-  moves in the engine from a room and prints where each left Dan.
+  moves in the engine from a room and prints where each left Ai.
   `route_seq.json` is the walkthrough's room sequence; a `null` marks a
   break between recordings.
 * `mksnap.js SNAP CELL SCRIPT OUT.json` plays a key script from a snapshot
   and saves the machine state after it - a seed for a survey of somewhere
   the walkthrough never stood (the surface beyond the first pit).
-* `emu_death.js SNAP CELL P|O NAME` walks Dan to a cell, faces him, and
+* `emu_death.js SNAP CELL P|O NAME` walks Ai to a cell, faces him, and
   fires in bursts while dumping the screen every two frames - how a guard
   really dies (arms up, the room's colours cycling, gone in ten frames).
 * `shot.js ROOM CELL OUT.png [fire|kneel]` draws one frame of the game with
-  Dan put down at that cell (`FITTED=n` sets the parts fitted) and saves the
+  Ai put down at that cell (`FITTED=n` sets the parts fitted) and saves the
   canvas at 4x: how a change looks is checked here, next to the original's
   screen, before it is pushed. `treenwalls.js` runs every room's every floor
   for twenty seconds of guards and reports any guard inside a wall.
@@ -101,15 +101,15 @@ emulator page on `http://127.0.0.1:8802/`.
   the room is never declared safe.
   `finite.js` shoots only the first guard on every floor and counts who
   else comes: a room's share is two in all, shot ones included.
-  `stranded.js` puts Dan on one floor and a guard on another with no lift
+  `stranded.js` puts Ai on one floor and a guard on another with no lift
   between, on every such pair in every room, and checks that the guard runs
-  out and one comes in on Dan's floor.
-  `takepart.js OUT` has Dan jump onto the part in room 83, saves the frame
+  out and one comes in on Ai's floor.
+  `takepart.js OUT` has Ai jump onto the part in room 83, saves the frame
   of the pickup (the screen turned over), the gap between pulses and the
   messages, and logs when the flash and each message come and go: as the
   original was filmed, the flash for 0.48 s, "NOW TAKE IT" for 3.3 s from
   its end, two seconds of quiet, then the Mekon for 3.5 s. `rewindtest.js`
-  walks Dan for eight seconds, presses Backspace, and checks he and all else
+  walks Ai for eight seconds, presses Backspace, and checks he and all else
   are as they were five seconds before.
 * `titlescroll.js` boots the original past its loading picture and measures
   the title screen's running line frame by frame (four pixels a frame).

@@ -1,5 +1,5 @@
 """Compose the title picture from the hi-res render, laid out as the original's
-loading screen: the plaque top left, Dan's portrait under it, the Mekon's
+loading screen: the plaque top left, Ai's portrait under it, the Mekon's
 portrait to the right over a wall of blue panels.  The plaque is left blank -
 the game letters it, so the story can rename it.
 
@@ -112,7 +112,7 @@ def main():
     right.paste(mk, (mx, my), mk)
     page.paste(right, (rx0, ry0))
 
-    # Dan's panel, left, under the plaque
+    # Ai's panel, left, under the plaque
     lx0, ly0, lx1, ly1 = 3 * K, 46 * K, 116 * K, 189 * K       # a white line below the plaque's shadow
     left = Image.new("RGB", (lx1 - lx0, ly1 - ly0))
     pd = ImageDraw.Draw(left)

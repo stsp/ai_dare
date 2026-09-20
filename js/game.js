@@ -1,5 +1,5 @@
 "use strict";
-/* Dan Dare: Pilot of the Future - a recreation of the 1986 ZX Spectrum game.
+/* Ai Dare: Pilot of the Future - a recreation of a ZX Spectrum game.
  *
  * The level geometry is derived from the game's screen map by
  * tools/extract_level.py; this file is the engine that plays it.
@@ -15,7 +15,7 @@ const LEVEL = window.DANDARE_LEVEL;
 const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 
 // --- tuning ---------------------------------------------------------------
-// Measured in the emulator: Dan runs a cell in four and a half frames; his
+// Measured in the emulator: Ai runs a cell in four and a half frames; his
 // jump rises ten pixels over twelve frames and lands twelve frames later,
 // five cells on, and holding the key changes nothing.
 const RUN_SPEED = 80;          // px/s
@@ -24,7 +24,7 @@ const JUMP_VY = -83;
 const JUMP_TIME = 0.48;         // the arc: twelve frames up and twelve down
 const JUMP_VX = 83;            // five cells in the 0.48 s
 const LIFT_SPEED = 67;         // the original's grav-lift: four pixels every three frames
-const TURN_TIME = 0.12;        // Dan turns on the spot before running back
+const TURN_TIME = 0.12;        // Ai turns on the spot before running back
 // The rifle, as filmed in the original: a shot every six frames while the
 // button is held; each shot is a dash one cell wide that moves a cell a frame
 // and leaves the two previous dashes behind it, a 24-pixel streak; it dies
@@ -35,9 +35,9 @@ const PART_PULSE = 4 / 50, PART_FLASH = 6 * PART_PULSE;   // a part taken: the s
 const LASER_STEP = 8;          // one cell a frame
 const LASER_TRAIL = 2;         // dashes left behind the head
 const LASER_MIN = 8, LASER_MAX = 20;   // cells a shot lives, chosen at random
-// A Treen who reaches Dan's level closes to a few cells, stands and fires a
-// shot every three frames while Dan is before him - the dashes run together
-// into a beam - and the rattle of it striking Dan sounds now and then.
+// A Treen who reaches Ai's level closes to a few cells, stands and fires a
+// shot every three frames while Ai is before him - the dashes run together
+// into a beam - and the rattle of it striking Ai sounds now and then.
 const TREEN_FIRE_PERIOD = 3 * FRAME;
 const TREEN_FIRE_RANGE = 14 * 8;   // he opens fire from this far
 const TREEN_STAND_OFF = 4 * 8;     // and walks no closer than this
@@ -45,7 +45,7 @@ const HIT_RATTLE_EVERY = 0.6, HIT_ENERGY = 3;
 const CLOCK_RATE = 3;          // game seconds per real second
 const START_TIME = 2 * 3600;
 const SDS_X = 144;              // the mechanism stands mid-room, where the map shows its silhouette
-const ESCAPE_ROOM = "75";       // Digby waits with the Anastasia here once the mechanism is armed
+const ESCAPE_ROOM = "75";       // the ship waits here once the mechanism is armed
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
@@ -59,14 +59,14 @@ const ROOMS = LEVEL.rooms;
 const ROOM_IDS = Object.keys(ROOMS);
 const PLAYABLE = ROOM_IDS.map((key) => ({ key, room: ROOMS[key] }));
 
-/** Platforms Dan can stand on, as pixel spans. */
+/** Platforms Ai can stand on, as pixel spans. */
 function platformsOf(room) {
   return room.platforms.map((p) => ({
     y: p.y * 8, x0: p.x0 * 8, x1: p.x1 * 8,
   }));
 }
 
-/** Walls Dan collides with (cell class 4), as pixel boxes, one per row run. */
+/** Walls Ai collides with (cell class 4), as pixel boxes, one per row run. */
 const WALL_CACHE = new Map();
 function wallsOf(key) {
   if (WALL_CACHE.has(key)) return WALL_CACHE.get(key);
@@ -100,7 +100,7 @@ for (const l of LEVEL.links) {
 }
 /** A door the original only opened once enough parts were fitted. */
 function isOpen(l) { return !!l && (state.cheat.doors || !(l.needs > state.fitted)); }
-/** The doorway on this side at the height Dan is walking: a room's left or
+/** The doorway on this side at the height Ai is walking: a room's left or
  *  right edge can lead to different rooms from different floors. */
 function exitAt(list, feet) {
   if (!list.length) return null;
@@ -134,7 +134,7 @@ const HOPS = (() => {
 
 // ------------------------------------------------------- world layout (fixed)
 
-/** Choose the screen Dan lands on: the leftmost surface screen. */
+/** Choose the screen Ai lands on: the leftmost surface screen. */
 function findStart() {
   return { key: LEVEL.start, room: ROOMS[LEVEL.start] };
 }
@@ -152,7 +152,7 @@ function placeParts() {
   });
 }
 
-/** The broadest floor in a screen: where Dan is put down safely. */
+/** The broadest floor in a screen: where Ai is put down safely. */
 function widestPlatform(room) {
   if (!room.platforms.length) return { x: 120, y: 120 };
   const p = room.platforms.reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a));
@@ -168,7 +168,7 @@ function highestPlatform(room) {
   return { x: (p.x0 + p.x1) * 4, y: p.y * 8 };
 }
 
-/** Prison cells: the rooms the original puts a captured Dan in, one per
+/** Prison cells: the rooms the original puts a captured Ai in, one per
  *  sector; a sector without one of its own uses the nearest behind it. */
 function placePrisons() {
   const out = new Map();
@@ -187,25 +187,25 @@ const PRISONS = placePrisons();
 
 // ------------------------------------------------------------------ entities
 
-/** Where the Treens come from. In most rooms some are already about when Dan
+/** Where the Treens come from. In most rooms some are already about when Ai
  *  walks in, placed by a seeded hash of the room; on the surface and in the
  *  Mekon's hologram room there are none to start with. Then, every so often
- *  while fewer than two are about, one runs in from the edge away from Dan on
+ *  while fewer than two are about, one runs in from the edge away from Ai on
  *  his floor - at the original's pace, about sixty pixels a second - closes
  *  to a few cells and pauses before he fires. The fourth sector is unguarded,
  *  as in the original. */
 const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
-const TREEN_FIRST = [0.4, 2.2];   // and sooner still into a room that was empty when Dan walked in
+const TREEN_FIRST = [0.4, 2.2];   // and sooner still into a room that was empty when Ai walked in
 const TREEN_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
-const TREEN_BEHIND = 64;         // how far into the room Dan must be before one follows him in through his own door
+const TREEN_BEHIND = 64;         // how far into the room Ai must be before one follows him in through his own door
 const TREEN_BEHIND_TIME = 4;     // seconds after he steps in that this holds; later a guard may come in at his back
-const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Dan
-const TREEN_CHASE = 3;           // seconds a guard counts as giving chase after he last had Dan in range
-const TREEN_LEAVE = 1.5;         // seconds a guard stranded on another floor waits before he runs out to come in on Dan's
+const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Ai
+const TREEN_CHASE = 3;           // seconds a guard counts as giving chase after he last had Ai in range
+const TREEN_LEAVE = 1.5;         // seconds a guard stranded on another floor waits before he runs out to come in on Ai's
 const TREEN_RETURN = [0.8, 2.0]; // and how soon after that he is in again
 const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
-// where none is about when Dan walks in, and they only run in after him:
+// where none is about when Ai walks in, and they only run in after him:
 // the screen he lands on, and the hologram's room
 function entryOnlyRoom(key, room) { return key === START.key || (LEVEL.boss && LEVEL.boss.room === key); }
 
@@ -231,7 +231,7 @@ function makeTreens(key, room) {
   return out;
 }
 
-/** The room's walls, steps and lift stations stop a guard as they stop Dan
+/** The room's walls, steps and lift stations stop a guard as they stop Ai
  *  (legs left out of the test, as with him); true when one has just done so. */
 function treenWalled(t, key) {
   let hit = false;
@@ -254,18 +254,18 @@ function treenInWall(key, x, y) {
 function spawnTreen(key, room) {
   const danFeet = dan.y + DAN_H;
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5 && p.x1 * 8 - TREEN_W > p.x0 * 8);
-  // Dan's own floor first, widest first; another floor when no doorway on his lets one in
+  // Ai's own floor first, widest first; another floor when no doorway on his lets one in
   const level = wide.filter((p) => Math.abs(p.y * 8 - danFeet) < 6).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   const others = wide.filter((p) => !level.includes(p)).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   for (const p of [...level, ...others]) {
     const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
-    // in from an edge away from Dan, running - but only through a doorway on
+    // in from an edge away from Ai, running - but only through a doorway on
     // that floor, never through a door that is shut, nor through a wall
     const y = p.y * 8 - TREEN_H;
     const way = waysOnto(key, p);
     const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
     const nearSide = farSide === "right" ? "left" : "right";
-    // through the door behind Dan only once he is well into the room: never
+    // through the door behind Ai only once he is well into the room: never
     // straight at his back as he steps in
     const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
     const onHisFloor = level.includes(p);
@@ -282,8 +282,8 @@ function spawnTreen(key, room) {
   state.treenClock = state.treenNext;         // no way in just now: try again next frame
 }
 
-/** A guard who uses the lifts: Dan on another floor of this room, and a lift
- *  on the guard's floor that stops at Dan's, and he heads for it; Dan riding
+/** A guard who uses the lifts: Ai on another floor of this room, and a lift
+ *  on the guard's floor that stops at Ai's, and he heads for it; Ai riding
  *  out of the room while the guard is giving chase, and he follows him onto
  *  it, to arrive behind him in the next room. */
 function liftToDan(t, key) {
@@ -302,10 +302,10 @@ function treenSeeksLift(t, key, room) {
   t.lift = { link, x: ((link.x0 + link.x1 + 1) / 2) * 8 - TREEN_W / 2, wait: 0.3 + Math.random() * 1.2 };
 }
 
-/** A guard on another floor than Dan, with no lift on his beat to bring him
+/** A guard on another floor than Ai, with no lift on his beat to bring him
  *  down or up: after a moment he runs off his floor through the nearer open
- *  edge and is out of the room, and one comes in again where Dan is (the
- *  spawner sends the room's next guard onto Dan's floor). Returns the edge he
+ *  edge and is out of the room, and one comes in again where Ai is (the
+ *  spawner sends the room's next guard onto Ai's floor). Returns the edge he
  *  is leaving by, or null when his floor has none he can walk off. */
 function treenLeaves(t, key) {
   const tried = t.noWay || new Set();                 // edges a wall has already turned him back from
@@ -324,7 +324,7 @@ function waysOnto(key, p) {
   return { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !treenInWall(key, 0, y),
            right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !treenInWall(key, VIEW_W - TREEN_W, y) };
 }
-/** Whether a guard could come in on the floor Dan stands on. */
+/** Whether a guard could come in on the floor Ai stands on. */
 function wayToDan(key, room) {
   const danFeet = dan.y + DAN_H;
   return room.platforms.some((p) => p.x1 - p.x0 >= 5 && Math.abs(p.y * 8 - danFeet) < 6 && (({ left, right }) => left || right)(waysOnto(key, p)));
@@ -345,7 +345,7 @@ function rideTreen(t, dt, room) {
   t.y += r.dir * LIFT_SPEED * dt;
   const feet = t.y + TREEN_H;
   if (r.out) {
-    // off the screen after Dan: he arrives in the next room when Dan does
+    // off the screen after Ai: he arrives in the next room when Ai does
     if (t.y + TREEN_H < 0 || t.y > VIEW_H) { t.dead = true; t.gone = true; state.pursuer = { room: r.to, x: t.x, dir: r.dir, stop: r.stop }; }
     return;
   }
@@ -380,7 +380,7 @@ const state = {
   energyMax: ENERGY_MAX,
   score: 0,
   fitted: 0,           // parts of the mechanism in their sockets
-  carrying: false,     // Dan has a part on him
+  carrying: false,     // Ai has a part on him
   armed: false,        // all five parts fitted: the countdown runs
   viewer: "asteroid",
   msgTop: null,          // narration box over the play area
@@ -397,8 +397,8 @@ const state = {
   treenClock: 0, treenNext: 0,   // the next arrival
   deadTreens: new Map(),   // room -> which of its guards have been shot
   deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
-  pursuer: null,           // a guard riding the lift after Dan into the next room
-  roomAge: 0,              // seconds since Dan stepped into this room
+  pursuer: null,           // a guard riding the lift after Ai into the next room
+  roomAge: 0,              // seconds since Ai stepped into this room
   takenItems: new Set(),   // the cups of energy drunk this game
   invert: 0,               // the screen inverted after a gun is shot, seconds left
   partFlash: 0,            // the screen turning over after a part is taken, seconds left
@@ -426,12 +426,12 @@ function resetDan(x, y) {
 }
 
 function enterRoom(key, x, y) {
-  // a guard riding the lift out after Dan is still on his way when Dan arrives
+  // a guard riding the lift out after Ai is still on his way when Ai arrives
   const chaser = treens.find((t) => !t.dead && t.riding && t.riding.out && t.riding.to === key);
   if (chaser) state.pursuer = { room: key, x: chaser.x, dir: chaser.riding.dir, stop: chaser.riding.stop };
   state.room = key;
-  // the original ends the game the moment Dan steps into the launch bay -
-  // "DAN AND DIGBY MAKE A GETAWAY!" - which lies behind the last gate
+  // the original ends the game the moment Ai steps into the launch bay -
+  // "AI DARE MAKES A GETAWAY!" - which lies behind the last gate
   if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
   if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }   // where he arrives: the guards keep clear of it
@@ -442,7 +442,7 @@ function enterRoom(key, x, y) {
   state.treenNext = wait[0] + Math.random() * (wait[1] - wait[0]);
   if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
   pickups = makePickups(key, room);
-  // a guard who took the lift after Dan rides in behind him
+  // a guard who took the lift after Ai rides in behind him
   if (state.pursuer && state.pursuer.room === key) {
     const q = state.pursuer;
     treens.push({ id: state.treenSeq++, x: q.x, y: q.dir > 0 ? -TREEN_H : VIEW_H, x0: 0, x1: VIEW_W - TREEN_W, dir: 1, anim: 0, dead: false, react: 0,
@@ -457,7 +457,7 @@ function enterRoom(key, x, y) {
   const zone = room.label || room.zone;                    // the number the original announces
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
-    say(tx(["DAN IS NOW IN SECTOR #"], zone), 2.5);
+    say(tx(["AI IS NOW IN SECTOR #"], zone), 2.5);
     if (zone > 1) taunt();
   }
   // the Mekon's hologram: he waits on his dais in one room of the fifth sector
@@ -530,7 +530,7 @@ function startGame() {
   const spawn = widestPlatform(START.room);
   resetDan(16, spawn.y - DAN_H);
   enterRoom(START.key, 16, spawn.y - DAN_H);
-  say(tx(["DAN LANDS ON", "THE ASTEROID"]), 3);
+  say(tx(["AI LANDS ON", "THE ASTEROID"]), 3);
 }
 
 // ------------------------------------------------------------------ collision
@@ -540,7 +540,7 @@ function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
 }
 
 /* Collision boxes are given as (x, y + yOff, w, h) so that kneeling can shrink
-   Dan from the head down while his feet stay put. */
+   Ai from the head down while his feet stay put. */
 
 /** Move a body horizontally, stopping at walls. */
 function moveX(body, dx, walls, w, h, yOff) {
@@ -598,7 +598,7 @@ const held = {
   fire: () => !(dan.stun > 0) && (keys.Space || keys.KeyM),
 };
 
-// ----------------------------------------------------------------- Dan update
+// ----------------------------------------------------------------- Ai update
 
 function updateDan(dt) {
   const room = currentRoom();
@@ -621,7 +621,7 @@ function updateDan(dt) {
   const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell) &&
                                                  Math.abs(dan.y + DAN_H - l.feet) <= 14);
   if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
-  // a lift answers only to Dan standing still: up while running is a jump,
+  // a lift answers only to Ai standing still: up while running is a jump,
   // even between the rails (the original clears a gap beside a shaft that way)
   if (!dan.onLift && dan.onGround && !dan.liftLatch && !held.left() && !held.right()) {
     const call = held.down() ? liftHere("down") : held.up() ? liftHere("up") : null;
@@ -665,7 +665,7 @@ function updateDan(dt) {
     const feet = dan.y + DAN_H;
     // the ride ends where the original ended it - the recorded stop height in
     // the room it leads to, whatever is there: a floor beside the shaft, and
-    // Dan steps out on it; nothing, as with the one broken lift, and he drops.
+    // Ai steps out on it; nothing, as with the one broken lift, and he drops.
     // Held on, it rides through the stop where the shaft goes on to another room.
     if (lift.stopHere && lift.stop != null && lift.stop >= 0 && !(hold && onward) && !(feet > VIEW_H)) {
       const reached = dir > 0 ? (before <= lift.stop && feet >= lift.stop) : (before >= lift.stop && feet <= lift.stop);
@@ -679,7 +679,7 @@ function updateDan(dt) {
       }
     }
     // the field ends at the top of the shaft with no stop there: as in the
-    // original, Dan drops back down the shaft to its bottom, past any floor
+    // original, Ai drops back down the shaft to its bottom, past any floor
     if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; dan.shaftFall = true; }
     if (dan.onLift && dir > 0 && feet > VIEW_H && !onward) {
       dan.onLift = null; dan.liftLatch = true;               // no floor met: drop to it
@@ -699,7 +699,7 @@ function updateDan(dt) {
       dir = 0;
     } else if (dir !== 0 && dir !== dan.face && dan.onGround) {
       dan.face = dir;
-      dan.turning = TURN_TIME;   // Dan turns on the spot before setting off
+      dan.turning = TURN_TIME;   // Ai turns on the spot before setting off
       dir = 0;
     } else if (dir !== 0) {
       dan.face = dir;
@@ -773,7 +773,7 @@ function updateDan(dt) {
 }
 
 
-/** Flip to the next screen when Dan walks off this one, falls through a
+/** Flip to the next screen when Ai walks off this one, falls through a
  *  hole, or rides a lift out of it - each only where the original allows. */
 function moveBetweenRooms() {
   const e = EXITS[state.room];
@@ -808,7 +808,7 @@ function moveBetweenRooms() {
     dan.liftLatch = true;
     if (ride.broken) say(tx(["OUT OF ORDER"]), 3);
   } else {
-    // no way out that way: keep Dan on this screen
+    // no way out that way: keep Ai on this screen
     if (dan.x < 0) dan.x = 0;
     if (dan.x + DAN_W > VIEW_W) dan.x = VIEW_W - DAN_W;
     if (dan.y + DAN_H > VIEW_H && !dan.onLift) {
@@ -851,11 +851,11 @@ function updateTreens(dt) {
     const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0 && !t.entering;   // not from the doorway
     if (inRange) t.chase = TREEN_CHASE; else if (t.chase > 0) t.chase -= dt;
     if (t.lifts && !inRange) treenSeeksLift(t, key, room);
-    // on another floor than Dan and no lift to him: he leaves, to come in where Dan is
-    // (only when one could come in on Dan's floor; else he keeps his beat)
+    // on another floor than Ai and no lift to him: he leaves, to come in where Ai is
+    // (only when one could come in on Ai's floor; else he keeps his beat)
     if (!level && !t.entering && dan.onGround && !(t.lifts && liftToDan(t, key)) && wayToDan(key, room)) {
       const danFeet = dan.y + DAN_H;
-      if (t.apartFrom !== danFeet) { t.apartFrom = danFeet; t.apart = 0; t.noWay = new Set(); }   // Dan on a new floor: a fresh try
+      if (t.apartFrom !== danFeet) { t.apartFrom = danFeet; t.apart = 0; t.noWay = new Set(); }   // Ai on a new floor: a fresh try
       t.apart += dt;
       if (t.apart >= TREEN_LEAVE && !t.leaving) t.leaving = treenLeaves(t, key);
     } else { t.apart = 0; t.apartFrom = null; t.leaving = null; }
@@ -863,7 +863,7 @@ function updateTreens(dt) {
       t.fire = false; t.dir = t.leaving === "left" ? -1 : 1;
       t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9;
       if (treenWalled(t, key)) { (t.noWay = t.noWay || new Set()).add(t.leaving); t.leaving = null; }   // a wall on the way out: the other edge, or he stays
-      if (t.x + TREEN_W <= 0 || t.x >= VIEW_W) {                       // out of the room; his place is taken where Dan is
+      if (t.x + TREEN_W <= 0 || t.x >= VIEW_W) {                       // out of the room; his place is taken where Ai is
         t.dead = true; t.gone = true;
         state.treenClock = 0;
         state.treenNext = TREEN_RETURN[0] + Math.random() * (TREEN_RETURN[1] - TREEN_RETURN[0]);
@@ -892,7 +892,7 @@ function updateTreens(dt) {
       t.anim += dt * 9;
       t.x += t.dir * TREEN_RUN * dt;
     }
-    if (treenWalled(t, key) && !inRange) t.dir = -t.dir;    // the room's walls stop him as they stop Dan
+    if (treenWalled(t, key) && !inRange) t.dir = -t.dir;    // the room's walls stop him as they stop Ai
     if (t.entering) {
       // in, and a few cells clear of the wall he came through, before he is one of the room's
       if (t.x >= t.x0 + TREEN_CLEAR && t.x + TREEN_W <= t.x1 + TREEN_W - TREEN_CLEAR) t.entering = false;
@@ -985,7 +985,7 @@ function hurtDan(amount) {
 }
 
 function fellTooFar() {
-  note(tx(["DAN FELL TOO FAR!"]), 3);
+  note(tx(["AI FELL TOO FAR!"]), 3);
   capture();
 }
 
@@ -999,9 +999,9 @@ function capture() {
   const p = highestPlatform(ROOMS[cell]);
   resetDan(p.x, p.y - DAN_H);
   enterRoom(cell, p.x, p.y - DAN_H);
-  say(tx(["DAN FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
+  say(tx(["AI FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
   dan.stun = 2.2;                              // he lies where they left him before coming round
-  state.nextTaunt = 4;                         // he calls to gloat once Dan wakes
+  state.nextTaunt = 4;                         // he calls to gloat once Ai wakes
 }
 
 // ------------------------------------------------------------------- pickups
@@ -1042,7 +1042,7 @@ function updatePickups() {
     state.score += 1000;
     beep(1320, 0.4, "triangle");
     if (state.fitted >= 5) {
-      // the mechanism is armed: eleven minutes to get back to Digby's ship
+      // the mechanism is armed: eleven minutes to get back to the ship
       state.armed = true;
       state.timeLeft = 11 * 60 - 1;
       state.score += 2000;
@@ -1142,7 +1142,7 @@ function zap() {
   } catch (e) { /* no audio available */ }
 }
 
-/** The beam striking Dan, as the original's beeper rattles it: runs of seven
+/** The beam striking Ai, as the original's beeper rattles it: runs of seven
  *  toggles in the ratio 2:1:2:3:2:1:2 at a random pitch, a pause between them,
  *  for about a tenth of a second. */
 function rattle(ms) {
@@ -1176,7 +1176,7 @@ const canvas = document.getElementById("screen");
 const ctx = canvas.getContext("2d");
 /** Size the canvas to the window: as many whole screen pixels per game pixel
  *  as fit (at the display's own density), so the tiles scale evenly while the
- *  drawn figures and Dan's rendered head get every pixel the display has. */
+ *  drawn figures and Ai's rendered head get every pixel the display has. */
 function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const k = Math.max(2, Math.min(9, Math.floor(Math.min(window.innerWidth * 0.96 / SCREEN_W, window.innerHeight * 0.88 / SCREEN_H) * dpr)));
@@ -1194,7 +1194,7 @@ window.addEventListener("resize", fitCanvas);
 /** The markings by a lift: an arrow on the floor for each way it goes, over
  *  the cells it answers from. */
 /** The cells the original draws in front of the figures - walls, walkways,
- *  shafts, doorways, the guns - painted back over Dan and the guards where
+ *  shafts, doorways, the guns - painted back over Ai and the guards where
  *  they overlap them (the original's own flag map, packed in the sheet's index). */
 function drawForeground(ctx, key) {
   const s = SHEETS.rooms, rows = state.backdrop && s.meta.solid && s.meta.solid[key];
@@ -1279,7 +1279,7 @@ function drawLiftMarks(ctx, key, room) {
   }
 }
 
-/** The doors between sectors: a panel the height of Dan at the exit, shut
+/** The doors between sectors: a panel the height of Ai at the exit, shut
  *  until enough parts of the mechanism are fitted, then only its frame. */
 function drawGates(ctx, key, room) {
   const e = EXITS[key];
@@ -1325,7 +1325,7 @@ function drawGates(ctx, key, room) {
   }
 }
 
-/** Which pose Dan is in now: kneeling, the moment after a shot, in the air,
+/** Which pose Ai is in now: kneeling, the moment after a shot, in the air,
  *  striding (the figure runs a four-phase cycle off `dan.anim`) or standing. */
 function danFrame() {
   if (dan.stun > 0) return "down";
@@ -1452,7 +1452,7 @@ function draw() {
   }
 }
 
-/** The loading picture, after the original's: the plaque, Dan under it, the
+/** The loading picture, after the original's: the plaque, Ai under it, the
  *  Mekon beside him - assets/title.png, drawn at the canvas's full resolution
  *  with the plaque lettered here so the story can rename it. */
 function drawSplash(ctx) {
@@ -1465,7 +1465,7 @@ function drawSplash(ctx) {
   const k = canvas.width / SCREEN_W;                // screen pixels per game pixel
   if (img) ctx.drawImage(img, 0, 0, SCREEN_W * k, SCREEN_H * k);
   // the plaque: 2..176 by 2..41 on the picture's 256x192
-  const [a, b] = [tx(["DAN DARE"])[0], tx(["PILOT OF THE FUTURE"])[0]];
+  const [a, b] = [tx(["AI DARE"])[0], tx(["PILOT OF THE FUTURE"])[0]];
   ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   ctx.fillStyle = C.byellow;
   ctx.font = `bold ${Math.round(21 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
@@ -1491,11 +1491,11 @@ function drawTitle() {
   ctx.fillStyle = C.byellow;
   ctx.fillRect(20, 14, VIEW_W - 40, 2);
   ctx.fillRect(20, 42, VIEW_W - 40, 2);
-  let w = textWidth("DAN DARE") * 2;
+  let w = textWidth(tx(["AI DARE"])[0]) * 2;
   ctx.save();
   ctx.translate((VIEW_W - w) / 2, 20);
   ctx.scale(2, 2);
-  drawText(ctx, "DAN DARE", 0, 0, C.byellow);
+  drawText(ctx, tx(["AI DARE"])[0], 0, 0, C.byellow);
   ctx.restore();
   drawText(ctx, "PILOT OF THE FUTURE",
            (VIEW_W - textWidth("PILOT OF THE FUTURE")) / 2, 34, C.bwhite);

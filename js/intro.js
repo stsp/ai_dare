@@ -2,23 +2,22 @@
 /* The title screen and the opening sequence, after the original's:
    a framed title with lines of text whose colours run through the palette,
    two pages taking turns (the credits, and the "best scores" joke), then on
-   fire: Dan and Digby speed over the asteroid, the Mekon calls to gloat, a
+   fire: Ai Dare speeds over the asteroid, the Mekon calls to gloat, a
    run of Treen craft to shoot on the way in, and the landing. */
 
 const MENU_PAGES = [
-  ["© IPC / DAN DARE LIMITED", "© 1986  VIRGIN GAMES LTD", "WRITTEN BY THE GANG OF FIVE.", "",
+  ["THE ASTEROID IS COMING.", "AI DARE GOES IN ALONE.", "", "",
    "PRESS 'FIRE' TO PLAY", "OR '1' FOR OPTIONS"],
   ["BEST  SCORES", "", "AAAARRRRGGHH........000500", ".RAN................000400",
    "..OUT...............000300", "...OF...............000200", "....MEMORY..........000100"],
 ];
 const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhite];
 
-/* The line that runs along the foot of the title screen: the original's own
-   words (its credits and hellos, read out of its memory at 0xCC98), or the
-   story's tale of the post, at the original's four pixels a frame. */
+/* The line that runs along the foot of the title screen, at the original's
+   four pixels a frame: the tale of the mission, or the story's tale of the post. */
 const MARQUEE = {
-  dare: "ALL PROGRAM CODE, GRAPHICS AND SOUND © GANG OF FIVE.      PART OF THE DAN DARE NOSTALGIA COLLECTION LICENSED WORLDWIDE BY DAN DARE LTD.      BASED ON THE ORIGINAL FRANK HAMPSON COMIC STRIPS.      A FEW 'HELLO'S TO SMIFFY, ANJ, LEE AND LORI, CRACKER HIGGINS, COSMIC, DUDE, NEIL DRYDEN, MICKY KINCAID, STEVE AND STU AND RACHEL AT MH, STRING, PHIL, PAULA, HAZEL, PUNKK, BY-TOR, ALL ON PRESTEL, COMPUNET AND MICRONET, UNCLE CLIVE, AND THE REST OF THE WORLD.    ..DAVE.THE.SORCERER..        ",
-  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      СКЕЛЕТ МЕКОН, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДЭР ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      НАПАРНИК ЖДЁТ В МАШИНЕ.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+  dare: "THE MEKON'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS TREENS GUARD EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      ONE HOUR.      NO ONE ELSE IS COMING.        ",
+  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      СКЕЛЕТ МЕКОН, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
 };
 const MARQUEE_SPEED = 4 * 50;             // pixels a second
 const MARQUEE_K = 2;                      // the big face, two pixels to one
@@ -65,7 +64,7 @@ function drawBig(ctx, text, x, y, colour, k) {
 function drawTitleBox(ctx) {
   ctx.fillStyle = C.blue; ctx.fillRect(44, 4, 152, 50);
   ctx.fillStyle = C.cyan; ctx.fillRect(46, 6, 148, 46);
-  const a = tx(["DAN DARE"])[0], b = tx(["PILOT OF THE FUTURE"])[0];
+  const a = tx(["AI DARE"])[0], b = tx(["PILOT OF THE FUTURE"])[0];
   drawBig(ctx, a, 120 - textWidth(a) * 1.5, 11, C.blue, 3);
   drawBig(ctx, b, 120 - textWidth(b) * 0.7, 36, C.blue, 1.4);
 }
@@ -114,7 +113,7 @@ function beginIntro() {
   intro.ship.x = 60; intro.ship.y = 96; intro.ship.vy = 0;
 }
 
-const INTRO_FLY = 4.5, INTRO_CALL = 3.5, INTRO_FIGHT = 16, INTRO_DIGBY = 3.5;
+const INTRO_FLY = 4.5, INTRO_CALL = 3.5, INTRO_FIGHT = 16, INTRO_SHIP = 3.5;
 
 function updateIntro(dt) {
   intro.t += dt;
@@ -123,11 +122,11 @@ function updateIntro(dt) {
   if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), INTRO_CALL); }
   else if (intro.phase === 1 && intro.t > INTRO_CALL) { intro.phase = 2; intro.t = 0; }
   else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.msgTop = null; }
-  else if (intro.phase === 3 && intro.t > INTRO_DIGBY) { startGame(); state.score += intro.score; return; }
+  else if (intro.phase === 3 && intro.t > INTRO_SHIP) { startGame(); state.score += intro.score; return; }
   if (tapped.Enter || tapped.Escape) { startGame(); state.score += intro.score; return; }   // skip the fight
 
   if (intro.phase === 2) {
-    // Dan flies the ship: up, down, forward and back, and fire
+    // Ai flies the ship: up, down, forward and back, and fire
     if (held.up()) s.y -= 70 * dt;
     if (held.down()) s.y += 70 * dt;
     if (held.left()) s.x -= 90 * dt;
@@ -168,8 +167,7 @@ function updateIntro(dt) {
   if (state.viewerStatic > 0) state.viewerStatic -= dt;
 }
 
-/** Anastasia, in profile: a cyan hull, the cabin, and the drive flame. */
-/** The Anastasia, nose to the right: a long tube with a rounded nose, a
+/** The ship, nose to the right: a long tube with a rounded nose, a
  *  canopy and a row of portholes along the top, a finned engine block at the
  *  tail and a flaring exhaust. About 42 by 12, its hit point at (x + 14, y + 4). */
 function drawShip(ctx, x, y, t) {
@@ -263,10 +261,10 @@ function drawIntro(ctx) {
       ctx.fillStyle = C.bwhite; ctx.fillRect(Math.round(f.x) - 1, Math.round(f.y) - 1, 3, 3);
     }
     for (const b of intro.bursts) { ctx.fillStyle = b.c; ctx.fillRect(Math.round(b.x), Math.round(b.y), 2, 2); }
-    if (intro.phase === 0) drawMessage(ctx, tx(["DAN AND DIGBY SPEED", "OVER THE ASTEROID!"]), true);
+    if (intro.phase === 0) drawMessage(ctx, tx(["AI DARE SPEEDS", "OVER THE ASTEROID!"]), true);
     if (intro.phase === 1 && state.msgBottom) drawMessage(ctx, state.msgBottom, false, true);
   } else {
-    drawMessage(ctx, tx(["DIGBY REMAINS ON THE SHIP", "AND AWAITS DAN'S RETURN"]), true);
+    drawMessage(ctx, tx(["THE SHIP STAYS BEHIND", "TO AWAIT AI'S RETURN"]), true);
   }
   ctx.restore();
   drawPanel(ctx, state);

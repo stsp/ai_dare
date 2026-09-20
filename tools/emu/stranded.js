@@ -1,4 +1,4 @@
-// every room with two floors: Dan on one, a guard put on another with no lift between; he must be out within 15 s and one must arrive on Dan's floor
+// every room with two floors: Ai on one, a guard put on another with no lift between; he must be out within 15 s and one must arrive on Ai's floor
 const { chromium } = require('playwright-core');
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
@@ -24,7 +24,7 @@ const { chromium } = require('playwright-core');
         const g = { id: state.treenSeq++, x: gx, y: pg.y * 8 - TREEN_H, x0: pg.x0 * 8, x1: pg.x1 * 8 - TREEN_W, dir: 1, anim: 0, dead: false, react: 0, lifts: false };
         treens.push(g);
         if (liftToDan(g, key)) continue;                    // a lift would bring him: another test's business
-        if (!wayToDan(key, ROOMS[key])) continue;          // no doorway onto Dan's floor: he keeps his beat, rightly
+        if (!wayToDan(key, ROOMS[key])) continue;          // no doorway onto Ai's floor: he keeps his beat, rightly
         cases++;
         let gone = false, came = false;
         for (let i = 0; i < 15 * 60; i++) {
@@ -37,8 +37,8 @@ const { chromium } = require('playwright-core');
         if (!gone && !g.leaving && g.noWay && g.noWay.size && !treenLeaves(g, key)) { noEdge++; continue; }   // walls on every way out
         if (!gone && !treenLeaves(g, key) && !(g.noWay && g.noWay.size)) { noEdge++; continue; }
         if (gone) left++; if (came) arrived++;
-        if (!gone) stuck.push(`${key}: guard on feet ${pg.y * 8} (beat ${g.x0}-${g.x1}) never left, at ${g.x.toFixed(0)}, Dan on ${pd.y * 8}; room now ${state.room} dan ${dan.x.toFixed(0)},${dan.y.toFixed(0)} ground ${dan.onGround} mode ${state.mode} wayToDan ${wayToDan(key, ROOMS[key])} apart ${(g.apart || 0).toFixed(1)} leaving ${g.leaving} noWay ${[...(g.noWay || [])]}`);
-        else if (!came) bad.push(`${key}: guard left but none came to Dan's floor ${pd.y * 8} in 15 s`);
+        if (!gone) stuck.push(`${key}: guard on feet ${pg.y * 8} (beat ${g.x0}-${g.x1}) never left, at ${g.x.toFixed(0)}, Ai on ${pd.y * 8}; room now ${state.room} dan ${dan.x.toFixed(0)},${dan.y.toFixed(0)} ground ${dan.onGround} mode ${state.mode} wayToDan ${wayToDan(key, ROOMS[key])} apart ${(g.apart || 0).toFixed(1)} leaving ${g.leaving} noWay ${[...(g.noWay || [])]}`);
+        else if (!came) bad.push(`${key}: guard left but none came to Ai's floor ${pd.y * 8} in 15 s`);
       }
     }
     return { cases, left, arrived, noEdge, stuck: stuck.slice(0, 12), bad: bad.slice(0, 12), nStuck: stuck.length, nBad: bad.length };

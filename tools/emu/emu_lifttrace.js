@@ -1,4 +1,4 @@
-// Trace one lift ride in the original: load a snapshot, walk Dan to a cell, tap a key, log room/x/y.
+// Trace one lift ride in the original: load a snapshot, walk Ai to a cell, tap a key, log room/x/y.
 const { boot } = require('./emu_lib');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1], SP: [7, 1] };
 const [snap, cellArg, keyArg, framesArg] = process.argv.slice(2);

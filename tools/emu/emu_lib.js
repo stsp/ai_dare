@@ -2,7 +2,7 @@
 const { chromium } = require('playwright-core');
 const fs = require('fs');
 const OUT = (process.env.DANDARE_WORK || process.cwd()).replace(/\/?$/, '/');   // where surveys, snapshots and screens go
-const POKES = { 47714: 201, 44413: 201, 43526: 0 };   // Virgin release: infinite energy, no wall guns, infinite ammo
+const POKES = { 47714: 201, 44413: 201, 43526: 0 };   // the published Multiface POKEs: infinite energy, no wall guns, infinite ammo
 async function boot(opts = {}) {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 600, height: 500 } });

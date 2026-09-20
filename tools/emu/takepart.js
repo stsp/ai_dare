@@ -1,4 +1,4 @@
-// room 83: Dan jumps onto the part; frames saved at the pickup (flash), mid flash gap, and a second later (messages, viewer)
+// room 83: Ai jumps onto the part; frames saved at the pickup (flash), mid flash gap, and a second later (messages, viewer)
 const { chromium } = require('playwright-core');
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });

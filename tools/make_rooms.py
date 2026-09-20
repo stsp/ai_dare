@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Room backdrops from the original's screens.
 
-Every room was dumped many times by the emulator surveys, each time with Dan,
+Every room was dumped many times by the emulator surveys, each time with Ai,
 a Treen or a message box somewhere in it. Cell by cell, the value most of the
 dumps agree on is the room itself; the sprites and boxes fall away. The parts
 of the mechanism are wiped too (the game lays its own), and a message box
@@ -115,7 +115,7 @@ def pixels(tiles, r0, r1, c0, c1):
 
 
 def erase_sprites(tiles, attr, masks, threshold=0.8):
-    """A figure that stood still through every dump - Dan boxed in a lift
+    """A figure that stood still through every dump - Ai boxed in a lift
     shaft, a Treen at the end of his beat - is found by its shape: where a
     mask's pixels are nearly all set, they are cleared, and a cell left empty
     takes its neighbour's colours. Returns how many figures went."""
@@ -160,17 +160,17 @@ def main():
     ap.add_argument("--level", default="level.json")
     ap.add_argument("--parts-from", default="data/emu/room_148.scr", help="a screen showing a part, cells 6-7 rows 14-15")
     ap.add_argument("--prefer", default="", help="comma-separated directories whose dumps, when a room has "
-                         "three or more of them, are used alone (Dan stood elsewhere in each)")
+                         "three or more of them, are used alone (Ai stood elsewhere in each)")
     ap.add_argument("--screens", default="data/emu", help="where the cleaned screens go")
     ap.add_argument("--erase", default="", help="figures to wipe by shape, as FILE:r0:r1:c0:c1,... - a clean "
-                         "dump and the cells a standing Dan or Treen fills in it; their mirrors are tried too")
+                         "dump and the cells a standing Ai or Treen fills in it; their mirrors are tried too")
     ap.add_argument("--door", default="", help="a sector door as ROOM:SIDE[:SHUTFILE:OPENFILE],... - the cells of "
                          "the doorway that differ between the two dumps are the door, and the backdrop takes the "
                          "open ones; without dumps, the slab of the first door given for that side is put at the doorway")
     ap.add_argument("--objects", default="", help="the rooms' gun tables as read from the original (data/emu/guns.json): "
                          "floor guns are lifted off the backdrops; every gun's place, span and wall colour go in the index")
     ap.add_argument("--solid", default="", help="the original's per-cell flag maps (data/emu/solid.json): the cells it "
-                         "draws over Dan and the cells that stop him, packed into the index a row at a time")
+                         "draws over Ai and the cells that stop him, packed into the index a row at a time")
     ap.add_argument("--button", default="", help="a lift station's call button as FILE:row:col - a cell whose ink the "
                          "original cycles while the lift is called or moving; every screen is searched for it")
     ap.add_argument("--arrow", default="", help="a lift's scrolling arrow cell as FILE:row:col; every dump is searched "
@@ -187,11 +187,11 @@ def main():
             m = re.search(r"room_(\d+)\.scr$", f)
             if m: caps[int(m.group(1))].append(f)
     # a dump that hardly agrees with what the older dumps mostly show - the
-    # screen blanked, Dan out cold, a stray room, a capture mid-redraw - is
+    # screen blanked, Ai out cold, a stray room, a capture mid-redraw - is
     # left out; the rest, old and new alike, are intersected
     prefer = [d for d in args.prefer.split(",") if d]
     for n in list(caps):
-        # a dump with the screen blanked (Dan out cold, the room gone dark) says nothing of the room
+        # a dump with the screen blanked (Ai out cold, the room gone dark) says nothing of the room
         alive = []
         for f in caps[n]:
             t, a = load(f)
@@ -298,7 +298,7 @@ def main():
     solid, block = {}, {}
     if args.solid:
         # bit 7: drawn in front of the figures; bits 7 and 6 without bit 4: a wall or a
-        # step Dan walks into (bit 4 marks doorways and guns, which have their own rules)
+        # step Ai walks into (bit 4 marks doorways and guns, which have their own rules)
         for room, rows in json.load(open(args.solid)).items():
             if room not in index: continue
             flags = [[int(rows[r][2 * c:2 * c + 2], 16) for c in range(32)] for r in range(0, 18)]

@@ -3,7 +3,7 @@
 
     python3 tools/validate_level.py MAP.png level.json [ROOM ...] [-o out.png]
 
-Overlays, per room: lift rails and field (green), walls Dan collides with (red
+Overlays, per room: lift rails and field (green), walls Ai collides with (red
 hatch), scenery (yellow outline), floors and ledges (white line), holes in the
 floor (magenta), and edge openings (cyan ticks at the open rows).
 """
