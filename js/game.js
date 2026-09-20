@@ -481,7 +481,7 @@ function call(lines, secs) {
 const TAUNTS = [
   ["YOU WILL NOT", "SUCCEED, DARE!"],
   ["THE ASTEROID CANNOT", "BE STOPPED, DARE"],
-  ["MY TREENS WILL", "FIND YOU, DARE"],
+  ["MY GUARDS WILL", "FIND YOU, DARE"],
   ["TIME IS RUNNING", "OUT, EARTHMAN"],
   ["GIVE UP, DARE.", "EARTH IS FINISHED"],
 ];
@@ -1501,7 +1501,7 @@ function drawTitle() {
            (VIEW_W - textWidth("COP'S ADVENTURE")) / 2, 34, C.bwhite);
 
   const lines = [
-    "THE MEKON'S ASTEROID IS ON",
+    "THE ALIEN'S ASTEROID IS ON",
     "COURSE FOR EARTH. FIND THE",
     "FIVE PARTS OF THE MECHANISM",
     "AND FIT THEM IN ITS ROOM.",

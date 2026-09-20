@@ -43,7 +43,7 @@ const STORY = {
   "ENERGY RESTORED": ["СИЛЫ ВОССТАНОВЛЕНЫ"],
   "YOU WILL NOT|SUCCEED, DARE!": ["НИЧЕГО У ТЕБЯ", "НЕ ВЫЙДЕТ, МЕНТ!"],
   "THE ASTEROID CANNOT|BE STOPPED, DARE": ["ПОЧТА НЕ ПРОЙДЁТ,", "МЕНТ"],
-  "MY TREENS WILL|FIND YOU, DARE": ["МОИ ПАЦАНЫ", "ТЕБЯ НАЙДУТ, МЕНТ"],
+  "MY GUARDS WILL|FIND YOU, DARE": ["МОИ ПАЦАНЫ", "ТЕБЯ НАЙДУТ, МЕНТ"],
   "TIME IS RUNNING|OUT, EARTHMAN": ["ВРЕМЯ ВЫХОДИТ,", "ЛЕГАВЫЙ"],
   "GIVE UP, DARE.|EARTH IS FINISHED": ["СДАВАЙСЯ, МЕНТ.", "РАЙОН НАШ"],
   "AI DARE MAKES A GETAWAY!": ["МЕНТ УЕЗЖАЕТ!"],
