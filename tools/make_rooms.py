@@ -246,17 +246,22 @@ def main():
         table = json.load(open(args.objects))
         for n in rooms:
             live = [g for g in table.get(str(n), []) if not g["dead"]]
-            # the cups of energy (the table's fifth kind) are lifted off too: the game draws and takes them
-            cups = [g for g in table.get(str(n), []) if g["dead"] and g["type"] == 1]
+            # What the table holds besides the guns, flagged apart from them: the
+            # parts of the mechanism (kind 2, where level.json already keeps
+            # them), and two cups Ai drinks - a tall one, two cells, on row 14,
+            # and a squat one, a single cell, on row 15. Both are lifted off the
+            # backdrop: the game draws them and takes them away.
+            CUPS = {1: 2, 0: 1}                                   # kind -> cells tall
+            cups = [g for g in table.get(str(n), []) if g["dead"] and g["type"] in CUPS]
             if not (live or cups) or str(n) not in index: continue
             path = os.path.join(args.screens, f"room_{n}.scr")
             t, a = load(path); out = []
             for g in cups:
-                r, c = g["y"] // 8, g["col"]
-                for rr in (r, r + 1):
+                r, c, tall = g["y"] // 8, g["col"], CUPS[g["type"]]
+                for rr in range(r, r + tall):
                     t[rr, c] = 0
                     a[rr, c] = a[rr, c - 1 if c > 0 else c + 1]       # the wall shows once the cup is drunk
-                items.setdefault(str(n), []).append([(c - 1) * 8, r * 8])
+                items.setdefault(str(n), []).append([(c - 1) * 8, r * 8, tall * 8])
             for g in live:
                 r, c, kind = g["y"] // 8, g["col"], g["type"]
                 w = 5 if kind == 0 else 2                      # the ceiling gun's visor spans five cells

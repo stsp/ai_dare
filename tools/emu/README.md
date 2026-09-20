@@ -83,6 +83,15 @@ emulator page on `http://127.0.0.1:8802/`.
   sector-2 loop, the whole recorded route, and a single walk.
   `DIE_EVERY` has the guards take Ai every so many hops, so a run is played
   through the cells as well: the whole game with deaths in it.
+* `floorcheck.js [detail]` replays in the engine every walk the floor probe
+  recorded in the original (`data/emu/floor.json`) and compares, cell by
+  cell, where his feet end up: every room's floors against the original's
+  own, not just the ones a route crosses. It reports where he walks a
+  course above or below the original, where he drops through a floor the
+  original stood on, and where a walk ends in another room. Walks that end
+  in a cell are the survey's Ai being taken by the guards, not a fault.
+  The corrections it turned up are kept in `tools/level_fixes.json` and
+  written into the generated level by `tools/apply_level_fixes.py`.
 * `quest_seq.js > quest_seq.json` reads the level itself for the rooms a
   player must walk to finish the game - each part in turn, each one carried
   to the slot, then the way out, with the doors that wait on parts
