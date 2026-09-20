@@ -1195,8 +1195,8 @@ let zapBuffer = null;
  *  drifts by a step after so many toggles. [hold, outer, step, inner, bits] */
 // the two cups of energy, as the original draws them, lifted off its screens:
 // the tall one white, a cell wide and two tall; the squat one cyan, one cell
-const CUP_BITS = ["........", "...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........",
-                  ".#..###.", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........"];
+const CUP_BITS = ["...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", ".#..###.",
+                  ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........", "........"];
 const CUP8_BITS = [".....###", "...##..#", "..#...##", ".....###", ".#......", ".....###", "........", "........"];
 const BURSTS = {
   guardHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
@@ -1529,8 +1529,12 @@ function draw() {
   // stand in front of the figures like the walls: drawn after them
   for (const p of pickups) {
     if (!p.taken) {                              // the original's cups, each on its own black cell
-      ctx.fillStyle = C.black; ctx.fillRect(Math.round(p.x), Math.round(p.y), 8, p.h);
-      drawBits(ctx, p.h > 8 ? CUP_BITS : CUP8_BITS, Math.round(p.x), Math.round(p.y), [p.h > 8 ? C.bwhite : C.cyan]);
+      const px = Math.round(p.x), py = Math.round(p.y);
+      ctx.fillStyle = C.black; ctx.fillRect(px, py, 8, p.h);
+      if (p.h > 8) {                             // the original's own attributes: the bowl bright, the stem below it plain
+        drawBits(ctx, CUP_BITS.slice(0, 8), px, py, [C.bwhite]);
+        drawBits(ctx, CUP_BITS.slice(8), px, py + 8, [C.white]);
+      } else drawBits(ctx, CUP8_BITS, px, py, [C.cyan]);
     }
   }
   for (const k of sdsParts) {
