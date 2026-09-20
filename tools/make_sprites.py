@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build assets/dan.png from the Dan renders in the repository root.
+"""Build assets/dan.png from the Ai renders in the repository root.
 
 Each render is one pose on a fake checkerboard, with a caption and a panel
 border. The checkerboard is recognised by its two grey levels, captions and
 borders are separate blobs, and the figure is the largest thing left. Frames
-are scaled so a running Dan stands DAN_H screen cells tall, packed into one
+are scaled so a running Ai stands DAN_H screen cells tall, packed into one
 sheet at 3x (the canvas scale, so the game draws them 1:1), and described in
 js/dan_sheet.js: where each frame sits, and where his body is within it so the
 hit box can be centred on him rather than on the rifle.
@@ -83,7 +83,7 @@ def shrink(rgb, a, scale):
 
 
 def head_of(rgb, a):
-    """Dan's head from a cut: the rows from the cap down to the chin, the
+    """Ai's head from a cut: the rows from the cap down to the chin, the
     columns the head itself spans (the shoulders, which begin a little above
     the chin at the back, are cut off). Returns the crop and where the neck's
     centre is within it."""

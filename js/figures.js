@@ -1,5 +1,5 @@
 "use strict";
-/* Illustrated figures drawn with canvas paths, in the comic style of Dan's
+/* Illustrated figures drawn with canvas paths, in the comic style of Ai's
    rendered frames: black outlines, flat colour with one shade. Everything is
    drawn in screen units (the canvas is scaled up, so curves stay smooth) and
    these are original designs, not the game's bitmaps.
@@ -49,7 +49,7 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   const bob = Math.abs(stride) * 0.6;
   const hip = -12 + bob, top = -25 + bob;         // the hips and the shoulder line
 
-  // seen from the side, like Dan: legs one behind the other, boots toe forward
+  // seen from the side, like Ai: legs one behind the other, boots toe forward
   const leg = (dx, swing, back) => {
     const kneeX = dx + swing * 2.4, footX = dx + swing * 4.8;
     const lift = Math.max(0, swing) * 1.6;
@@ -208,10 +208,10 @@ function drawMekonSeated(ctx, bx, by, bw, bh, t) {
   ctx.restore();
 }
 
-/* Dan himself, drawn the same way: a pilot in an olive uniform and peaked
+/* Ai himself, drawn the same way: a pilot in an olive uniform and peaked
    cap, rifle out before him. `pose` is "stand", "run", "jump", "kneel" or
    "fire"; `phase` runs the stride (0..1) and the muzzle flash. The box is
-   Dan's hit box, feet at its bottom, as with the rendered frames. */
+   Ai's hit box, feet at its bottom, as with the rendered frames. */
 const DAN_FIG = {
   skin: "#f1c9a0", skinShade: "#c99468", hair: "#3b2a1a",
   cap: "#5f7d3a", capShade: "#3d5325", capBand: "#1d2736", peak: "#151515",

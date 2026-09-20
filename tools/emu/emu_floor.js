@@ -1,4 +1,4 @@
-// Floor probe: from every surveyed node, walk left and right recording Dan's
+// Floor probe: from every surveyed node, walk left and right recording Ai's
 // x and y every two frames, so the cells he stands on and the cells he falls
 // from are known exactly - the picture of a pit says nothing about its edges.
 const { boot, OUT } = require('./emu_lib');

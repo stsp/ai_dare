@@ -24,7 +24,7 @@ const { chromium } = require('playwright-core');
           updateDan(1 / 60); updateTreens(1 / 60); updateLasers(1 / 60);
           if (!killed) { const t = treens.find((t) => !t.dead && !t.riding); if (t) { killTreen(t); killed = true; } }
         }
-        const seen = treens.filter((t) => !t.gone).length;   // one who ran out to come in where Dan is is the same guard
+        const seen = treens.filter((t) => !t.gone).length;   // one who ran out to come in where Ai is is the same guard
         most = Math.max(most, seen);
         if (seen > TREEN_MAX) bad.push(`${key} feet ${p.y * 8}: ${seen} guards came in all, one shot, ${treens.filter((t) => !t.dead).length} standing`);
       }

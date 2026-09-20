@@ -1,4 +1,4 @@
-// Like emu_film, but first walks Dan to a cell.
+// Like emu_film, but first walks Ai to a cell.
 const { boot, OUT } = require('./emu_lib');
 const fs = require('fs');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1], SP: [7, 1], M: [7, 4], N: [7, 8] };

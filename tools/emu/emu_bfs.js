@@ -1,5 +1,5 @@
 // Map the original by playing it: breadth-first over (room, floor) states,
-// trying every move Dan has, with the emulator stepped frame by frame.
+// trying every move Ai has, with the emulator stepped frame by frame.
 const { boot, OUT } = require('./emu_lib');
 const fs = require('fs');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1], SP: [7, 1] };
@@ -50,7 +50,7 @@ const DIR = process.argv[3] || 'bfs';
   const restore = async (k) => { await E.page.evaluate((k) => __restore(k), k); await step([], 3); };
   const save = (k) => E.page.evaluate((k) => __save(k), k);
 
-  // walk one way until the room changes or Dan stops making progress
+  // walk one way until the room changes or Ai stops making progress
   const walk = async (dir, jump) => {
     let last = await state(), still = 0, fellAt = null;
     for (let t = 0; t < 900; t += 6) {

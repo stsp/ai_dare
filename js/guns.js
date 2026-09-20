@@ -5,11 +5,11 @@
    each - all watched in the emulator with the gun routine put back:
 
    - a floor gun (a squat box on the floor course) fires a dash along the
-     floor either way; it stands in Dan's way, and nothing he fires touches
+     floor either way; it stands in Ai's way, and nothing he fires touches
      it - he crushes it by coming down on it from above, and it is left a
-     flattened hat: 75 points and "DAN CAN CRUSH FLOOR GUNS";
+     flattened hat: 75 points and "AI CAN CRUSH FLOOR GUNS";
    - a wall gun (a fist mounted on the wall, facing left or right) fires a
-     dash the way it faces from the row below its top; a hit from Dan's rifle
+     dash the way it faces from the row below its top; a hit from Ai's rifle
      removes it and the wall is left bare;
    - a ceiling gun (a visor high on the wall) fires a dash down at a slant;
      shot - only from a floor level with it, so most cannot be - it leaves a
@@ -19,7 +19,7 @@
    frame. Each frame the original rolls one chance in four of a shot, picks
    one gun at random and fires it if one of its three shot slots is free; a
    shot moves a cell every three frames and ends at the screen's edge, in a
-   floor or wall, or in Dan. */
+   floor or wall, or in Ai. */
 
 const GUN_CEILING = 0, GUN_LEFT = 1, GUN_RIGHT = 2, GUN_FLOOR = 3;
 const GUN_SHOT_FRAMES = 3;            // a cell every three frames
@@ -47,7 +47,7 @@ function makeGuns(key) {
   const list = (window.ROOMS_SHEET && window.ROOMS_SHEET.guns && window.ROOMS_SHEET.guns[key]) || [];
   return list.map(([type, x, y, w, fill], i) => {
     const id = key + ":" + i;
-    // a floor gun sits on the floor course, its eight rows the ones Dan's hop must clear
+    // a floor gun sits on the floor course, its eight rows the ones Ai's hop must clear
     const floor = type === GUN_FLOOR;
     return { id, type, x, y, w, h: floor ? 8 : 16, cy: y, fill, dead: state.deadGuns.has(id) };
   });
@@ -136,7 +136,7 @@ function updateGuns(dt) {
   gunShots = gunShots.filter((s) => !s.done);
 }
 
-/** A gun's dash reaching Dan strikes him as a Treen's beam does. */
+/** A gun's dash reaching Ai strikes him as a Treen's beam does. */
 function gunShotHitsDan(x, y, w, h) {
   const bh = dan.kneeling ? DAN_KNEEL_H : DAN_H;
   if (dan.onLift || !overlaps(x, y, w, h, dan.x, dan.y + DAN_H - bh, DAN_W, bh)) return false;
@@ -150,7 +150,7 @@ function gunShotHitsDan(x, y, w, h) {
   return true;
 }
 
-/** Floor guns stand in Dan's way: he walks into them and stops. */
+/** Floor guns stand in Ai's way: he walks into them and stops. */
 function gunsBlockDan(h, yOff) {
   for (const g of guns) {
     if (g.dead || g.type !== GUN_FLOOR || dan.vy < 0) continue;      // a jump clears it: the box is lower than his hop
@@ -170,13 +170,13 @@ function gunsUnderDan(prevFeet) {
       g.dead = true;
       state.deadGuns.add(g.id);
       state.score += GUN_CRUSH_SCORE;
-      note(tx(["DAN CAN CRUSH FLOOR GUNS"]), 2.5);
+      note(tx(["AI CAN CRUSH FLOOR GUNS"]), 2.5);
       beeperBurst("crush");
     }
   }
 }
 
-/** Dan's shot into a wall or ceiling gun: it goes, and the screen inverts for a frame. */
+/** Ai's shot into a wall or ceiling gun: it goes, and the screen inverts for a frame. */
 function gunsShotBy(l) {
   for (const g of guns) {
     if (g.dead || g.type === GUN_FLOOR) continue;

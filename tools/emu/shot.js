@@ -1,4 +1,4 @@
-// Look at the game itself: Dan put down at CELL on the widest platform of ROOM, one frame drawn, the canvas saved at 4x.
+// Look at the game itself: Ai put down at CELL on the widest platform of ROOM, one frame drawn, the canvas saved at 4x.
 //   FITTED=n NODE_PATH=... node shot.js ROOM CELL OUT.png [fire|kneel]     (the game served at 127.0.0.1:8801)
 const { chromium } = require('playwright-core');
 const [room, cell, out, pose] = process.argv.slice(2);

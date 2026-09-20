@@ -1,6 +1,6 @@
-// Drive Dan from a room's snapshot with the guns live and film it: node emu_gunshoot.js SNAP NAME "O:30,Q:6,W:60,A+SP:100"
+// Drive Ai from a room's snapshot with the guns live and film it: node emu_gunshoot.js SNAP NAME "O:30,Q:6,W:60,A+SP:100"
 // (K:n holds key K for n frames, K+K2:n holds both, W:n waits); every second frame's screen is saved as NAME_nnn.scr,
-// the gun table (0x62A5) and Dan's cell are logged every ten frames.
+// the gun table (0x62A5) and Ai's cell are logged every ten frames.
 const { boot, OUT } = require('./emu_lib');
 const fs = require('fs');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1], SP: [7, 1] };

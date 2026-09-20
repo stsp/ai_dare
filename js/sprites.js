@@ -1,9 +1,9 @@
 "use strict";
-/* Sprite bitmaps, drawn for this project: the small things Dan picks up.
+/* Sprite bitmaps, drawn for this project: the small things Ai picks up.
    '.' transparent   'X' body   'o' shade   'w' highlight
 
-   Dan, the Treens and the Mekon are illustrations drawn with paths, in
-   js/figures.js. Dan's rendered frames (assets/dan.png) are kept below as
+   Ai, the Treens and the Mekon are illustrations drawn with paths, in
+   js/figures.js. Ai's rendered frames (assets/dan.png) are kept below as
    an alternative: drawSheetFrame() draws one where the figure is drawn now. */
 
 const SPR = {};
@@ -11,10 +11,10 @@ function defineSprite(name, rows) { SPR[name] = { w: rows[0].length, h: rows.len
 
 // ------------------------------------------------------- drawn frames (PNG)
 
-/* Dan's frames are illustrations, not bitmaps: assets/dan.png, built by
+/* Ai's frames are illustrations, not bitmaps: assets/dan.png, built by
    tools/make_sprites.py from the renders in the repository root, packed at
    the canvas scale so they draw 1:1 with no resampling. js/dan_sheet.js says
-   where each frame sits and where Dan's body is within it, so the hit box is
+   where each frame sits and where Ai's body is within it, so the hit box is
    centred on him rather than on the rifle he holds out in front. */
 const SHEETS = {};
 function loadSheet(name, meta) {

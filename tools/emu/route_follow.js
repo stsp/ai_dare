@@ -37,7 +37,7 @@ const fitted0 = +(process.argv[3] || 0);
       }
       return moves;
     };
-    // walk to a cell on the level Dan is on, jumping the gaps in it (up to two)
+    // walk to a cell on the level Ai is on, jumping the gaps in it (up to two)
     const gotoJumping = (cell, gaps = 2) => {
       const s0 = snapshot(); const feet0 = dan.y + DAN_H; const r0 = state.room;
       let fellAt = null;
@@ -111,7 +111,7 @@ const fitted0 = +(process.argv[3] || 0);
       restore(s0);
       return false;
     };
-    // place Dan in the first room
+    // place Ai in the first room
     const r0 = ROOMS[String(seq[0])]; const sp = widestPlatform(r0); resetDan(sp.x, sp.y - DAN_H); enterRoom(String(seq[0]), sp.x, sp.y - DAN_H); dan.invuln = 1e9; settle();
     let ok = 0;
     for (let i = 1; i < seq.length; i++) {
@@ -131,7 +131,7 @@ const fitted0 = +(process.argv[3] || 0);
         else jumpFrom(c - 5, 'right');
       }
       if (from === SDS_ROOM && state.carrying) { goto(2); for (let k = 0; k < 60; k++) tick(); }
-      // captured on purpose: the walkthrough let the guards take Dan to the cells
+      // captured on purpose: the walkthrough let the guards take Ai to the cells
       if (PRISONS.includes(to) && !LEVEL.links.some((l) => l.from === from && l.to === to)) {
         const r = ROOMS[to]; const p = widestPlatform(r); resetDan(p.x, p.y - DAN_H); enterRoom(to, p.x, p.y - DAN_H); settle();
         log.push(`ok ${from} -> ${to}: captured (by design)`); ok++; continue;

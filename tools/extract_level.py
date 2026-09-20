@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive Dan Dare level data from the speccy.cz screen map.
+"""Derive the level data from the speccy.cz screen map.
 
 The map (https://maps.speccy.cz/maps/DanDare1.png) is a montage of the game's
 rooms. Measured from the image:
@@ -17,7 +17,7 @@ rooms. Measured from the image:
 What this script can and cannot recover
 ---------------------------------------
 Room CONTENTS are recovered exactly: every cell is classified, so the game can
-draw each of the 106 rooms as the map shows it, and stand Dan on its floors.
+draw each of the 106 rooms as the map shows it, and stand Ai on its floors.
 
 Room CONNECTIONS are not in the image. Only 24 of 85 side-by-side room
 boundaries are open, and only 18 of 72 vertically stacked pairs even share a
@@ -148,7 +148,7 @@ class ArrayReader(MapReader):
 
 
 def read_room(reader, r, c):
-    """Classify one room's 30x18 cells and read the geometry Dan plays on.
+    """Classify one room's 30x18 cells and read the geometry Ai plays on.
 
     Everything is read from the shape of the ink, not its colour, because the
     sectors recolour the same furniture: lift rails are cyan in one area and
@@ -206,7 +206,7 @@ def read_room(reader, r, c):
                        "y0": 0 if top <= 3 else top,
                        "y1": TH if bot >= TH - 6 else bot})
 
-    # --- structure: everything else with enough ink. A cell is a wall Dan
+    # --- structure: everything else with enough ink. A cell is a wall Ai
     #     collides with when it sits in a horizontal run of three or more -
     #     blocks, steps and ledges. Thinner uprights - door frames, pillars,
     #     rockets, aerials - are scenery he walks in front of.
@@ -306,7 +306,7 @@ def plan_doors(rooms):
             elif rooms[me]["holes"]:
                 natural.append([me, down, "drop"])
         elif rooms[me]["holes"]:
-            # a hole with nothing under it: close the floor, Dan cannot fall
+            # a hole with nothing under it: close the floor, Ai cannot fall
             # into a room that does not exist
             fill_holes(rooms[me])
 
@@ -323,7 +323,7 @@ def plan_doors(rooms):
                     seen.add(nxt); q.append(nxt)
         return seen
 
-    # A generated door is only worth anything if Dan can use it: a doorway
+    # A generated door is only worth anything if Ai can use it: a doorway
     # needs the floor open to the edge on both sides, a lift needs a shaft.
     def usable(a, b, kind):
         if kind == "side":
@@ -433,7 +433,7 @@ def main():
     natural, generated, reached, start = plan_doors(rooms)
 
     # Mark what the finished graph can actually reach, so the game never puts a
-    # key, a cell or the self-destruct room somewhere Dan cannot get to.
+    # key, a cell or the self-destruct room somewhere Ai cannot get to.
     graph = {}
     for a, b, kind in natural + generated:
         graph.setdefault(a, set()).add(b)

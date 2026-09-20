@@ -110,7 +110,7 @@ function drawBandCell(ctx, x, y, style) {
 
 /* Structure recedes: the room's back wall and the figures moving in front of
    it should carry the picture, so walls, pillars and machinery are drawn dark
-   with only their lit top edge picked out. Scenery Dan walks in front of is
+   with only their lit top edge picked out. Scenery Ai walks in front of is
    drawn a shade darker again than the walls that stop him. */
 function drawSolidCell(ctx, x, y, style, covered, scenery) {
   ctx.fillStyle = style.solid;
@@ -120,7 +120,7 @@ function drawSolidCell(ctx, x, y, style, covered, scenery) {
   ctx.fillStyle = "rgba(0,0,0,0.55)";
   ctx.fillRect(x + CELL - 1, y, 1, CELL);
   ctx.fillRect(x, y + CELL - 1, CELL, 1);
-  if (!covered && !scenery) {        // a ledge Dan can stand on: light the lip
+  if (!covered && !scenery) {        // a ledge Ai can stand on: light the lip
     ctx.fillStyle = style.wall;
     ctx.fillRect(x, y, CELL, 2);
     ctx.fillStyle = C.bwhite;

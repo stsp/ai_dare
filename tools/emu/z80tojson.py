@@ -1,4 +1,4 @@
-"""Convert a .z80 snapshot (v1/v2/v3, 48K) to the harness's JSON snapshot; print room and Dan's x/y."""
+"""Convert a .z80 snapshot (v1/v2/v3, 48K) to the harness's JSON snapshot; print room and Ai's x/y."""
 import sys, json, base64
 def convert(path):
     z = open(path, 'rb').read()

@@ -13,7 +13,7 @@ const SCRIPT = [[[], 150], [['O'], 50], [['P'], 100], [['O'], 50], [['Q'], 40], 
     const w = window.__workers[0];
     window.__frame = () => new Promise((res) => { const h = (e) => { if (e.data.message === 'frameCompleted') { w.removeEventListener('message', h); res(); } }; w.addEventListener('message', h); w.postMessage({ message: 'runFrame', frameBuffer: new ArrayBuffer(26112) }); });
     window.__key = (row, mask, down) => w.postMessage({ message: down ? 'keyDown' : 'keyUp', row, mask });
-    // step n frames with keys held, sampling the screen every `every` frames (bitmap + attributes) with Dan's position and the room
+    // step n frames with keys held, sampling the screen every `every` frames (bitmap + attributes) with Ai's position and the room
     window.__run = async (keys, n, every) => {
       for (const [r, m] of keys) __key(r, m, true);
       const out = [];

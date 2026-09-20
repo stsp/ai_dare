@@ -15,21 +15,21 @@ Object.assign(GLYPHS, {
 
 // the original's lines, joined by |, and what the policeman's story says instead
 const STORY = {
-  "DAN DARE": ["МЕНТ ДЭР"],
+  "AI DARE": ["МЕНТ ДАРЕ"],
   "PILOT OF THE FUTURE": ["УЧАСТКОВЫЙ БУДУЩЕГО"],
   "PRESS 'FIRE' TO PLAY": ["ЖМИ 'ОГОНЬ' ЧТОБЫ ИГРАТЬ"],
   "OR '1' FOR OPTIONS": ["ИЛИ '1' ДЛЯ НАСТРОЕК"],
   "BEST  SCORES": ["ЛУЧШИЕ  СЧЕТА"],
-  "DAN AND DIGBY SPEED|OVER THE ASTEROID!": ["МЕНТ С НАПАРНИКОМ ЛЕТЯТ", "НАД РАЙОНОМ!"],
-  "DIGBY REMAINS ON THE SHIP|AND AWAITS DAN'S RETURN": ["НАПАРНИК ОСТАЁТСЯ В МАШИНЕ", "И ЖДЁТ МЕНТА"],
+  "AI DARE SPEEDS|OVER THE ASTEROID!": ["МЕНТ ЛЕТИТ", "НАД РАЙОНОМ!"],
+  "THE SHIP STAYS BEHIND|TO AWAIT AI'S RETURN": ["МАШИНА ОСТАЁТСЯ", "ЖДАТЬ МЕНТА"],
   "\"YOU WILL NOT SUCCEED, DARE!\"": ["\"ПОСЫЛКИ НЕ ДОЙДУТ, МЕНТ!\""],
-  "DAN LANDS ON|THE ASTEROID": ["МЕНТ ПРИБЫВАЕТ", "В РАЙОН"],
+  "AI LANDS ON|THE ASTEROID": ["МЕНТ ПРИБЫВАЕТ", "В РАЙОН"],
   "INTRUDER ALERT !": ["ЧУЖОЙ НА РАЙОНЕ !"],
-  "DAN IS NOW IN SECTOR #": ["МЕНТ ТЕПЕРЬ В КВАРТАЛЕ #"],
+  "AI IS NOW IN SECTOR #": ["МЕНТ ТЕПЕРЬ В КВАРТАЛЕ #"],
   "\"I SAY....IT'S A HOLOGRAM !\"": ["\"ГЛЯДИ-КА... ЭТО ГОЛОГРАММА !\""],
   "\"NO! PUT THAT DOWN!\"": ["\"НЕТ! ПОЛОЖИ НА МЕСТО!\""],
   "THE SELF DESTRUCT ROOM": ["СОРТИРОВОЧНАЯ СТАНЦИЯ"],
-  "DAN CAN CRUSH FLOOR GUNS": ["МЕНТ ДАВИТ НАПОЛЬНЫЕ ПУШКИ"],
+  "AI CAN CRUSH FLOOR GUNS": ["МЕНТ ДАВИТ НАПОЛЬНЫЕ ПУШКИ"],
   "WALK TO THE LEFT|TO FIT THE PART": ["ИДИ ВЛЕВО,", "ЧТОБЫ СДАТЬ ЯЩИК"],
   "NOW TAKE IT TO THE|SELF-DESTRUCT SYSTEM": ["ТЕПЕРЬ НЕСИ ЕГО", "НА СОРТИРОВКУ"],
   "PART # FITTED": ["ЯЩИК # СДАН"],
@@ -38,15 +38,15 @@ const STORY = {
   "\"11 MINUTES TO SELF DESTRUCT\"": ["\"11 МИНУТ ДО ОТПРАВКИ ПОЧТЫ\""],
   "OUT OF ORDER": ["НЕ РАБОТАЕТ"],
   "THIS ROOM IS SAFE": ["ТУТ ЧИСТО"],
-  "DAN FELL TOO FAR!": ["МЕНТ РАСШИБСЯ!"],
-  "DAN FALLS UNCONSCIOUS|FOR TEN MINUTES": ["МЕНТ ОТКЛЮЧИЛСЯ", "НА ДЕСЯТЬ МИНУТ"],
+  "AI FELL TOO FAR!": ["МЕНТ РАСШИБСЯ!"],
+  "AI FALLS UNCONSCIOUS|FOR TEN MINUTES": ["МЕНТ ОТКЛЮЧИЛСЯ", "НА ДЕСЯТЬ МИНУТ"],
   "ENERGY RESTORED": ["СИЛЫ ВОССТАНОВЛЕНЫ"],
   "YOU WILL NOT|SUCCEED, DARE!": ["НИЧЕГО У ТЕБЯ", "НЕ ВЫЙДЕТ, МЕНТ!"],
   "THE ASTEROID CANNOT|BE STOPPED, DARE": ["ПОЧТА НЕ ПРОЙДЁТ,", "МЕНТ"],
   "MY TREENS WILL|FIND YOU, DARE": ["МОИ ПАЦАНЫ", "ТЕБЯ НАЙДУТ, МЕНТ"],
   "TIME IS RUNNING|OUT, EARTHMAN": ["ВРЕМЯ ВЫХОДИТ,", "ЛЕГАВЫЙ"],
   "GIVE UP, DARE.|EARTH IS FINISHED": ["СДАВАЙСЯ, МЕНТ.", "РАЙОН НАШ"],
-  "DAN AND DIGBY MAKE A GETAWAY!": ["МЕНТ С НАПАРНИКОМ УЕЗЖАЮТ!"],
+  "AI DARE MAKES A GETAWAY!": ["МЕНТ УЕЗЖАЕТ!"],
   "FIVE": ["ПЯТЬ"], "FOUR": ["ЧЕТЫРЕ"], "THREE": ["ТРИ"], "TWO": ["ДВА"], "ONE": ["ОДИН"],
   "WELL DONE SIR! THIS COULD|GET YOU YOUR KNIGHTHOOD!": ["МОЛОДЕЦ, СЕРЖАНТ!", "ЭТО ТЯНЕТ НА ЗВЁЗДОЧКУ!"],
   "OUT OF TIME": ["ВРЕМЯ ВЫШЛО"],
@@ -57,7 +57,9 @@ const STORY = {
   "CONTROL  OPTIONS": ["НАСТРОЙКИ"],
   "KEYBOARD Q,A,O,P,SPACE": ["КЛАВИШИ Q,A,O,P,ПРОБЕЛ"],
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
-  "STORY: DAN DARE": ["СЮЖЕТ: МЕНТ ДЭР"],
+  "STORY: AI DARE": ["СЮЖЕТ: МЕНТ ДАРЕ"],
+  "THE ASTEROID IS COMING.": ["ПОЧТА ПРОПАЛА."],
+  "AI DARE GOES IN ALONE.": ["МЕНТ ДАРЕ ИДЁТ ОДИН."],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
   "PRESS SPACE": ["НАЖМИ ПРОБЕЛ"],
 };
@@ -100,7 +102,7 @@ function drawOptions(ctx) {
   const tick = Math.floor(state.phase * 10);
   const head = tx(["CONTROL  OPTIONS"])[0];
   drawBig(ctx, head, 120 - textWidth(head) * 0.8, 62, C.white, 1.6);
-  const lines = [tx(["KEYBOARD Q,A,O,P,SPACE"])[0], tx(["CURSOR KEYS AND SPACE"])[0], tx(["STORY: DAN DARE"])[0]];
+  const lines = [tx(["KEYBOARD Q,A,O,P,SPACE"])[0], tx(["CURSOR KEYS AND SPACE"])[0], tx(["STORY: AI DARE"])[0]];
   lines.forEach((ln, i) => {
     const y = 82 + i * 13, lit = i + 1 === options.control || (i === 2 && state.story === "postal");
     if (lit) { ctx.fillStyle = C.black; ctx.fillRect(2, y - 2, VIEW_W - 4, 11); }
