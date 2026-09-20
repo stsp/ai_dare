@@ -3,13 +3,14 @@ const { chromium } = require('playwright-core');
 const fs = require('fs');
 const seq = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));   // [room, room, ...]
 const fitted0 = +(process.argv[3] || 0);
+const dieEvery = +(process.argv[4] || 0);   // every so many hops the guards take him: does he find his way on?
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const page = await browser.newPage({ viewport: { width: 800, height: 620 } });
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
   await page.goto('http://127.0.0.1:8801/index.html'); await page.waitForTimeout(600);
   await page.click('#screen'); await page.waitForTimeout(200);
-  const out = await page.evaluate(([seq, fitted0]) => {
+  const out = await page.evaluate(([seq, fitted0, dieEvery]) => {
     startGame(); state.fitted = fitted0; state.timeLeft = 99999; window.TRACE = seq.length <= 4;
     const log = [];
     const K = { right: 'ArrowRight', left: 'ArrowLeft', up: 'ArrowUp', down: 'ArrowDown' };
@@ -136,6 +137,11 @@ const fitted0 = +(process.argv[3] || 0);
         const r = ROOMS[to]; const p = widestPlatform(r); resetAi(p.x, p.y - AI_H); enterRoom(to, p.x, p.y - AI_H); settle();
         log.push(`ok ${from} -> ${to}: captured (by design)`); ok++; continue;
       }
+      if (dieEvery && i % dieEvery === 0) {
+        const held = state.room;
+        capture(); ai.stun = 0; state.timeLeft = 99999; state.energy = 100; settle();
+        log.push(`   taken in ${held} -> cell ${state.room}`);
+      }
       const got = state.room === to || tryMove(to);
       log.push(`${got ? 'ok ' : 'XX '}${from} -> ${to}: ${st()}${state.carrying ? ' carrying' : ''} fitted=${state.fitted}${state.mode !== 'play' ? ' MODE ' + state.mode : ''}`);
       if (!got) { // give up on this hop: teleport on so the rest can be checked
@@ -145,7 +151,7 @@ const fitted0 = +(process.argv[3] || 0);
     }
     log.push(`hops ok ${ok} of ${seq.filter((r, i) => i > 0 && r != null && seq[i - 1] != null).length}`);
     return log;
-  }, [seq, fitted0]);
+  }, [seq, fitted0, dieEvery]);
   console.log(out.join('\n'));
   await browser.close();
 })();
