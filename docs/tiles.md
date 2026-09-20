@@ -33,6 +33,12 @@ build; the game no longer loads it. `--check` rebuilds every room from the tiles
 and compares it with `assets/rooms.png` cell by cell; it reports 0 cells
 differing, so the tiles are the original's own screens, exactly.
 
+Three rooms - 189, 190 and 221 - were dumped after Ai had shot their ceiling
+gun, so their cleaned screens held what was left of a visor where the game
+expected a standing one. `make_tiles.py` puts the visor the other 44 guns agree
+on back over them (`--no-repair-guns` leaves them as dumped) and writes the
+repaired screens back to `data/emu`.
+
     NODE_PATH=... node tools/check_tiles.js out.png
 
 does the same check against the game itself: it saves the sheet the game builds
@@ -66,7 +72,7 @@ element lists the tiles it is built from.
 | lift arrow | 17 | 136 | 75 | the arrow cell beside a shaft: it scrolls a pixel every four frames, so a cleaned backdrop mostly has it blank and the game draws it |
 | lift button | 1 | 8 | 4 | the round call button, whose colours cycle while a lift is called or moving |
 | wall gun | 8 | 104 | 15 | the fist mounted on a wall, two cells by two, facing left or right |
-| ceiling gun | 20 | 470 | 28 | the visor high on a wall, five cells by two |
+| ceiling gun | 10 | 470 | 28 | the visor high on a wall, five cells by two; one drawing in every room |
 | door | 11 | 72 | 6 | the six sector doors' slabs, two cells by six |
 | mechanism | 6 | 20 | 1 | the five spheres of the mechanism, each two cells by two |
 
@@ -77,9 +83,11 @@ element lists the tiles it is built from.
 Five things the original keeps in its rooms are drawn by the game from bitmaps
 of its own rather than from the tile set, because they move or are taken:
 
-* the **floor gun** (20 of them), its crushed hat and the hole a shot leaves in
-  a wall — `GUN_BITS` in `js/guns.js`; the backdrop under a floor gun is the
-  bare floor course;
+* the **floor gun** (20 of them) and its crushed hat — `GUN_BITS` in
+  `js/guns.js`; the backdrop under a floor gun is the bare floor course. The
+  visor of a ceiling gun, in contrast, is in the tile set, and a shot one is
+  drawn out of those same tiles: `GUN_BITS.shot` is the mask of what the
+  original leaves standing of it;
 * the **cup of energy** — `CUP_BITS` in `js/game.js`, in six rooms;
 * the **part of the mechanism** — the box Ai carries, `PART_BITS` in
   `js/figures.js`, in five rooms;
