@@ -115,7 +115,7 @@ python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/g
     --geometry level_map.json --parts 83:5,148:6,185:26,255:23,56:12 --slot 143 --from-screen 117 \
     --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 --clear 143:13:22:6:14 \
     --fake-lifts data/emu/phantom_lifts.json -o level.json                                            # -> level.json + js/level.js
-python3 tools/make_sprites.py                               # renders in ./ -> assets/dan.png
+python3 tools/make_sprites.py                               # the pose renders (kept out of the repository) -> assets/dan.png
 python3 tools/make_title.py                                 # the render -> assets/title.png
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
     --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \

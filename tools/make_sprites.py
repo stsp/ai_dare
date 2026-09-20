@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Build assets/dan.png from the Ai renders in the repository root.
+"""Build assets/dan.png from the Ai pose renders, which are kept out of the
+repository (assets/dan.png is committed; put the renders beside this file to rebuild it).
 
 Each render is one pose on a fake checkerboard, with a caption and a panel
 border. The checkerboard is recognised by its two grey levels, captions and
