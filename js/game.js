@@ -451,7 +451,7 @@ function widestPlatformOf(room) {
  *  the room sheet's index); one taken stays taken for the game. */
 function makePickups(key, room) {
   const list = (window.ROOMS_SHEET && window.ROOMS_SHEET.items && window.ROOMS_SHEET.items[key]) || [];
-  return list.map(([x, y], i) => ({ id: key + ":" + i, x, y, taken: state.takenItems.has(key + ":" + i) }));
+  return list.map(([x, y, h], i) => ({ id: key + ":" + i, x, y, h: h || 16, taken: state.takenItems.has(key + ":" + i) }));
 }
 
 // --------------------------------------------------------------------- state
@@ -843,7 +843,7 @@ function updateAi(dt) {
       const feet = ai.y + AI_H;
       for (const p of platforms) {
         if (p.landing) continue;               // the lift's car at its stop is not a kerb: he floated up onto it in mid air
-        if (ai.x + AI_W > p.x0 && ai.x < p.x1 && feet > p.y && feet - p.y <= 17) ai.y = p.y - AI_H;   // a kerb of two courses is walked up
+        if (ai.x + AI_W > p.x0 && ai.x < p.x1 && feet > p.y && feet - p.y <= 9) ai.y = p.y - AI_H;   // a kerb of one course is walked up
       }
     }
     let catchers = platforms;
@@ -1119,7 +1119,7 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, 8, 16)) {   // taken as he lands on it, at the bottom of the jump
+    if (!p.taken && ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, 8, p.h)) {   // taken as he lands on it, at the bottom of the jump
       p.taken = true;
       state.takenItems.add(p.id);
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
@@ -1193,9 +1193,11 @@ let zapBuffer = null;
 /** The original's beeper bursts, from its five-byte sound records: its
  *  routine steps a bit pattern round, holding each edge for a count that
  *  drifts by a step after so many toggles. [hold, outer, step, inner, bits] */
-// the cup of energy, as the original draws it: a cell wide, two tall
+// the two cups of energy, as the original draws them, lifted off its screens:
+// the tall one white, a cell wide and two tall; the squat one cyan, one cell
 const CUP_BITS = ["........", "...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........",
                   ".#..###.", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........"];
+const CUP8_BITS = [".....###", "...##..#", "..#...##", ".....###", ".#......", ".....###", "........", "........"];
 const BURSTS = {
   guardHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
   guardGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
@@ -1497,9 +1499,9 @@ function draw() {
   // the cups and the parts are tiles of the room in the original, flagged to
   // stand in front of the figures like the walls: drawn after them
   for (const p of pickups) {
-    if (!p.taken) {                              // the original's cup: white on its own black cell
-      ctx.fillStyle = C.black; ctx.fillRect(Math.round(p.x), Math.round(p.y), 8, 16);
-      drawBits(ctx, CUP_BITS, Math.round(p.x), Math.round(p.y), [C.bwhite]);
+    if (!p.taken) {                              // the original's cups, each on its own black cell
+      ctx.fillStyle = C.black; ctx.fillRect(Math.round(p.x), Math.round(p.y), 8, p.h);
+      drawBits(ctx, p.h > 8 ? CUP_BITS : CUP8_BITS, Math.round(p.x), Math.round(p.y), [p.h > 8 ? C.bwhite : C.cyan]);
     }
   }
   for (const k of sdsParts) {
