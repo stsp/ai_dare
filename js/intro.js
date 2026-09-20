@@ -64,7 +64,7 @@ function drawBig(ctx, text, x, y, colour, k) {
 function drawTitleBox(ctx) {
   ctx.fillStyle = C.blue; ctx.fillRect(44, 4, 152, 50);
   ctx.fillStyle = C.cyan; ctx.fillRect(46, 6, 148, 46);
-  const a = tx(["AI DARE"])[0], b = tx(["PILOT OF THE FUTURE"])[0];
+  const a = tx(["AI DARE"])[0], b = tx(["COP'S ADVENTURE"])[0];
   drawBig(ctx, a, 120 - textWidth(a) * 1.5, 11, C.blue, 3);
   drawBig(ctx, b, 120 - textWidth(b) * 0.7, 36, C.blue, 1.4);
 }
