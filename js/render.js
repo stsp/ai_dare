@@ -279,24 +279,24 @@ function drawPanel(ctx, state) {
   drawText(ctx, tx(["SCORE #"], state.score)[0], px + 104, py + 4, C.bwhite);
   drawText(ctx, tx(["PARTS # OF 5"], state.fitted)[0] + (state.carrying ? " +1" : ""), px + 104, py + 14, C.bcyan);
 
-  // viewer window at the right: the asteroid, or the Mekon when he taunts you
+  // viewer window at the right: the asteroid, or the alien boss when he taunts you
   const vx = SCREEN_W - 44, vy = py + 2, vs = 26;
   ctx.fillStyle = C.white;
   ctx.fillRect(vx - 1, vy - 1, vs + 2, vs + 2);
   ctx.fillStyle = C.black;
   ctx.fillRect(vx, vy, vs, vs);
-  if (state.viewer === "mekon" && state.viewerStatic > 0) {
+  if (state.viewer === "boss" && state.viewerStatic > 0) {
     // the link locking on: bars of interference
     for (let j = 0; j < vs; j += 3) {
       ctx.fillStyle = (Math.floor(state.phase * 40) + j) % 6 < 3 ? C.white : C.black;
       ctx.fillRect(vx, vy + j, vs, 2);
     }
-  } else if (state.viewer === "mekon") {
+  } else if (state.viewer === "boss") {
     ctx.save();
     ctx.beginPath(); ctx.rect(vx, vy, vs, vs); ctx.clip();
     ctx.fillStyle = "#0a1a2a";
     ctx.fillRect(vx, vy, vs, vs);
-    drawMekonHead(ctx, vx, vy + 1, vs, state.phase * 6);
+    drawBossHead(ctx, vx, vy + 1, vs, state.phase * 6);
     ctx.fillStyle = "rgba(255,255,255,0.08)";           // the link's scan lines
     for (let j = 0; j < vs; j += 2) ctx.fillRect(vx, vy + j, vs, 1);
     ctx.restore();

@@ -2,8 +2,8 @@
 /* The title screen and the opening sequence, after the original's:
    a framed title with lines of text whose colours run through the palette,
    two pages taking turns (the credits, and the "best scores" joke), then on
-   fire: Ai Dare speeds over the asteroid, the Mekon calls to gloat, a
-   run of Treen craft to shoot on the way in, and the landing. */
+   fire: Ai Dare speeds over the asteroid, the alien boss calls to gloat, a
+   run of alien craft to shoot on the way in, and the landing. */
 
 const MENU_PAGES = [
   ["THE ASTEROID IS COMING.", "AI DARE GOES IN ALONE.", "", "",
@@ -17,7 +17,7 @@ const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhi
    mission, or the story's tale of the post. */
 const MARQUEE = {
   dare: "THE ALIEN'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS GANG GUARDS EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      ONE HOUR.      NO ONE ELSE IS COMING.        ",
-  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      БАНДИТ-ПРИШЕЛЕЦ, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      ДАН ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      БАНДИТ-ПРИШЕЛЕЦ, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
 };
 const MARQUEE_SPEED = 4 * 50 / 1.5;       // pixels a second: the original's four a frame, slowed by half again to be read
 const MARQUEE_K = 2;                      // the big face, two pixels to one
@@ -255,7 +255,7 @@ function drawIntro(ctx) {
     drawShip(ctx, Math.round(intro.ship.x), Math.round(intro.ship.y), intro.t);
     ctx.fillStyle = C.bwhite;
     for (const sh of intro.shots) ctx.fillRect(Math.round(sh.x), Math.round(sh.y), 6, 1);
-    for (const f of intro.foes) {                 // a Treen craft: a ring with a core
+    for (const f of intro.foes) {                 // a guard craft: a ring with a core
       ctx.strokeStyle = f.hue; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(Math.round(f.x), Math.round(f.y), 6, 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = C.bwhite; ctx.fillRect(Math.round(f.x) - 1, Math.round(f.y) - 1, 3, 3);

@@ -1,5 +1,5 @@
 /* An alternative story, chosen on the options page: instead of a pilot on
- * the Mekon's asteroid, a policeman in a rough district, sent in place of the
+ * the alien boss's asteroid, a policeman in a rough district, sent in place of the
  * postman to carry the mailboxes to the sorting office. Only the words
  * change: every message, the panel and the title. The original's lines stay
  * the default. The font gains the Cyrillic letters it needs, in the same
@@ -15,7 +15,7 @@ Object.assign(GLYPHS, {
 
 // the original's lines, joined by |, and what the policeman's story says instead
 const STORY = {
-  "AI DARE": ["ДАН ДАРЕ"],
+  "AI DARE": ["МЕНТ ДАРЕ"],
   "COP'S ADVENTURE": ["ПРИКЛЮЧЕНИЯ МЕНТА"],
   "PRESS 'FIRE' TO PLAY": ["ЖМИ 'ОГОНЬ' ЧТОБЫ ИГРАТЬ"],
   "OR '1' FOR OPTIONS": ["ИЛИ '1' ДЛЯ НАСТРОЕК"],
@@ -57,9 +57,9 @@ const STORY = {
   "CONTROL  OPTIONS": ["НАСТРОЙКИ"],
   "KEYBOARD Q,A,O,P,SPACE": ["КЛАВИШИ Q,A,O,P,ПРОБЕЛ"],
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
-  "STORY: AI DARE": ["СЮЖЕТ: ДАН ДАРЕ"],
+  "STORY: AI DARE": ["СЮЖЕТ: МЕНТ ДАРЕ"],
   "THE ASTEROID IS COMING.": ["ПОЧТА ПРОПАЛА."],
-  "AI DARE GOES IN ALONE.": ["ДАН ДАРЕ ИДЁТ ОДИН."],
+  "AI DARE GOES IN ALONE.": ["МЕНТ ДАРЕ ИДЁТ ОДИН."],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
   "PRESS SPACE": ["НАЖМИ ПРОБЕЛ"],
 };
@@ -78,11 +78,11 @@ function tx(lines, n) {
 const options = { control: 1 };
 
 function loadStory() {
-  try { return localStorage.getItem("dandare.story") === "postal" ? "postal" : "dare"; } catch (e) { return "dare"; }
+  try { return localStorage.getItem("aidare.story") === "postal" ? "postal" : "dare"; } catch (e) { return "dare"; }
 }
 function setStory(s) {
   state.story = s;
-  try { localStorage.setItem("dandare.story", s); } catch (e) { /* no storage */ }
+  try { localStorage.setItem("aidare.story", s); } catch (e) { /* no storage */ }
 }
 
 function updateOptions() {

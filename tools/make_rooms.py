@@ -2,7 +2,7 @@
 """Room backdrops from the original's screens.
 
 Every room was dumped many times by the emulator surveys, each time with Ai,
-a Treen or a message box somewhere in it. Cell by cell, the value most of the
+a guard or a message box somewhere in it. Cell by cell, the value most of the
 dumps agree on is the room itself; the sprites and boxes fall away. The parts
 of the mechanism are wiped too (the game lays its own), and a message box
 that every dump shows is rebuilt from the band's pattern. The cleaned screens
@@ -116,7 +116,7 @@ def pixels(tiles, r0, r1, c0, c1):
 
 def erase_sprites(tiles, attr, masks, threshold=0.8):
     """A figure that stood still through every dump - Ai boxed in a lift
-    shaft, a Treen at the end of his beat - is found by its shape: where a
+    shaft, a guard at the end of his beat - is found by its shape: where a
     mask's pixels are nearly all set, they are cleared, and a cell left empty
     takes its neighbour's colours. Returns how many figures went."""
     img = pixels(tiles, 0, ROWS, 0, COLS)
@@ -163,7 +163,7 @@ def main():
                          "three or more of them, are used alone (Ai stood elsewhere in each)")
     ap.add_argument("--screens", default="data/emu", help="where the cleaned screens go")
     ap.add_argument("--erase", default="", help="figures to wipe by shape, as FILE:r0:r1:c0:c1,... - a clean "
-                         "dump and the cells a standing Ai or Treen fills in it; their mirrors are tried too")
+                         "dump and the cells a standing Ai or guard fills in it; their mirrors are tried too")
     ap.add_argument("--door", default="", help="a sector door as ROOM:SIDE[:SHUTFILE:OPENFILE],... - the cells of "
                          "the doorway that differ between the two dumps are the door, and the backdrop takes the "
                          "open ones; without dumps, the slab of the first door given for that side is put at the doorway")

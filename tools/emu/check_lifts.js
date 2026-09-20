@@ -28,15 +28,15 @@ for (const e of edges) for (let x = e.x0; x <= e.x1; x++) { const k = `${e.from}
     for (const c of cases) {
       if (!ROOMS[String(c.from)]) { out.push({ ...c, got: 'no room' }); continue; }
       const feet = feetOf(c.y);
-      resetDan(c.x * 8, feet - DAN_H - 12); enterRoom(String(c.from), c.x * 8, feet - DAN_H - 12); dan.invuln = 1e9; state.energy = 999; dan.onLift = null; dan.liftLatch = false; dan.vy = 0;
+      resetAi(c.x * 8, feet - AI_H - 12); enterRoom(String(c.from), c.x * 8, feet - AI_H - 12); ai.invuln = 1e9; state.energy = 999; ai.onLift = null; ai.liftLatch = false; ai.vy = 0;
       for (const k in keys) keys[k] = false;
-      for (let i = 0; i < 60; i++) updateDan(1 / 60);
-      const before = `${state.room}/${dan.y + DAN_H}`;
+      for (let i = 0; i < 60; i++) updateAi(1 / 60);
+      const before = `${state.room}/${ai.y + AI_H}`;
       const key = c.via === 'up' ? 'ArrowUp' : 'ArrowDown';
-      keys[key] = true; for (let i = 0; i < 6; i++) updateDan(1 / 60); keys[key] = false;
+      keys[key] = true; for (let i = 0; i < 6; i++) updateAi(1 / 60); keys[key] = false;
       const rooms = [state.room]; let rest = 0, i = 0;
-      for (; i < 900 && rest < 30; i++) { updateDan(1 / 60); if (state.room !== rooms[rooms.length - 1]) rooms.push(state.room); if (dan.onGround && !dan.onLift) rest++; else rest = 0; if (state.mode !== 'play') break; }
-      out.push({ ...c, before, got: `${state.room}/${Math.round(dan.y + DAN_H)}`, rooms, mode: state.mode, moved: rooms.length > 1 || Math.abs(dan.y + DAN_H - feet) > 6 });
+      for (; i < 900 && rest < 30; i++) { updateAi(1 / 60); if (state.room !== rooms[rooms.length - 1]) rooms.push(state.room); if (ai.onGround && !ai.onLift) rest++; else rest = 0; if (state.mode !== 'play') break; }
+      out.push({ ...c, before, got: `${state.room}/${Math.round(ai.y + AI_H)}`, rooms, mode: state.mode, moved: rooms.length > 1 || Math.abs(ai.y + AI_H - feet) > 6 });
     }
     return out;
   }, [...seen.values()]);

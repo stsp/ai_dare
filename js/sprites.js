@@ -2,8 +2,8 @@
 /* Sprite bitmaps, drawn for this project: the small things Ai picks up.
    '.' transparent   'X' body   'o' shade   'w' highlight
 
-   Ai, the Treens and the Mekon are illustrations drawn with paths, in
-   js/figures.js. Ai's rendered frames (assets/dan.png) are kept below as
+   Ai, the guards and the alien boss are illustrations drawn with paths, in
+   js/figures.js. Ai's rendered frames (assets/ai.png) are kept below as
    an alternative: drawSheetFrame() draws one where the figure is drawn now. */
 
 const SPR = {};
@@ -11,9 +11,9 @@ function defineSprite(name, rows) { SPR[name] = { w: rows[0].length, h: rows.len
 
 // ------------------------------------------------------- drawn frames (PNG)
 
-/* Ai's frames are illustrations, not bitmaps: assets/dan.png, built by
+/* Ai's frames are illustrations, not bitmaps: assets/ai.png, built by
    tools/make_sprites.py from the renders in the repository root, packed at
-   the canvas scale so they draw 1:1 with no resampling. js/dan_sheet.js says
+   the canvas scale so they draw 1:1 with no resampling. js/ai_sheet.js says
    where each frame sits and where Ai's body is within it, so the hit box is
    centred on him rather than on the rifle he holds out in front. */
 const SHEETS = {};
@@ -23,8 +23,8 @@ function loadSheet(name, meta) {
   img.onload = () => { SHEETS[name] = { img, meta }; };
   img.src = meta.image;
 }
-loadSheet("dan", window.DAN_SHEET);
-loadSheet("dan_head", window.DAN_SHEET && window.DAN_SHEET.head);   // his head alone, for the drawn figure to wear
+loadSheet("ai", window.AI_SHEET);
+loadSheet("ai_head", window.AI_SHEET && window.AI_SHEET.head);   // his head alone, for the drawn figure to wear
 loadSheet("rooms", window.ROOMS_SHEET);   // the rooms as the original draws them, cleaned of sprites
 loadSheet("title", { image: "assets/title.png" });   // the loading picture, from the render
 // the plaque's lettering: a bold slab serif, as the original's, with the Cyrillic the story needs

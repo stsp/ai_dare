@@ -7,11 +7,11 @@
  * The rules follow the original: a two-hour countdown, an energy bar rather
  * than lives (run out and you are captured and dumped in a prison cell, losing
  * ten minutes), five parts of the self-destruct mechanism - one per sector -
- * to carry to its room and fit, each opening the door to the next sector, Treen guards that make a room safe once cleared, and
+ * to carry to its room and fit, each opening the door to the next sector, guards that make a room safe once cleared, and
  * grav-lift shafts between floors.
  */
 
-const LEVEL = window.DANDARE_LEVEL;
+const LEVEL = window.AIDARE_LEVEL;
 const RW = LEVEL.room.w, RH = LEVEL.room.h;      // 30 x 18 cells
 
 // --- tuning ---------------------------------------------------------------
@@ -35,12 +35,12 @@ const PART_PULSE = 4 / 50, PART_FLASH = 6 * PART_PULSE;   // a part taken: the s
 const LASER_STEP = 8;          // one cell a frame
 const LASER_TRAIL = 2;         // dashes left behind the head
 const LASER_MIN = 8, LASER_MAX = 20;   // cells a shot lives, chosen at random
-// A Treen who reaches Ai's level closes to a few cells, stands and fires a
+// A guard who reaches Ai's level closes to a few cells, stands and fires a
 // shot every three frames while Ai is before him - the dashes run together
 // into a beam - and the rattle of it striking Ai sounds now and then.
-const TREEN_FIRE_PERIOD = 3 * FRAME;
-const TREEN_FIRE_RANGE = 14 * 8;   // he opens fire from this far
-const TREEN_STAND_OFF = 4 * 8;     // and walks no closer than this
+const GUARD_FIRE_PERIOD = 3 * FRAME;
+const GUARD_FIRE_RANGE = 14 * 8;   // he opens fire from this far
+const GUARD_STAND_OFF = 4 * 8;     // and walks no closer than this
 const HIT_RATTLE_EVERY = 0.6, HIT_ENERGY = 3;
 const CLOCK_RATE = 3;          // game seconds per real second
 const START_TIME = 2 * 3600;
@@ -49,9 +49,9 @@ const ESCAPE_ROOM = "75";       // the ship waits here once the mechanism is arm
 const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
-const DAN_W = 10, DAN_H = 32, DAN_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
-const TREEN_W = 10, TREEN_H = 32;
-const TREEN_DEATH = 0.2;         // seconds a shot guard stands with his arms up before he is gone, the room flashing
+const AI_W = 10, AI_H = 32, AI_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
+const GUARD_W = 10, GUARD_H = 32;
+const GUARD_DEATH = 0.2;         // seconds a shot guard stands with his arms up before he is gone, the room flashing
 
 // --------------------------------------------------------------- level utils
 
@@ -187,119 +187,119 @@ const PRISONS = placePrisons();
 
 // ------------------------------------------------------------------ entities
 
-/** Where the Treens come from. In most rooms some are already about when Ai
+/** Where the guards come from. In most rooms some are already about when Ai
  *  walks in, placed by a seeded hash of the room; on the surface and in the
- *  Mekon's hologram room there are none to start with. Then, every so often
+ *  the alien boss's hologram room there are none to start with. Then, every so often
  *  while fewer than two are about, one runs in from the edge away from Ai on
  *  his floor - at the original's pace, about sixty pixels a second - closes
  *  to a few cells and pauses before he fires. The fourth sector is unguarded,
  *  as in the original. */
-const TREEN_MAX = 2, TREEN_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
-const TREEN_FIRST = [0.4, 2.2];   // and sooner still into a room that was empty when Ai walked in
-const TREEN_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
-const TREEN_BEHIND = 64;         // how far into the room Ai must be before one follows him in through his own door
-const TREEN_BEHIND_TIME = 4;     // seconds after he steps in that this holds; later a guard may come in at his back
-const TREEN_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Ai
-const TREEN_CHASE = 3;           // seconds a guard counts as giving chase after he last had Ai in range
-const TREEN_LEAVE = 1.5;         // seconds a guard stranded on another floor waits before he runs out to come in on Ai's
-const TREEN_RETURN = [0.8, 2.0]; // and how soon after that he is in again
-const TREEN_RUN = 60, TREEN_REACT = 0.6;      // pixels a second; the pause before he fires
+const GUARD_MAX = 2, GUARD_AGAIN = [1.5, 5];  // seconds before the next one runs in: soon enough to be met on the way through
+const GUARD_FIRST = [0.4, 2.2];   // and sooner still into a room that was empty when Ai walked in
+const GUARD_CLEAR = 8;           // pixels an arriving guard walks in from the wall before he takes aim
+const GUARD_BEHIND = 64;         // how far into the room Ai must be before one follows him in through his own door
+const GUARD_BEHIND_TIME = 4;     // seconds after he steps in that this holds; later a guard may come in at his back
+const GUARD_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts after Ai
+const GUARD_CHASE = 3;           // seconds a guard counts as giving chase after he last had Ai in range
+const GUARD_LEAVE = 1.5;         // seconds a guard stranded on another floor waits before he runs out to come in on Ai's
+const GUARD_RETURN = [0.8, 2.0]; // and how soon after that he is in again
+const GUARD_RUN = 60, GUARD_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
 // where none is about when Ai walks in, and they only run in after him:
 // the screen he lands on, and the hologram's room
 function entryOnlyRoom(key, room) { return key === START.key || (LEVEL.boss && LEVEL.boss.room === key); }
 
 /** How many of a room's guards have been shot, over the whole game. */
-function deadHere(key) { return (state.deadTreens.get(key) || new Set()).size; }
+function deadHere(key) { return (state.deadGuards.get(key) || new Set()).size; }
 
-function makeTreens(key, room) {
+function makeGuards(key, room) {
   if (unguardedRoom(key, room) || entryOnlyRoom(key, room)) return [];
   const r = rng(hashKey(key));
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
-  const n = wide.length === 0 ? 0 : Math.min(Math.floor(r() * 3), TREEN_MAX - deadHere(key));   // the room's share, less the ones shot here
+  const n = wide.length === 0 ? 0 : Math.min(Math.floor(r() * 3), GUARD_MAX - deadHere(key));   // the room's share, less the ones shot here
   const out = [];
   for (let i = 0; i < n; i++) {
     const p = wide[Math.floor(r() * wide.length)];
-    const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
+    const x0 = p.x0 * 8, x1 = p.x1 * 8 - GUARD_W;
     if (x1 <= x0) continue;
     const x = x0 + r() * (x1 - x0);
-    if (Math.abs(x - dan.x) < 80 && Math.abs(p.y * 8 - TREEN_H - dan.y) < 24) continue;   // never near him on his floor: he steps in with room to look about
-    if (treenInWall(key, x, p.y * 8 - TREEN_H)) continue;                                 // nor inside a wall
-    if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - TREEN_H)) < 8)) continue;
-    out.push({ id: state.treenSeq++, x, y: p.y * 8 - TREEN_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0, lifts: r() < TREEN_LIFT_CHANCE });
+    if (Math.abs(x - ai.x) < 80 && Math.abs(p.y * 8 - GUARD_H - ai.y) < 24) continue;   // never near him on his floor: he steps in with room to look about
+    if (guardInWall(key, x, p.y * 8 - GUARD_H)) continue;                                 // nor inside a wall
+    if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - GUARD_H)) < 8)) continue;
+    out.push({ id: state.guardSeq++, x, y: p.y * 8 - GUARD_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0, lifts: r() < GUARD_LIFT_CHANCE });
   }
   return out;
 }
 
 /** The room's walls, steps and lift stations stop a guard as they stop Ai
  *  (legs left out of the test, as with him); true when one has just done so. */
-function treenWalled(t, key) {
+function guardWalled(t, key) {
   let hit = false;
   for (const wl of wallsOf(key)) {
-    if (overlaps(t.x, t.y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
-      t.x = t.x + TREEN_W / 2 < (wl.x0 + wl.x1) / 2 ? wl.x0 - TREEN_W : wl.x1;
+    if (overlaps(t.x, t.y, GUARD_W, GUARD_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
+      t.x = t.x + GUARD_W / 2 < (wl.x0 + wl.x1) / 2 ? wl.x0 - GUARD_W : wl.x1;
       hit = true;
     }
   }
   // pushed off the screen by a wall at the edge: he is out of the room, not
   // a guard lying in wait behind it (who would keep the room from ever being safe)
-  if (hit && (t.x < 0 || t.x + TREEN_W > VIEW_W)) { t.dead = true; t.gone = true; }
+  if (hit && (t.x < 0 || t.x + GUARD_W > VIEW_W)) { t.dead = true; t.gone = true; }
   return hit;
 }
 /** Whether a guard standing at (x, y) would be inside one of the room's walls. */
-function treenInWall(key, x, y) {
-  return wallsOf(key).some((wl) => overlaps(x, y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
+function guardInWall(key, x, y) {
+  return wallsOf(key).some((wl) => overlaps(x, y, GUARD_W, GUARD_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
 }
 
-function spawnTreen(key, room) {
-  const danFeet = dan.y + DAN_H;
-  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5 && p.x1 * 8 - TREEN_W > p.x0 * 8);
+function spawnGuard(key, room) {
+  const aiFeet = ai.y + AI_H;
+  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5 && p.x1 * 8 - GUARD_W > p.x0 * 8);
   // Ai's own floor first, widest first; another floor when no doorway on his lets one in
-  const level = wide.filter((p) => Math.abs(p.y * 8 - danFeet) < 6).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
+  const level = wide.filter((p) => Math.abs(p.y * 8 - aiFeet) < 6).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   const others = wide.filter((p) => !level.includes(p)).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   for (const p of [...level, ...others]) {
-    const x0 = p.x0 * 8, x1 = p.x1 * 8 - TREEN_W;
+    const x0 = p.x0 * 8, x1 = p.x1 * 8 - GUARD_W;
     // in from an edge away from Ai, running - but only through a doorway on
     // that floor, never through a door that is shut, nor through a wall
-    const y = p.y * 8 - TREEN_H;
+    const y = p.y * 8 - GUARD_H;
     const way = waysOnto(key, p);
-    const farSide = dan.x + DAN_W / 2 < VIEW_W / 2 ? "right" : "left";
+    const farSide = ai.x + AI_W / 2 < VIEW_W / 2 ? "right" : "left";
     const nearSide = farSide === "right" ? "left" : "right";
     // through the door behind Ai only once he is well into the room: never
     // straight at his back as he steps in
-    const room_ = dan.x + DAN_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
+    const room_ = ai.x + AI_W / 2, clear = nearSide === "left" ? room_ : VIEW_W - room_;
     const onHisFloor = level.includes(p);
-    const justIn = state.roomAge < TREEN_BEHIND_TIME;                 // the rule is for the moment he steps in, not for ever
-    const side = way[farSide] ? farSide : way[nearSide] && (clear >= TREEN_BEHIND || !onHisFloor || !justIn) ? nearSide : null;
+    const justIn = state.roomAge < GUARD_BEHIND_TIME;                 // the rule is for the moment he steps in, not for ever
+    const side = way[farSide] ? farSide : way[nearSide] && (clear >= GUARD_BEHIND || !onHisFloor || !justIn) ? nearSide : null;
     if (!side) continue;
     // he steps in at the edge cell, whole, as the original's sprites do - under the
     // door frame where the room has one - and runs in from there
-    const x = side === "right" ? VIEW_W - TREEN_W : 0;
-    treens.push({ id: state.treenSeq++, x, y, x0, x1, dir: dan.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < TREEN_LIFT_CHANCE });
+    const x = side === "right" ? VIEW_W - GUARD_W : 0;
+    guards.push({ id: state.guardSeq++, x, y, x0, x1, dir: ai.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < GUARD_LIFT_CHANCE });
     if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
     return;
   }
-  state.treenClock = state.treenNext;         // no way in just now: try again next frame
+  state.guardClock = state.guardNext;         // no way in just now: try again next frame
 }
 
 /** A guard who uses the lifts: Ai on another floor of this room, and a lift
  *  on the guard's floor that stops at Ai's, and he heads for it; Ai riding
  *  out of the room while the guard is giving chase, and he follows him onto
  *  it, to arrive behind him in the next room. */
-function liftToDan(t, key) {
-  const feet = t.y + TREEN_H;
+function liftToAi(t, key) {
+  const feet = t.y + GUARD_H;
   const onHisFloor = (l) => l.feet != null && Math.abs(l.feet - feet) <= 14 &&
-                            l.x0 * 8 >= t.x0 - 8 && (l.x1 + 1) * 8 <= t.x1 + TREEN_W + 8;   // its cells on his beat
-  if (dan.onLift && dan.onLift.link && t.chase > 0 && onHisFloor(dan.onLift.link)) return dan.onLift.link;   // after him
-  if (!dan.onGround) return null;
-  const danFeet = dan.y + DAN_H;
-  if (Math.abs(danFeet - feet) < 12) return null;
-  return EXITS[key].lifts.find((l) => l.to === key && l.stop != null && onHisFloor(l) && Math.abs(l.stop - danFeet) <= 14) || null;
+                            l.x0 * 8 >= t.x0 - 8 && (l.x1 + 1) * 8 <= t.x1 + GUARD_W + 8;   // its cells on his beat
+  if (ai.onLift && ai.onLift.link && t.chase > 0 && onHisFloor(ai.onLift.link)) return ai.onLift.link;   // after him
+  if (!ai.onGround) return null;
+  const aiFeet = ai.y + AI_H;
+  if (Math.abs(aiFeet - feet) < 12) return null;
+  return EXITS[key].lifts.find((l) => l.to === key && l.stop != null && onHisFloor(l) && Math.abs(l.stop - aiFeet) <= 14) || null;
 }
-function treenSeeksLift(t, key, room) {
-  const link = liftToDan(t, key);
+function guardSeeksLift(t, key, room) {
+  const link = liftToAi(t, key);
   if (!link) return;
-  t.lift = { link, x: ((link.x0 + link.x1 + 1) / 2) * 8 - TREEN_W / 2, wait: 0.3 + Math.random() * 1.2 };
+  t.lift = { link, x: ((link.x0 + link.x1 + 1) / 2) * 8 - GUARD_W / 2, wait: 0.3 + Math.random() * 1.2 };
 }
 
 /** A guard on another floor than Ai, with no lift on his beat to bring him
@@ -307,54 +307,54 @@ function treenSeeksLift(t, key, room) {
  *  edge and is out of the room, and one comes in again where Ai is (the
  *  spawner sends the room's next guard onto Ai's floor). Returns the edge he
  *  is leaving by, or null when his floor has none he can walk off. */
-function treenLeaves(t, key) {
+function guardLeaves(t, key) {
   const tried = t.noWay || new Set();                 // edges a wall has already turned him back from
-  const left = t.x0 <= 0 && !treenInWall(key, 0, t.y) && !tried.has("left");
-  const right = t.x1 + TREEN_W >= VIEW_W && !treenInWall(key, VIEW_W - TREEN_W, t.y) && !tried.has("right");
+  const left = t.x0 <= 0 && !guardInWall(key, 0, t.y) && !tried.has("left");
+  const right = t.x1 + GUARD_W >= VIEW_W && !guardInWall(key, VIEW_W - GUARD_W, t.y) && !tried.has("right");
   if (!left && !right) return null;
-  if (left && right) return t.x + TREEN_W / 2 < VIEW_W / 2 ? "left" : "right";
+  if (left && right) return t.x + GUARD_W / 2 < VIEW_W / 2 ? "left" : "right";
   return left ? "left" : "right";
 }
 /** The edges of a floor a guard can step in through: a doorway on that floor
  *  (its link, or one with no floor recorded) whose door is open, and no wall
  *  where he would stand. */
 function waysOnto(key, p) {
-  const e = EXITS[key], feet = p.y * 8, y = feet - TREEN_H;
+  const e = EXITS[key], feet = p.y * 8, y = feet - GUARD_H;
   const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
-  return { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !treenInWall(key, 0, y),
-           right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !treenInWall(key, VIEW_W - TREEN_W, y) };
+  return { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !guardInWall(key, 0, y),
+           right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !guardInWall(key, VIEW_W - GUARD_W, y) };
 }
 /** Whether a guard could come in on the floor Ai stands on. */
-function wayToDan(key, room) {
-  const danFeet = dan.y + DAN_H;
-  return room.platforms.some((p) => p.x1 - p.x0 >= 5 && Math.abs(p.y * 8 - danFeet) < 6 && (({ left, right }) => left || right)(waysOnto(key, p)));
+function wayToAi(key, room) {
+  const aiFeet = ai.y + AI_H;
+  return room.platforms.some((p) => p.x1 - p.x0 >= 5 && Math.abs(p.y * 8 - aiFeet) < 6 && (({ left, right }) => left || right)(waysOnto(key, p)));
 }
-function treenToLift(t, dt) {
+function guardToLift(t, dt) {
   const dx = t.lift.x - t.x;
   t.fire = false;
-  if (Math.abs(dx) > 2) { t.dir = dx > 0 ? 1 : -1; t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9; if (treenWalled(t, state.room)) t.lift = null; return; }   // a wall between him and the cells: he gives it up
+  if (Math.abs(dx) > 2) { t.dir = dx > 0 ? 1 : -1; t.x += t.dir * GUARD_RUN * dt; t.anim += dt * 9; if (guardWalled(t, state.room)) t.lift = null; return; }   // a wall between him and the cells: he gives it up
   t.lift.wait -= dt;                                  // a moment on the cells before the field takes him
   if (t.lift.wait > 0) return;
   const l = t.lift.link;
   t.riding = { dir: l.kind === "down" ? 1 : -1, stop: l.stop, out: l.to !== state.room, to: l.to };
   t.lift = null;
 }
-function rideTreen(t, dt, room) {
+function rideGuard(t, dt, room) {
   const r = t.riding;
   t.fire = false;
   t.y += r.dir * LIFT_SPEED * dt;
-  const feet = t.y + TREEN_H;
+  const feet = t.y + GUARD_H;
   if (r.out) {
     // off the screen after Ai: he arrives in the next room when Ai does
-    if (t.y + TREEN_H < 0 || t.y > VIEW_H) { t.dead = true; t.gone = true; state.pursuer = { room: r.to, x: t.x, dir: r.dir, stop: r.stop }; }
+    if (t.y + GUARD_H < 0 || t.y > VIEW_H) { t.dead = true; t.gone = true; state.pursuer = { room: r.to, x: t.x, dir: r.dir, stop: r.stop }; }
     return;
   }
   if ((r.dir > 0 && feet >= r.stop) || (r.dir < 0 && feet <= r.stop)) {
-    t.y = r.stop - TREEN_H;
-    const p = platformsOf(room).find((p) => Math.abs(p.y - r.stop) <= 14 && t.x + TREEN_W > p.x0 - 8 && t.x < p.x1 + 8);
-    if (p) { t.x0 = p.x0; t.x1 = p.x1 - TREEN_W; }
+    t.y = r.stop - GUARD_H;
+    const p = platformsOf(room).find((p) => Math.abs(p.y - r.stop) <= 14 && t.x + GUARD_W > p.x0 - 8 && t.x < p.x1 + 8);
+    if (p) { t.x0 = p.x0; t.x1 = p.x1 - GUARD_W; }
     t.riding = null;
-    t.dir = dan.x > t.x ? 1 : -1;
+    t.dir = ai.x > t.x ? 1 : -1;
   }
 }
 
@@ -391,11 +391,11 @@ const state = {
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
-  taunts: 0, nextTaunt: 40,   // the Mekon's calls
+  taunts: 0, nextTaunt: 40,   // the alien boss's calls
   clearedRooms: new Set(),
-  treenSeq: 0,           // ids for the Treens that arrive, per game
-  treenClock: 0, treenNext: 0,   // the next arrival
-  deadTreens: new Map(),   // room -> which of its guards have been shot
+  guardSeq: 0,           // ids for the guards that arrive, per game
+  guardClock: 0, guardNext: 0,   // the next arrival
+  deadGuards: new Map(),   // room -> which of its guards have been shot
   deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
   pursuer: null,           // a guard riding the lift after Ai into the next room
   roomAge: 0,              // seconds since Ai stepped into this room
@@ -408,17 +408,17 @@ const state = {
   phase: 0,
 };
 
-let dan = null;
+let ai = null;
 let boss = null;          // the seated figure in the self-destruct room
-let treens = [];
+let guards = [];
 let pickups = [];
 let lasers = [];
 let sdsParts = placeParts();
 
 function currentRoom() { return ROOMS[state.room]; }
 
-function resetDan(x, y) {
-  dan = {
+function resetAi(x, y) {
+  ai = {
     x, y, vx: 0, vy: 0, face: 1,
     onGround: false, kneeling: false, turning: 0,
     onLift: null, liftLatch: false, shaftFall: false, jumpT: 0, jumping: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0, stun: 0,
@@ -427,40 +427,40 @@ function resetDan(x, y) {
 
 function enterRoom(key, x, y) {
   // a guard riding the lift out after Ai is still on his way when Ai arrives
-  const chaser = treens.find((t) => !t.dead && t.riding && t.riding.out && t.riding.to === key);
+  const chaser = guards.find((t) => !t.dead && t.riding && t.riding.out && t.riding.to === key);
   if (chaser) state.pursuer = { room: key, x: chaser.x, dir: chaser.riding.dir, stop: chaser.riding.stop };
   state.room = key;
   // the original ends the game the moment Ai steps into the launch bay -
   // "AI DARE MAKES A GETAWAY!" - which lies behind the last gate
   if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
-  if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }   // where he arrives: the guards keep clear of it
-  treens = state.clearedRooms.has(key) ? [] : makeTreens(key, room);
-  state.treenClock = 0;
+  if (x != null) { ai.x = x; ai.y = y; ai.vx = 0; ai.vy = 0; }   // where he arrives: the guards keep clear of it
+  guards = state.clearedRooms.has(key) ? [] : makeGuards(key, room);
+  state.guardClock = 0;
   state.roomAge = 0;
-  const wait = treens.length ? TREEN_AGAIN : TREEN_FIRST;
-  state.treenNext = wait[0] + Math.random() * (wait[1] - wait[0]);
-  if (treens.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
+  const wait = guards.length ? GUARD_AGAIN : GUARD_FIRST;
+  state.guardNext = wait[0] + Math.random() * (wait[1] - wait[0]);
+  if (guards.length && !state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
   pickups = makePickups(key, room);
   // a guard who took the lift after Ai rides in behind him
   if (state.pursuer && state.pursuer.room === key) {
     const q = state.pursuer;
-    treens.push({ id: state.treenSeq++, x: q.x, y: q.dir > 0 ? -TREEN_H : VIEW_H, x0: 0, x1: VIEW_W - TREEN_W, dir: 1, anim: 0, dead: false, react: 0,
+    guards.push({ id: state.guardSeq++, x: q.x, y: q.dir > 0 ? -GUARD_H : VIEW_H, x0: 0, x1: VIEW_W - GUARD_W, dir: 1, anim: 0, dead: false, react: 0,
                   lifts: true, riding: { dir: q.dir, stop: q.stop, out: false } });
   }
   state.pursuer = null;
   guns = makeGuns(key);
   gunShots = [];
   lasers = [];
-  if (x != null) { dan.x = x; dan.y = y; dan.vx = 0; dan.vy = 0; }
-  dan.invuln = Math.max(dan.invuln, 0.8);
+  if (x != null) { ai.x = x; ai.y = y; ai.vx = 0; ai.vy = 0; }
+  ai.invuln = Math.max(ai.invuln, 0.8);
   const zone = room.label || room.zone;                    // the number the original announces
   if (!state.sectorSeen.has(zone)) {
     state.sectorSeen.add(zone);
     say(tx(["AI IS NOW IN SECTOR #"], zone), 2.5);
     if (zone > 1) taunt();
   }
-  // the Mekon's hologram: he waits on his dais in one room of the fifth sector
+  // the alien boss's hologram: he waits on his dais in one room of the fifth sector
   boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
   if (boss) say(tx(["\"I SAY....IT'S A HOLOGRAM !\""]), 3);   // every time he walks in, as in the original
   if (key === SDS_ROOM) {
@@ -469,11 +469,11 @@ function enterRoom(key, x, y) {
   }
 }
 
-/** The Mekon on the video link: his face on the screen at the bottom right,
+/** The alien boss on the video link: his face on the screen at the bottom right,
  *  his words in the box at the top. */
 function call(lines, secs) {
   note(lines, secs);                 // over the link his words come up in the lower box
-  state.viewer = "mekon";
+  state.viewer = "boss";
   state.viewerTimer = secs;
   state.viewerStatic = 0.5;          // the picture takes a moment to lock on
 }
@@ -491,7 +491,7 @@ function taunt() {
   state.nextTaunt = 45 + Math.random() * 60;
 }
 
-/** Words due in `t` seconds: a narration (say) or the Mekon's call. Kept as
+/** Words due in `t` seconds: a narration (say) or the alien boss's call. Kept as
  *  data, not closures, so a rewind carries them. */
 function cue(t, kind, lines, secs) { state.cues.push({ t, kind, lines, secs }); }
 function runCues(dt) {
@@ -520,7 +520,7 @@ function startGame() {
   state.sectorSeen = new Set();
   state.alerted = new Set();
   state.clearedRooms = new Set();
-  state.deadTreens = new Map();
+  state.deadGuards = new Map();
   state.deadGuns = new Set();
   state.takenItems = new Set();
   sdsParts = placeParts();
@@ -528,8 +528,8 @@ function startGame() {
   state.carrying = false;
   state.armed = false;
   const spawn = widestPlatform(START.room);
-  resetDan(16, spawn.y - DAN_H);
-  enterRoom(START.key, 16, spawn.y - DAN_H);
+  resetAi(16, spawn.y - AI_H);
+  enterRoom(START.key, 16, spawn.y - AI_H);
   say(tx(["AI LANDS ON", "THE ASTEROID"]), 3);
 }
 
@@ -591,78 +591,78 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => { keys[e.code] = false; });
 
 const held = {
-  left: () => !(dan.stun > 0) && (keys.ArrowLeft || keys.KeyO),
-  right: () => !(dan.stun > 0) && (keys.ArrowRight || keys.KeyP),
-  up: () => !(dan.stun > 0) && (keys.ArrowUp || keys.KeyQ),
-  down: () => !(dan.stun > 0) && (keys.ArrowDown || keys.KeyA),
-  fire: () => !(dan.stun > 0) && (keys.Space || keys.KeyM),
+  left: () => !(ai.stun > 0) && (keys.ArrowLeft || keys.KeyO),
+  right: () => !(ai.stun > 0) && (keys.ArrowRight || keys.KeyP),
+  up: () => !(ai.stun > 0) && (keys.ArrowUp || keys.KeyQ),
+  down: () => !(ai.stun > 0) && (keys.ArrowDown || keys.KeyA),
+  fire: () => !(ai.stun > 0) && (keys.Space || keys.KeyM),
 };
 
 // ----------------------------------------------------------------- Ai update
 
-function updateDan(dt) {
+function updateAi(dt) {
   const room = currentRoom();
   const platforms = platformsOf(room);
 
-  dan.landed = false;
-  if (dan.hurt > 0) dan.hurt -= dt;
-  if (dan.stun > 0) { dan.stun -= dt; dan.vx = 0; }   // out cold in the cell: nothing answers the keys
-  if (dan.invuln > 0) dan.invuln -= dt;
-  if (dan.fireCool > 0) dan.fireCool -= dt;
-  if (dan.rattle > 0) dan.rattle -= dt;
+  ai.landed = false;
+  if (ai.hurt > 0) ai.hurt -= dt;
+  if (ai.stun > 0) { ai.stun -= dt; ai.vx = 0; }   // out cold in the cell: nothing answers the keys
+  if (ai.invuln > 0) ai.invuln -= dt;
+  if (ai.fireCool > 0) ai.fireCool -= dt;
+  if (ai.rattle > 0) ai.rattle -= dt;
 
   // --- grav-lift: stand on the marked cells and press up or down. One press
   //     rides to the next floor, in this room or the next; keeping the key
   //     held rides on through it. That is how the original behaves.
   const exits = EXITS[state.room];
-  const cell = Math.floor((dan.x + DAN_W / 2) / 8);
+  const cell = Math.floor((ai.x + AI_W / 2) / 8);
   // a lift answers only from its stops - the floors the original called it
   // from or stopped it at; not every floor beside a shaft is one
   const liftHere = (kind) => exits.lifts.find((l) => l.kind === kind && inLiftZone(room, l, cell) &&
-                                                 Math.abs(dan.y + DAN_H - l.feet) <= 14);
-  if (!held.up() && !held.down()) dan.liftLatch = false;   // a ride wants a fresh press
+                                                 Math.abs(ai.y + AI_H - l.feet) <= 14);
+  if (!held.up() && !held.down()) ai.liftLatch = false;   // a ride wants a fresh press
   // a lift answers only to Ai standing still: up while running is a jump,
   // even between the rails (the original clears a gap beside a shaft that way)
-  if (!dan.onLift && dan.onGround && !dan.liftLatch && !held.left() && !held.right()) {
+  if (!ai.onLift && ai.onGround && !ai.liftLatch && !held.left() && !held.right()) {
     const call = held.down() ? liftHere("down") : held.up() ? liftHere("up") : null;
     if (call) {
       // the stop is in the room the link leads to: here only for a ride
       // between this room's own floors
-      dan.onLift = { dir: held.down() ? 1 : -1, link: call, stop: call.stop, stopHere: call.to === state.room, at: state.phase };
+      ai.onLift = { dir: held.down() ? 1 : -1, link: call, stop: call.stop, stopHere: call.to === state.room, at: state.phase };
     }
   }
   // the field carries him between the rails, whichever cell he called it from;
   // arriving in a room by lift, the ride goes on only where that room's own
   // lift continues the same way
-  if (dan.onLift && dan.onLift.shaft === undefined) {
+  if (ai.onLift && ai.onLift.shaft === undefined) {
     const sh = room.shafts.find((s) => cell >= s.x - 3 && cell <= s.x + s.w) || null;
-    dan.onLift.shaft = sh;
-    dan.onLift.startFeet = dan.y + DAN_H;      // the floor he set off from does not catch him
-    if (!dan.onLift.link && sh) {
-      const kind = dan.onLift.dir > 0 ? "down" : "up";
+    ai.onLift.shaft = sh;
+    ai.onLift.startFeet = ai.y + AI_H;      // the floor he set off from does not catch him
+    if (!ai.onLift.link && sh) {
+      const kind = ai.onLift.dir > 0 ? "down" : "up";
       const inShaft = (l) => l.kind === kind && l.x1 >= sh.x - 3 && l.x0 <= sh.x + sh.w;
-      dan.onLift.link = exits.lifts.find((l) => inShaft(l) && l.to !== state.room) || null;
+      ai.onLift.link = exits.lifts.find((l) => inShaft(l) && l.to !== state.room) || null;
       // the broken lift: entered riding, it gives out at the bottom of the shaft here
-      const gone = !dan.onLift.link && exits.lifts.find((l) => inShaft(l) && l.broken && l.feet < 0);
-      if (gone) { dan.onLift.link = gone; dan.onLift.stop = gone.stop; dan.onLift.stopHere = true; }
+      const gone = !ai.onLift.link && exits.lifts.find((l) => inShaft(l) && l.broken && l.feet < 0);
+      if (gone) { ai.onLift.link = gone; ai.onLift.stop = gone.stop; ai.onLift.stopHere = true; }
     }
   }
 
-  if (dan.onLift) {
-    dan.vy = 0;
-    dan.vx = 0;
-    dan.kneeling = false;
-    dan.onGround = false;
-    const lift = dan.onLift;
+  if (ai.onLift) {
+    ai.vy = 0;
+    ai.vx = 0;
+    ai.kneeling = false;
+    ai.onGround = false;
+    const lift = ai.onLift;
     const dir = lift.dir;
     const hold = dir > 0 ? held.down() : held.up();
     const onward = lift.link && lift.link.to !== state.room && isOpen(lift.link);   // the shaft goes on
     if (hold && onward) { lift.stop = lift.link.stop; lift.stopHere = false; }   // riding through: the next stop is the next link's
     // (the field carries him straight up or down from where he called it, as
     // the original does: it never draws him in towards the rails)
-    const before = dan.y + DAN_H;
-    dan.y += dir * LIFT_SPEED * dt;
-    const feet = dan.y + DAN_H;
+    const before = ai.y + AI_H;
+    ai.y += dir * LIFT_SPEED * dt;
+    const feet = ai.y + AI_H;
     // the ride ends where the original ended it - the recorded stop height in
     // the room it leads to, whatever is there: a floor beside the shaft, and
     // Ai steps out on it; nothing, as with the one broken lift, and he drops.
@@ -671,99 +671,99 @@ function updateDan(dt) {
       const reached = dir > 0 ? (before <= lift.stop && feet >= lift.stop) : (before >= lift.stop && feet <= lift.stop);
       const past = dir > 0 ? lift.stop > lift.startFeet + 16 : lift.stop < lift.startFeet - 16;
       if (reached && past) {
-        dan.y = lift.stop - DAN_H;
-        const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && dan.x + DAN_W > p.x0 - 8 && dan.x < p.x1 + 8);
-        dan.onLift = null; dan.liftLatch = true;
-        if (floor) { dan.y = floor.y - DAN_H; dan.onGround = true; }   // else the broken lift: he falls
+        ai.y = lift.stop - AI_H;
+        const floor = platforms.find((p) => Math.abs(p.y - lift.stop) <= 14 && ai.x + AI_W > p.x0 - 8 && ai.x < p.x1 + 8);
+        ai.onLift = null; ai.liftLatch = true;
+        if (floor) { ai.y = floor.y - AI_H; ai.onGround = true; }   // else the broken lift: he falls
         else if (lift.broken || (lift.link && lift.link.broken)) say(tx(["OUT OF ORDER"]), 3);
       }
     }
     // the field ends at the top of the shaft with no stop there: as in the
     // original, Ai drops back down the shaft to its bottom, past any floor
-    if (dan.onLift && dir < 0 && dan.y < 0 && !onward) { dan.y = 0; dan.onLift = null; dan.liftLatch = true; dan.shaftFall = true; }
-    if (dan.onLift && dir > 0 && feet > VIEW_H && !onward) {
-      dan.onLift = null; dan.liftLatch = true;               // no floor met: drop to it
+    if (ai.onLift && dir < 0 && ai.y < 0 && !onward) { ai.y = 0; ai.onLift = null; ai.liftLatch = true; ai.shaftFall = true; }
+    if (ai.onLift && dir > 0 && feet > VIEW_H && !onward) {
+      ai.onLift = null; ai.liftLatch = true;               // no floor met: drop to it
     }
   } else {
     // --- kneel: no turning while down ---
-    dan.kneeling = held.down() && dan.onGround;
+    ai.kneeling = held.down() && ai.onGround;
 
     let dir = 0;
-    if (!dan.kneeling) {
+    if (!ai.kneeling) {
       if (held.left()) dir = -1;
       else if (held.right()) dir = 1;
     }
 
-    if (dan.turning > 0) {
-      dan.turning -= dt;
+    if (ai.turning > 0) {
+      ai.turning -= dt;
       dir = 0;
-    } else if (dir !== 0 && dir !== dan.face && dan.onGround) {
-      dan.face = dir;
-      dan.turning = TURN_TIME;   // Ai turns on the spot before setting off
+    } else if (dir !== 0 && dir !== ai.face && ai.onGround) {
+      ai.face = dir;
+      ai.turning = TURN_TIME;   // Ai turns on the spot before setting off
       dir = 0;
     } else if (dir !== 0) {
-      dan.face = dir;
+      ai.face = dir;
     }
 
-    if (dan.onGround) {
-      dan.vx = dir * RUN_SPEED;
-      if (held.up() && !dan.liftLatch) {
+    if (ai.onGround) {
+      ai.vx = dir * RUN_SPEED;
+      if (held.up() && !ai.liftLatch) {
         const way = held.left() ? -1 : held.right() ? 1 : 0;   // the way he is pressed, turned or not
-        if (way) dan.face = way;
-        dan.turning = 0;
-        dan.vy = JUMP_VY;
-        dan.vx = way * JUMP_VX;   // straight up, or a diagonal hop
-        dan.jumpT = JUMP_TIME;    // the arc is fixed: the keys do nothing until he lands
-        dan.jumping = true;
-        dan.onGround = false;
+        if (way) ai.face = way;
+        ai.turning = 0;
+        ai.vy = JUMP_VY;
+        ai.vx = way * JUMP_VX;   // straight up, or a diagonal hop
+        ai.jumpT = JUMP_TIME;    // the arc is fixed: the keys do nothing until he lands
+        ai.jumping = true;
+        ai.onGround = false;
       }
     } else {
       // in the air the original carries him through the jump's arc and no
       // further: past it, or off a ledge, he drops straight down
-      if (dan.jumpT > 0) dan.jumpT -= dt; else dan.vx = 0;
+      if (ai.jumpT > 0) ai.jumpT -= dt; else ai.vx = 0;
     }
 
-    dan.vy += GRAVITY * dt;
-    const h = dan.kneeling ? DAN_KNEEL_H : DAN_H;
-    const yOff = DAN_H - h;
+    ai.vy += GRAVITY * dt;
+    const h = ai.kneeling ? AI_KNEEL_H : AI_H;
+    const yOff = AI_H - h;
     // The original's walls, steps and lift stations stop him; the panelling
     // and the machinery he walks in front of do not. His legs are left out of
     // the test: a course he stands on runs through them.
-    moveX(dan, dan.vx * dt, wallsOf(state.room), DAN_W, h - 8, yOff);
-    gunsBlockDan(h, yOff);                 // a floor gun is the one thing he walks into
-    if (dan.onGround) {
-      const feet = dan.y + DAN_H;
+    moveX(ai, ai.vx * dt, wallsOf(state.room), AI_W, h - 8, yOff);
+    gunsBlockAi(h, yOff);                 // a floor gun is the one thing he walks into
+    if (ai.onGround) {
+      const feet = ai.y + AI_H;
       for (const p of platforms) {
-        if (dan.x + DAN_W > p.x0 && dan.x < p.x1 && feet > p.y && feet - p.y <= 17) dan.y = p.y - DAN_H;   // a kerb of two courses is walked up
+        if (ai.x + AI_W > p.x0 && ai.x < p.x1 && feet > p.y && feet - p.y <= 17) ai.y = p.y - AI_H;   // a kerb of two courses is walked up
       }
     }
     let catchers = platforms;
-    if (dan.shaftFall) {                   // falling down the shaft: only its bottom floor catches him
-      const under = platforms.filter((p) => dan.x + DAN_W > p.x0 && dan.x < p.x1 && p.y >= dan.y + DAN_H - 2);
+    if (ai.shaftFall) {                   // falling down the shaft: only its bottom floor catches him
+      const under = platforms.filter((p) => ai.x + AI_W > p.x0 && ai.x < p.x1 && p.y >= ai.y + AI_H - 2);
       const lowest = under.length ? Math.max(...under.map((p) => p.y)) : -1;
       catchers = platforms.filter((p) => p.y === lowest);
     }
-    const feetBefore = dan.y + DAN_H, airborne = !dan.onGround;
+    const feetBefore = ai.y + AI_H, airborne = !ai.onGround;
     // a jump lands on a ledge a course above where it started: the original
     // moves him by cells and sets him down on whatever his last cell rests on
-    moveY(dan, dan.vy * dt, catchers, DAN_W, h, yOff, dan.jumping ? 9 : 0.5);
-    dan.landed = airborne && dan.onGround;      // this is the frame he comes down
-    if (dan.onGround) dan.jumping = false;
-    if (dan.vy >= 0) gunsUnderDan(feetBefore);   // coming down on a floor gun crushes it
-    if (dan.onGround) dan.shaftFall = false;
+    moveY(ai, ai.vy * dt, catchers, AI_W, h, yOff, ai.jumping ? 9 : 0.5);
+    ai.landed = airborne && ai.onGround;      // this is the frame he comes down
+    if (ai.onGround) ai.jumping = false;
+    if (ai.vy >= 0) gunsUnderAi(feetBefore);   // coming down on a floor gun crushes it
+    if (ai.onGround) ai.shaftFall = false;
   }
 
-  if (Math.abs(dan.vx) > 1 && dan.onGround) dan.anim += dt * 8;
+  if (Math.abs(ai.vx) > 1 && ai.onGround) ai.anim += dt * 8;
 
   // --- fire: short range laser, kneeling shots come out low ---
-  if (held.fire() && dan.fireCool <= 0) {
-    dan.fireCool = FIRE_PERIOD;
+  if (held.fire() && ai.fireCool <= 0) {
+    ai.fireCool = FIRE_PERIOD;
     // the dash leaves the gun's muzzle: 13 past the figure's middle, level with the barrel
-    const tip = dan.x + DAN_W / 2 + dan.face * 13;
+    const tip = ai.x + AI_W / 2 + ai.face * 13;
     lasers.push({
-      x: dan.face > 0 ? tip : tip - LASER_STEP,
-      y: dan.y + (dan.kneeling ? 20 : 13),
-      dir: dan.face, cells: LASER_MIN + Math.floor(Math.random() * (LASER_MAX - LASER_MIN + 1)),
+      x: ai.face > 0 ? tip : tip - LASER_STEP,
+      y: ai.y + (ai.kneeling ? 20 : 13),
+      dir: ai.face, cells: LASER_MIN + Math.floor(Math.random() * (LASER_MAX - LASER_MIN + 1)),
       trail: [], acc: 0, friendly: true,
     });
     zap();
@@ -777,109 +777,109 @@ function updateDan(dt) {
  *  hole, or rides a lift out of it - each only where the original allows. */
 function moveBetweenRooms() {
   const e = EXITS[state.room];
-  const c0 = Math.floor(dan.x / 8), c1 = Math.floor((dan.x + DAN_W - 1) / 8);   // the cells under his feet
+  const c0 = Math.floor(ai.x / 8), c1 = Math.floor((ai.x + AI_W - 1) / 8);   // the cells under his feet
   const zone = (list) => list.find((l) => c1 >= l.x0 && c0 <= l.x1);
-  const ride = dan.onLift && dan.onLift.link;
-  const feet = dan.y + DAN_H;
+  const ride = ai.onLift && ai.onLift.link;
+  const feet = ai.y + AI_H;
   const left = exitAt(e.lefts, feet), right = exitAt(e.rights, feet);
   // through a doorway he arrives at the height the original set him down at
   // (the link's feet) when he is walking or coming down - a step or a course
   // between the two rooms' floors is absorbed at the door, as there
-  const arrive = (l) => { if (l.feet != null && dan.vy >= 0 && Math.abs(feet - l.feet) <= 14) { dan.y = l.feet - DAN_H; dan.vy = 0; } };
-  if (dan.x <= 0 && isOpen(left)) {
+  const arrive = (l) => { if (l.feet != null && ai.vy >= 0 && Math.abs(feet - l.feet) <= 14) { ai.y = l.feet - AI_H; ai.vy = 0; } };
+  if (ai.x <= 0 && isOpen(left)) {
     arrive(left);
-    enterRoom(left.to, VIEW_W - DAN_W - 3, dan.y);
-  } else if (dan.x + DAN_W >= VIEW_W && isOpen(right)) {
+    enterRoom(left.to, VIEW_W - AI_W - 3, ai.y);
+  } else if (ai.x + AI_W >= VIEW_W && isOpen(right)) {
     arrive(right);
-    enterRoom(right.to, 3, dan.y);
-  } else if (dan.y + DAN_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
-    enterRoom(ride.to, dan.x, -DAN_H + 6);                           // riding on down
-    dan.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
-    dan.liftLatch = true;
+    enterRoom(right.to, 3, ai.y);
+  } else if (ai.y + AI_H > VIEW_H && ride && ride.kind === "down" && ride.to !== state.room && isOpen(ride)) {
+    enterRoom(ride.to, ai.x, -AI_H + 6);                           // riding on down
+    ai.onLift = { dir: 1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
+    ai.liftLatch = true;
     // the one lift that is out of order: the original says so as he rides into its room
     if (ride.broken || EXITS[ride.to].lifts.some((l) => l.broken && l.feet < 0)) say(tx(["OUT OF ORDER"]), 3);
-  } else if (dan.y + DAN_H > 130 && !dan.onLift && isOpen(zone(e.drops))) {
+  } else if (ai.y + AI_H > 130 && !ai.onLift && isOpen(zone(e.drops))) {
     // fell through a hole in the floor: the original switches rooms as soon
     // as he drops below the floor course, before his run carries him past it
-    enterRoom(zone(e.drops).to, dan.x, -DAN_H + 6);
-  } else if (dan.y + DAN_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride)) {
-    enterRoom(ride.to, dan.x, VIEW_H - DAN_H / 2);                    // riding on up
-    dan.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
-    dan.liftLatch = true;
+    enterRoom(zone(e.drops).to, ai.x, -AI_H + 6);
+  } else if (ai.y + AI_H / 2 < 0 && ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride)) {
+    enterRoom(ride.to, ai.x, VIEW_H - AI_H / 2);                    // riding on up
+    ai.onLift = { dir: -1, link: null, stop: ride.stop, stopHere: true, broken: ride.broken };
+    ai.liftLatch = true;
     if (ride.broken) say(tx(["OUT OF ORDER"]), 3);
   } else {
     // no way out that way: keep Ai on this screen
-    if (dan.x < 0) dan.x = 0;
-    if (dan.x + DAN_W > VIEW_W) dan.x = VIEW_W - DAN_W;
-    if (dan.y + DAN_H > VIEW_H && !dan.onLift) {
+    if (ai.x < 0) ai.x = 0;
+    if (ai.x + AI_W > VIEW_W) ai.x = VIEW_W - AI_W;
+    if (ai.y + AI_H > VIEW_H && !ai.onLift) {
       // below the floor with no way out: a floor under him, and he stands on
       // it; none, and he has fallen into the pit - the original's "fell too far"
       // (a lift arriving from below is still half off the screen - leave it)
-      const under = platformsOf(currentRoom()).filter((p) => dan.x + DAN_W > p.x0 && dan.x < p.x1);
+      const under = platformsOf(currentRoom()).filter((p) => ai.x + AI_W > p.x0 && ai.x < p.x1);
       if (!under.length) { fellTooFar(); return; }
       const floor = under.reduce((a, b) => (b.y > a.y ? b : a));
-      dan.y = floor.y - DAN_H; dan.vy = 0; dan.onGround = true; dan.onLift = null; dan.liftLatch = true;
+      ai.y = floor.y - AI_H; ai.vy = 0; ai.onGround = true; ai.onLift = null; ai.liftLatch = true;
     }
     const ridingOut = ride && ride.kind === "up" && ride.to !== state.room && isOpen(ride);
-    if (dan.y < 0 && !ridingOut) { dan.y = 0; dan.vy = 0; }
+    if (ai.y < 0 && !ridingOut) { ai.y = 0; ai.vy = 0; }
   }
 }
 
-// -------------------------------------------------------------- Treen update
+// -------------------------------------------------------------- Guard update
 
-function updateTreens(dt) {
+function updateGuards(dt) {
   const key = state.room, room = currentRoom();
   state.roomAge += dt;
   // the next one arrives when his time comes, unless the room is unguarded,
-  // cleared, or has had its share: a room's guards are TREEN_MAX in all, the
+  // cleared, or has had its share: a room's guards are GUARD_MAX in all, the
   // ones shot here counted, so one left standing never brings another
-  if (!unguardedRoom(key, room) && !state.clearedRooms.has(key) && treens.filter((t) => !t.dead).length + deadHere(key) < TREEN_MAX) {
-    state.treenClock += dt;
-    if (state.treenClock >= state.treenNext) {
-      state.treenClock = 0;
-      state.treenNext = TREEN_AGAIN[0] + Math.random() * (TREEN_AGAIN[1] - TREEN_AGAIN[0]);
-      spawnTreen(key, room);
+  if (!unguardedRoom(key, room) && !state.clearedRooms.has(key) && guards.filter((t) => !t.dead).length + deadHere(key) < GUARD_MAX) {
+    state.guardClock += dt;
+    if (state.guardClock >= state.guardNext) {
+      state.guardClock = 0;
+      state.guardNext = GUARD_AGAIN[0] + Math.random() * (GUARD_AGAIN[1] - GUARD_AGAIN[0]);
+      spawnGuard(key, room);
     }
   }
-  for (const t of treens) {
-    if (t.dying > 0) { t.dying -= dt; if (t.dying <= 0) beeperBurst("treenGone"); }   // his last moment after the shot that got him
+  for (const t of guards) {
+    if (t.dying > 0) { t.dying -= dt; if (t.dying <= 0) beeperBurst("guardGone"); }   // his last moment after the shot that got him
     if (t.dead) continue;
-    if (t.riding) { rideTreen(t, dt, room); continue; }
-    if (t.lift) { treenToLift(t, dt); continue; }
-    const level = Math.abs((t.y + TREEN_H) - (dan.y + DAN_H)) < 12;
-    const dx = (dan.x + DAN_W / 2) - (t.x + TREEN_W / 2);
-    const inRange = level && Math.abs(dx) <= TREEN_FIRE_RANGE && dan.stun <= 0 && !t.entering;   // not from the doorway
-    if (inRange) t.chase = TREEN_CHASE; else if (t.chase > 0) t.chase -= dt;
-    if (t.lifts && !inRange) treenSeeksLift(t, key, room);
+    if (t.riding) { rideGuard(t, dt, room); continue; }
+    if (t.lift) { guardToLift(t, dt); continue; }
+    const level = Math.abs((t.y + GUARD_H) - (ai.y + AI_H)) < 12;
+    const dx = (ai.x + AI_W / 2) - (t.x + GUARD_W / 2);
+    const inRange = level && Math.abs(dx) <= GUARD_FIRE_RANGE && ai.stun <= 0 && !t.entering;   // not from the doorway
+    if (inRange) t.chase = GUARD_CHASE; else if (t.chase > 0) t.chase -= dt;
+    if (t.lifts && !inRange) guardSeeksLift(t, key, room);
     // on another floor than Ai and no lift to him: he leaves, to come in where Ai is
     // (only when one could come in on Ai's floor; else he keeps his beat)
-    if (!level && !t.entering && dan.onGround && !(t.lifts && liftToDan(t, key)) && wayToDan(key, room)) {
-      const danFeet = dan.y + DAN_H;
-      if (t.apartFrom !== danFeet) { t.apartFrom = danFeet; t.apart = 0; t.noWay = new Set(); }   // Ai on a new floor: a fresh try
+    if (!level && !t.entering && ai.onGround && !(t.lifts && liftToAi(t, key)) && wayToAi(key, room)) {
+      const aiFeet = ai.y + AI_H;
+      if (t.apartFrom !== aiFeet) { t.apartFrom = aiFeet; t.apart = 0; t.noWay = new Set(); }   // Ai on a new floor: a fresh try
       t.apart += dt;
-      if (t.apart >= TREEN_LEAVE && !t.leaving) t.leaving = treenLeaves(t, key);
+      if (t.apart >= GUARD_LEAVE && !t.leaving) t.leaving = guardLeaves(t, key);
     } else { t.apart = 0; t.apartFrom = null; t.leaving = null; }
     if (t.leaving) {
       t.fire = false; t.dir = t.leaving === "left" ? -1 : 1;
-      t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9;
-      if (treenWalled(t, key)) { (t.noWay = t.noWay || new Set()).add(t.leaving); t.leaving = null; }   // a wall on the way out: the other edge, or he stays
-      if (t.x + TREEN_W <= 0 || t.x >= VIEW_W) {                       // out of the room; his place is taken where Ai is
+      t.x += t.dir * GUARD_RUN * dt; t.anim += dt * 9;
+      if (guardWalled(t, key)) { (t.noWay = t.noWay || new Set()).add(t.leaving); t.leaving = null; }   // a wall on the way out: the other edge, or he stays
+      if (t.x + GUARD_W <= 0 || t.x >= VIEW_W) {                       // out of the room; his place is taken where Ai is
         t.dead = true; t.gone = true;
-        state.treenClock = 0;
-        state.treenNext = TREEN_RETURN[0] + Math.random() * (TREEN_RETURN[1] - TREEN_RETURN[0]);
+        state.guardClock = 0;
+        state.guardNext = GUARD_RETURN[0] + Math.random() * (GUARD_RETURN[1] - GUARD_RETURN[0]);
       }
       continue;
     }
     t.react = inRange ? t.react + dt : 0;        // he takes a moment before he opens fire
-    const engaged = inRange && t.react >= TREEN_REACT;
+    const engaged = inRange && t.react >= GUARD_REACT;
     t.fire = engaged;
     if (inRange) {
       t.dir = dx > 0 ? 1 : -1;
-      if (Math.abs(dx) > TREEN_STAND_OFF) { t.x += t.dir * TREEN_RUN * dt; t.anim += dt * 9; }
+      if (Math.abs(dx) > GUARD_STAND_OFF) { t.x += t.dir * GUARD_RUN * dt; t.anim += dt * 9; }
       t.shot = engaged ? (t.shot || 0) + dt : 0;
-      while (t.shot >= TREEN_FIRE_PERIOD) {
-        t.shot -= TREEN_FIRE_PERIOD;
-        const tip = t.x + TREEN_W / 2 + t.dir * 13;         // the rifle's muzzle
+      while (t.shot >= GUARD_FIRE_PERIOD) {
+        t.shot -= GUARD_FIRE_PERIOD;
+        const tip = t.x + GUARD_W / 2 + t.dir * 13;         // the rifle's muzzle
         lasers.push({
           x: t.dir > 0 ? tip : tip - LASER_STEP, y: t.y + 13,
           dir: t.dir, cells: LASER_MIN + Math.floor(Math.random() * (LASER_MAX - LASER_MIN + 1)),
@@ -890,52 +890,52 @@ function updateTreens(dt) {
     } else {
       t.shot = 0;
       t.anim += dt * 9;
-      t.x += t.dir * TREEN_RUN * dt;
+      t.x += t.dir * GUARD_RUN * dt;
     }
-    if (treenWalled(t, key) && !inRange) t.dir = -t.dir;    // the room's walls stop him as they stop Ai
+    if (guardWalled(t, key) && !inRange) t.dir = -t.dir;    // the room's walls stop him as they stop Ai
     if (t.entering) {
       // in, and a few cells clear of the wall he came through, before he is one of the room's
-      if (t.x >= t.x0 + TREEN_CLEAR && t.x + TREEN_W <= t.x1 + TREEN_W - TREEN_CLEAR) t.entering = false;
+      if (t.x >= t.x0 + GUARD_CLEAR && t.x + GUARD_W <= t.x1 + GUARD_W - GUARD_CLEAR) t.entering = false;
     } else {
       if (t.x <= t.x0) { t.x = t.x0; if (!inRange) t.dir = 1; }
-      if (t.x + TREEN_W >= t.x1) { t.x = t.x1 - TREEN_W; if (!inRange) t.dir = -1; }
+      if (t.x + GUARD_W >= t.x1) { t.x = t.x1 - GUARD_W; if (!inRange) t.dir = -1; }
     }
 
-    if (dan.invuln <= 0 && !dan.onLift && overlaps(dan.x, dan.y, DAN_W, DAN_H, t.x, t.y, TREEN_W, TREEN_H)) {
-      hurtDan(18);
-      dan.vx = (dan.x < t.x ? -1 : 1) * 90;
-      dan.vy = -70;
+    if (ai.invuln <= 0 && !ai.onLift && overlaps(ai.x, ai.y, AI_W, AI_H, t.x, t.y, GUARD_W, GUARD_H)) {
+      hurtAi(18);
+      ai.vx = (ai.x < t.x ? -1 : 1) * 90;
+      ai.vy = -70;
     }
   }
 }
 
-/** A Treen shot: arms up, the room flashes, and he is gone. */
-function killTreen(t) {
+/** A guard shot: arms up, the room flashes, and he is gone. */
+function killGuard(t) {
   t.dead = true;
-  t.dying = TREEN_DEATH;
-  state.flash = TREEN_DEATH;                 // the original flashes the whole room
-  if (!state.deadTreens.has(state.room)) state.deadTreens.set(state.room, new Set());
-  state.deadTreens.get(state.room).add(t.id);
-  beeperBurst("treenHit");
+  t.dying = GUARD_DEATH;
+  state.flash = GUARD_DEATH;                 // the original flashes the whole room
+  if (!state.deadGuards.has(state.room)) state.deadGuards.set(state.room, new Set());
+  state.deadGuards.get(state.room).add(t.id);
+  beeperBurst("guardHit");
 }
 
 /** A shot's dash hits whatever it crosses; the dead shot's streak fades.
- *  A Treen's shot takes any Treen in its way but the one who fired it. */
+ *  A guard's shot takes any guard in its way but the one who fired it. */
 function laserHit(l) {
-  for (const t of treens) {
-    if (!t.dead && t.id !== l.by && overlaps(l.x, l.y, LASER_STEP, 2, t.x, t.y, TREEN_W, TREEN_H)) {
-      killTreen(t);
+  for (const t of guards) {
+    if (!t.dead && t.id !== l.by && overlaps(l.x, l.y, LASER_STEP, 2, t.x, t.y, GUARD_W, GUARD_H)) {
+      killGuard(t);
       l.cells = 0;
       if (l.friendly) state.score += 50;         // the original's fifty for a guard
     }
   }
   if (l.friendly) { gunsShotBy(l); return; }
-  if (overlaps(l.x, l.y, LASER_STEP, 2, dan.x, dan.y, DAN_W, DAN_H) &&
-             !dan.kneeling && !dan.onLift) {          // the field shields him while he rides
+  if (overlaps(l.x, l.y, LASER_STEP, 2, ai.x, ai.y, AI_W, AI_H) &&
+             !ai.kneeling && !ai.onLift) {          // the field shields him while he rides
     // the beam strikes him: he flickers, and now and then the rattle of it sounds
-    dan.hurt = Math.max(dan.hurt, 0.25);
-    if (!(dan.rattle > 0)) {
-      dan.rattle = HIT_RATTLE_EVERY;
+    ai.hurt = Math.max(ai.hurt, 0.25);
+    if (!(ai.rattle > 0)) {
+      ai.rattle = HIT_RATTLE_EVERY;
       state.energy -= HIT_ENERGY;
       rattle();
       if (state.energy <= 0) capture();
@@ -967,7 +967,7 @@ function updateLasers(dt) {
   }
   lasers = lasers.filter((l) => l.cells > 0 || l.trail.length);
 
-  if (deadHere(state.room) >= TREEN_MAX && !treens.some((t) => !t.dead)) {   // two shot here and none left: the room is safe
+  if (deadHere(state.room) >= GUARD_MAX && !guards.some((t) => !t.dead)) {   // two shot here and none left: the room is safe
     const key = state.room;
     if (!state.clearedRooms.has(key)) {
       state.clearedRooms.add(key);
@@ -976,10 +976,10 @@ function updateLasers(dt) {
   }
 }
 
-function hurtDan(amount) {
+function hurtAi(amount) {
   state.energy -= amount;
-  dan.hurt = 1.0;
-  dan.invuln = 1.0;
+  ai.hurt = 1.0;
+  ai.invuln = 1.0;
   beep(120, 0.15, "sawtooth");
   if (state.energy <= 0) capture();
 }
@@ -997,10 +997,10 @@ function capture() {
   state.score = Math.max(0, state.score - 200);
   const cell = PRISONS.get(currentRoom().zone) || START.key;
   const p = highestPlatform(ROOMS[cell]);
-  resetDan(p.x, p.y - DAN_H);
-  enterRoom(cell, p.x, p.y - DAN_H);
+  resetAi(p.x, p.y - AI_H);
+  enterRoom(cell, p.x, p.y - AI_H);
   say(tx(["AI FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
-  dan.stun = 2.2;                              // he lies where they left him before coming round
+  ai.stun = 2.2;                              // he lies where they left him before coming round
   state.nextTaunt = 4;                         // he calls to gloat once Ai wakes
 }
 
@@ -1009,7 +1009,7 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && dan.landed && overlaps(dan.x, dan.y, DAN_W, DAN_H, p.x, p.y, 8, 16)) {   // taken as he lands on it, at the bottom of the jump
+    if (!p.taken && ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, 8, 16)) {   // taken as he lands on it, at the bottom of the jump
       p.taken = true;
       state.takenItems.add(p.id);
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
@@ -1021,7 +1021,7 @@ function updatePickups() {
   for (const k of sdsParts) {
     // the parts come one at a time: the next is where the last fitted one led
     if (k.taken || k.key !== key || state.carrying || k.id !== state.fitted) continue;
-    if (dan.landed && overlaps(dan.x, dan.y, DAN_W, DAN_H, k.x, k.y, 16, 16)) {   // landed on, never just walked over
+    if (ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, k.x, k.y, 16, 16)) {   // landed on, never just walked over
       k.taken = true;
       state.carrying = true;
       state.score += 500;
@@ -1029,14 +1029,14 @@ function updatePickups() {
       // as filmed in the original: the whole screen's colours turn over three
       // times (four frames on, four off), the word where to take it comes as
       // the flashing ends and stays 3.3 s, and two seconds after it goes the
-      // Mekon is on the link for 3.5 s
+      // alien boss is on the link for 3.5 s
       state.partFlash = PART_FLASH;
       cue(PART_FLASH, "say", ["NOW TAKE IT TO THE", "SELF-DESTRUCT SYSTEM"], 3.34);
       cue(PART_FLASH + 3.34 + 2.0, "call", ["\"NO! PUT THAT DOWN!\""], 3.5);
     }
   }
   // the socket: walk to the left of the self-destruct room with a part
-  if (key === SDS_ROOM && state.carrying && dan.x <= 32 && dan.onGround) {
+  if (key === SDS_ROOM && state.carrying && ai.x <= 32 && ai.onGround) {
     state.carrying = false;
     state.fitted++;
     state.score += 1000;
@@ -1087,8 +1087,8 @@ let zapBuffer = null;
 const CUP_BITS = ["........", "...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........",
                   ".#..###.", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........"];
 const BURSTS = {
-  treenHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
-  treenGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
+  guardHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
+  guardGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
   crush: [0x80, 0x20, 0x19, 0x02, 0x5a],       // C804: a floor gun crushed
   gunShot: [0x40, 0x18, 0x21, 0x03, 0x54],     // C809: a wall or ceiling gun shot
 };
@@ -1202,8 +1202,8 @@ function drawForeground(ctx, key) {
   const [sx, sy] = s.meta.rooms[key];
   // the figures' full width, rifle and all: the drawn figure is wider than the
   // hit box, and a rifle pushed into a wall goes behind it whole, not in part
-  const boxes = [[dan.x - 20, dan.y, DAN_W + 40, DAN_H]];
-  for (const t of treens) if (!t.dead || t.dying > 0) boxes.push([t.x - 10, t.y, TREEN_W + 20, TREEN_H]);
+  const boxes = [[ai.x - 20, ai.y, AI_W + 40, AI_H]];
+  for (const t of guards) if (!t.dead || t.dying > 0) boxes.push([t.x - 10, t.y, GUARD_W + 20, GUARD_H]);
   const done = new Set();
   for (const [bx, by, bw, bh] of boxes) {
     const c0 = Math.max(0, Math.floor(bx / 8)), c1 = Math.min(29, Math.floor((bx + bw - 1) / 8));
@@ -1248,9 +1248,9 @@ function drawLiftMarks(ctx, key, room) {
     // original: the two take turns, one magenta while the other is red, swapping
     // every four frames, and both go blue for a moment as the ride begins
     const buttons = window.ROOMS_SHEET.buttons && window.ROOMS_SHEET.buttons[key];
-    const riding = dan.onLift || treens.some((t) => !t.dead && t.riding);
+    const riding = ai.onLift || guards.some((t) => !t.dead && t.riding);
     if (buttons && riding) {
-      const starting = dan.onLift && dan.onLift.at != null && state.phase - dan.onLift.at < 8 * FRAME;
+      const starting = ai.onLift && ai.onLift.at != null && state.phase - ai.onLift.at < 8 * FRAME;
       buttons.forEach(([x, y, attr], i) => {
         const paper = PALETTE[(attr >> 3) & 7];
         ctx.fillStyle = attr & 0x40 ? paper.replace("d8", "ff") : paper;
@@ -1326,14 +1326,14 @@ function drawGates(ctx, key, room) {
 }
 
 /** Which pose Ai is in now: kneeling, the moment after a shot, in the air,
- *  striding (the figure runs a four-phase cycle off `dan.anim`) or standing. */
-function danFrame() {
-  if (dan.stun > 0) return "down";
-  if (dan.onLift) return "lift";
-  if (dan.kneeling) return "kneel";
-  if (dan.fireCool > 0 && dan.onGround) return "fire";
-  if (!dan.onGround && !dan.onLift) return "jump";
-  if (Math.abs(dan.vx) > 1 && dan.onGround) return "run";
+ *  striding (the figure runs a four-phase cycle off `ai.anim`) or standing. */
+function aiFrame() {
+  if (ai.stun > 0) return "down";
+  if (ai.onLift) return "lift";
+  if (ai.kneeling) return "kneel";
+  if (ai.fireCool > 0 && ai.onGround) return "fire";
+  if (!ai.onGround && !ai.onLift) return "jump";
+  if (Math.abs(ai.vx) > 1 && ai.onGround) return "run";
   return "stand";
 }
 
@@ -1368,17 +1368,17 @@ function draw() {
   if (boss && !state.backdrop) {                      // the backdrop already holds the original's hologram
     boss.anim += 0.05;
     const bob = Math.round(Math.sin(boss.anim) * 2);
-    drawMekonSeated(ctx, Math.round(boss.x), Math.round(boss.y + bob), 24, 30, boss.anim);
+    drawBossSeated(ctx, Math.round(boss.x), Math.round(boss.y + bob), 24, 30, boss.anim);
   }
-  for (const t of treens) {
+  for (const t of guards) {
     if (t.dead && !(t.dying > 0)) continue;
-    drawTreenFigure(ctx, Math.round(t.x), Math.round(t.y), TREEN_W, TREEN_H, t.anim / 2, t.dir < 0,
+    drawGuardFigure(ctx, Math.round(t.x), Math.round(t.y), GUARD_W, GUARD_H, t.anim / 2, t.dir < 0,
                     { fire: !!t.fire, armsUp: t.dead });
   }
-  if (!(dan.hurt > 0 && Math.floor(dan.hurt * 16) % 2)) {
-    const dx = Math.round(dan.x), dy = Math.round(dan.y);
-    const pose = danFrame();
-    drawDanFigure(ctx, dx, dy, DAN_W, DAN_H, pose === "run" ? "run" : pose, (dan.anim / 2) % 1, dan.face < 0);
+  if (!(ai.hurt > 0 && Math.floor(ai.hurt * 16) % 2)) {
+    const dx = Math.round(ai.x), dy = Math.round(ai.y);
+    const pose = aiFrame();
+    drawAiFigure(ctx, dx, dy, AI_W, AI_H, pose === "run" ? "run" : pose, (ai.anim / 2) % 1, ai.face < 0);
   }
   // as in the original, the room stands in front of the figures: the walkways
   // hide their feet, the shafts and doorways hide whoever passes through them
@@ -1419,7 +1419,7 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   if (state.burst > 0) {
-    const cx = dan.x + DAN_W / 2, cy = dan.y + DAN_H / 2;
+    const cx = ai.x + AI_W / 2, cy = ai.y + AI_H / 2;
     const t = 1 - state.burst / 0.35;
     ctx.strokeStyle = C.bwhite;
     ctx.lineWidth = 1;
@@ -1434,7 +1434,7 @@ function draw() {
   }
   if (state.messageTimer > 0) {
     if (state.msgTop) drawMessage(ctx, state.msgTop, true);
-    if (state.msgBottom) drawMessage(ctx, state.msgBottom, false, state.viewer === "mekon");
+    if (state.msgBottom) drawMessage(ctx, state.msgBottom, false, state.viewer === "boss");
   } else {
     state.msgTop = state.msgBottom = null;
   }
@@ -1453,7 +1453,7 @@ function draw() {
 }
 
 /** The loading picture, after the original's: the plaque, Ai under it, the
- *  Mekon beside him - assets/title.png, drawn at the canvas's full resolution
+ *  alien boss beside him - assets/title.png, drawn at the canvas's full resolution
  *  with the plaque lettered here so the story can rename it. */
 function drawSplash(ctx) {
   const img = SHEETS.title && SHEETS.title.img;
@@ -1554,8 +1554,8 @@ function frame(now) {
       state.timeLeft = 0;
       beginEnding("lost");
     }
-    updateDan(dt);
-    updateTreens(dt);
+    updateAi(dt);
+    updateGuards(dt);
     updateGuns(dt);
     updateLasers(dt);
     updatePickups();
@@ -1574,11 +1574,11 @@ const REWIND_SECS = 5, REWIND_KEEP = 10, REWIND_STEP = 0.5;
 const history = [];        // [{age, snap}], oldest first
 let sinceSnap = REWIND_STEP;
 function snapshotPlay() {
-  return structuredClone({ dan, boss, treens, pickups, lasers, sdsParts, guns, gunShots, state });
+  return structuredClone({ ai, boss, guards, pickups, lasers, sdsParts, guns, gunShots, state });
 }
 function restorePlay(snap) {
   const s = structuredClone(snap);
-  dan = s.dan; boss = s.boss; treens = s.treens; pickups = s.pickups; lasers = s.lasers; sdsParts = s.sdsParts;
+  ai = s.ai; boss = s.boss; guards = s.guards; pickups = s.pickups; lasers = s.lasers; sdsParts = s.sdsParts;
   guns = s.guns; gunShots = s.gunShots;
   Object.assign(state, s.state);
 }
@@ -1603,7 +1603,7 @@ function rewind(secs) {
   for (const k in keys) keys[k] = false;
 }
 
-resetDan(24, 40);
+resetAi(24, 40);
 enterRoom(START.key, 24, 40);
 state.mode = "splash";
 state.story = loadStory();

@@ -47,7 +47,7 @@ const SCRIPT = [[[], 150], [['O'], 50], [['P'], 100], [['O'], 50], [['Q'], 40], 
     }
     const pos = [];
     for (let i = 0; i < b.length; i++) if (b[i].room === +room) pos.push(`${b[i].x},${b[i].y}`);
-    result[room] = { frames, left, cells, dan: a[0] ? `${a[0].x},${a[0].y}` : null, path: [...new Set(pos)].join(' ') };
+    result[room] = { frames, left, cells, ai: a[0] ? `${a[0].x},${a[0].y}` : null, path: [...new Set(pos)].join(' ') };
     console.log(room, 'frames', frames, 'left', left, 'diff cells', Object.keys(cells).length, Object.keys(cells).slice(0, 12).join(' '));
     fs.writeFileSync(OUT + outFile, JSON.stringify(result));
   }

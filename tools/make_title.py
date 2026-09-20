@@ -1,5 +1,5 @@
 """Compose the title picture from the hi-res render, laid out as the original's
-loading screen: the plaque top left, Ai's portrait under it, the Mekon's
+loading screen: the plaque top left, Ai's portrait under it, the alien boss's
 portrait to the right over a wall of blue panels.  The plaque is left blank -
 the game letters it, so the story can rename it.
 
@@ -58,7 +58,7 @@ def fit(fig, box_w, box_h):
 
 
 def tech_wall(w, h):
-    """The Mekon's backdrop: a wall of blue panels with a few lit tell-tales."""
+    """The alien boss's backdrop: a wall of blue panels with a few lit tell-tales."""
     im = Image.new("RGB", (w, h))
     d = ImageDraw.Draw(im)
     for y in range(h):                          # a slow gradient, darker at the top
@@ -92,17 +92,17 @@ def main():
     mask = figure_mask(im)
 
     # the two heads, boxed by hand on the 2816x1584 render
-    dan = cut(im, mask, (860, 20, 1420, 620))       # cap to chest
-    mekon = cut(im, mask, (1500, 130, 2000, 690))   # dome to collar
+    ai = cut(im, mask, (860, 20, 1420, 620))       # cap to chest
+    boss = cut(im, mask, (1500, 130, 2000, 690))   # dome to collar
 
     page = Image.new("RGB", (W, H), (255, 255, 255))
     d = ImageDraw.Draw(page)
 
-    # the Mekon's panel, right, over the tech wall: composed apart, so the
+    # the alien boss's panel, right, over the tech wall: composed apart, so the
     # figure is clipped to its panel and never crosses the frame's lines
     rx0, ry0, rx1, ry1 = 120 * K, 3 * K, 253 * K, 189 * K
     right = tech_wall(rx1 - rx0, ry1 - ry0)
-    mk = fit(mekon, rx1 - rx0, int((ry1 - ry0) * 1.02))
+    mk = fit(boss, rx1 - rx0, int((ry1 - ry0) * 1.02))
     mx, my = (rx1 - rx0 - mk.width) // 2, ry1 - ry0 - mk.height
     # the shadow he throws on the wall, as in the original: his silhouette in
     # black, cast to the right and down
@@ -119,7 +119,7 @@ def main():
     for y in range(left.height):
         t = y / left.height
         pd.line([(0, y), (left.width, y)], fill=(int(10 + 20 * t), int(12 + 22 * t), int(30 + 40 * t)))
-    dn = fit(dan, lx1 - lx0, int((ly1 - ly0) * 0.97))       # the cap stays clear of the line above
+    dn = fit(ai, lx1 - lx0, int((ly1 - ly0) * 0.97))       # the cap stays clear of the line above
     left.paste(dn, ((lx1 - lx0 - dn.width) // 2, ly1 - ly0 - dn.height), dn)
     page.paste(left, (lx0, ly0))
 

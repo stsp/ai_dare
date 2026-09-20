@@ -78,7 +78,7 @@ function updateEnding(dt) {
   }
 }
 
-/** The asteroid: a globe, the Mekon's world, its lands in green on cyan seas. */
+/** The asteroid: a globe, the alien boss's world, its lands in green on cyan seas. */
 function drawGlobe(ctx, x, y, r, white) {
   ctx.fillStyle = white ? C.bwhite : C.bcyan;
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();

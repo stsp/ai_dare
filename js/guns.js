@@ -130,19 +130,19 @@ function updateGuns(dt) {
       // into a wall or a floor: the dash ends
       if (walls.some((wl) => overlaps(x0, s.y, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) ||
           platforms.some((p) => s.y + h > p.y && s.y < p.y + 8 && x0 + w > p.x0 && x0 < p.x1)) { s.done = true; break; }
-      if (gunShotHitsDan(x0, s.y, w, h)) { s.done = true; break; }
+      if (gunShotHitsAi(x0, s.y, w, h)) { s.done = true; break; }
     }
   }
   gunShots = gunShots.filter((s) => !s.done);
 }
 
-/** A gun's dash reaching Ai strikes him as a Treen's beam does. */
-function gunShotHitsDan(x, y, w, h) {
-  const bh = dan.kneeling ? DAN_KNEEL_H : DAN_H;
-  if (dan.onLift || !overlaps(x, y, w, h, dan.x, dan.y + DAN_H - bh, DAN_W, bh)) return false;
-  dan.hurt = Math.max(dan.hurt, 0.25);
-  if (!(dan.rattle > 0)) {
-    dan.rattle = HIT_RATTLE_EVERY;
+/** A gun's dash reaching Ai strikes him as a guard's beam does. */
+function gunShotHitsAi(x, y, w, h) {
+  const bh = ai.kneeling ? AI_KNEEL_H : AI_H;
+  if (ai.onLift || !overlaps(x, y, w, h, ai.x, ai.y + AI_H - bh, AI_W, bh)) return false;
+  ai.hurt = Math.max(ai.hurt, 0.25);
+  if (!(ai.rattle > 0)) {
+    ai.rattle = HIT_RATTLE_EVERY;
     state.energy -= HIT_ENERGY;
     rattle();
     if (state.energy <= 0) capture();
@@ -151,22 +151,22 @@ function gunShotHitsDan(x, y, w, h) {
 }
 
 /** Floor guns stand in Ai's way: he walks into them and stops. */
-function gunsBlockDan(h, yOff) {
+function gunsBlockAi(h, yOff) {
   for (const g of guns) {
-    if (g.dead || g.type !== GUN_FLOOR || dan.vy < 0) continue;      // a jump clears it: the box is lower than his hop
-    if (overlaps(dan.x, dan.y + yOff, DAN_W, h, g.x, g.cy, 16, 8)) {
-      dan.x = dan.vx > 0 || (dan.vx === 0 && dan.x < g.x) ? g.x - DAN_W : g.x + 16;
-      dan.vx = 0;
+    if (g.dead || g.type !== GUN_FLOOR || ai.vy < 0) continue;      // a jump clears it: the box is lower than his hop
+    if (overlaps(ai.x, ai.y + yOff, AI_W, h, g.x, g.cy, 16, 8)) {
+      ai.x = ai.vx > 0 || (ai.vx === 0 && ai.x < g.x) ? g.x - AI_W : g.x + 16;
+      ai.vx = 0;
     }
   }
 }
 
 /** Coming down on a floor gun from above crushes it into a hat. */
-function gunsUnderDan(prevFeet) {
-  const feet = dan.y + DAN_H;
+function gunsUnderAi(prevFeet) {
+  const feet = ai.y + AI_H;
   for (const g of guns) {
     if (g.dead || g.type !== GUN_FLOOR) continue;
-    if (prevFeet <= g.cy + 1 && feet >= g.cy && dan.x + DAN_W > g.x && dan.x < g.x + 16) {
+    if (prevFeet <= g.cy + 1 && feet >= g.cy && ai.x + AI_W > g.x && ai.x < g.x + 16) {
       g.dead = true;
       state.deadGuns.add(g.id);
       state.score += GUN_CRUSH_SCORE;

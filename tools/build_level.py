@@ -80,7 +80,7 @@ def main():
                     help="wipe tiles the map shows but the game draws itself, as room:c0:c1:r0:r1 "
                          "(cells c0..c1, rows r0..r1), e.g. 143:13:22:6:14 - the self-destruct mechanism")
     ap.add_argument("--boss", default="",
-                    help="where the Mekon's hologram stands, as room:cell:row (his feet)")
+                    help="where the alien boss's hologram stands, as room:cell:row (his feet)")
     ap.add_argument("--from-screen", default="",
                     help="rooms to read off their own screen even where the map seems to match")
     ap.add_argument("--exclude", default="",
@@ -857,7 +857,7 @@ def main():
     js = os.path.join(os.path.dirname(args.out) or ".", "js", "level.js")
     if os.path.isdir(os.path.dirname(js)):
         with open(js, "w") as f:
-            f.write("window.DANDARE_LEVEL=")
+            f.write("window.AIDARE_LEVEL=")
             json.dump(level, f, separators=(",", ":"))
             f.write(";\n")
     kinds = defaultdict(int)
