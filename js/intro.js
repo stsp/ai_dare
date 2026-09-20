@@ -115,13 +115,15 @@ function beginIntro() {
 }
 
 const INTRO_FLY = 4.5, INTRO_CALL = 3.5, INTRO_FIGHT = 16, INTRO_SHIP = 3.5;
+/** How long the call is held: the skeleton says more than the original's boss did. */
+function introCall() { return state.story === "postal" ? 6.5 : INTRO_CALL; }
 
 function updateIntro(dt) {
   intro.t += dt;
   intro.scroll += dt * 48;
   const s = intro.ship;
-  if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), INTRO_CALL); }
-  else if (intro.phase === 1 && intro.t > INTRO_CALL) { intro.phase = 2; intro.t = 0; }
+  if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), introCall()); }
+  else if (intro.phase === 1 && intro.t > introCall()) { intro.phase = 2; intro.t = 0; }
   else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.msgTop = null; }
   else if (intro.phase === 3 && intro.t > INTRO_SHIP) { startGame(); state.score += intro.score; return; }
   if (tapped.Enter || tapped.Escape) { startGame(); state.score += intro.score; return; }   // skip the fight
@@ -161,7 +163,9 @@ function updateIntro(dt) {
     for (const b of intro.bursts) { b.x += b.vx * dt; b.y += b.vy * dt; b.t -= dt; }
     intro.bursts = intro.bursts.filter((b) => b.t > 0);
   } else {
-    s.y = 96 + Math.sin(intro.t * 2) * 2;
+    // a tall box of the skeleton's would cover her, so she rides higher over it
+    const tall = intro.phase === 1 && (state.msgBottom || []).length > 2;
+    s.y = (tall ? 62 : 96) + Math.sin(intro.t * 2) * 2;
   }
   tickMessages(dt);
   if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
