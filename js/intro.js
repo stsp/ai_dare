@@ -6,14 +6,24 @@
    run of Treen craft to shoot on the way in, and the landing. */
 
 const MENU_PAGES = [
-  ["* IPC / DAN DARE LIMITED", "* 1986  VIRGIN GAMES LTD", "WRITTEN BY THE GANG OF FIVE.", "",
+  ["© IPC / DAN DARE LIMITED", "© 1986  VIRGIN GAMES LTD", "WRITTEN BY THE GANG OF FIVE.", "",
    "PRESS 'FIRE' TO PLAY", "OR '1' FOR OPTIONS"],
   ["BEST  SCORES", "", "AAAARRRRGGHH........000500", ".RAN................000400",
    "..OUT...............000300", "...OF...............000200", "....MEMORY..........000100"],
 ];
 const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhite];
 
-const menu = { page: 0, t: 0, scroll: 0 };
+/* The line that runs along the foot of the title screen: the original's own
+   words (its credits and hellos, read out of its memory at 0xCC98), or the
+   story's tale of the post, at the original's four pixels a frame. */
+const MARQUEE = {
+  dare: "ALL PROGRAM CODE, GRAPHICS AND SOUND © GANG OF FIVE.      PART OF THE DAN DARE NOSTALGIA COLLECTION LICENSED WORLDWIDE BY DAN DARE LTD.      BASED ON THE ORIGINAL FRANK HAMPSON COMIC STRIPS.      A FEW 'HELLO'S TO SMIFFY, ANJ, LEE AND LORI, CRACKER HIGGINS, COSMIC, DUDE, NEIL DRYDEN, MICKY KINCAID, STEVE AND STU AND RACHEL AT MH, STRING, PHIL, PAULA, HAZEL, PUNKK, BY-TOR, ALL ON PRESTEL, COMPUNET AND MICRONET, UNCLE CLIVE, AND THE REST OF THE WORLD.    ..DAVE.THE.SORCERER..        ",
+  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      СКЕЛЕТ МЕКОН, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДЭР ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      НАПАРНИК ЖДЁТ В МАШИНЕ.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+};
+const MARQUEE_SPEED = 4 * 50;             // pixels a second
+const MARQUEE_K = 2;                      // the big face, two pixels to one
+
+const menu = { page: 0, t: 0, scroll: 0, marquee: 0 };
 
 function updateMenu(dt) {
   menu.t += dt;
@@ -21,6 +31,25 @@ function updateMenu(dt) {
     menu.scroll += dt * 140;
     if (menu.scroll > 120) { menu.page = 1 - menu.page; menu.t = 0; menu.scroll = 0; }
   }
+  menu.marquee += dt * MARQUEE_SPEED;
+  const round = textWidth(MARQUEE[state.story] || MARQUEE.dare) * MARQUEE_K + SCREEN_W;
+  if (menu.marquee > round) menu.marquee -= round;
+}
+
+/** The title screen's frame is the whole screen's, as the original's: no
+ *  panel, and the running line along its foot. */
+function drawTitleFrame(ctx) {
+  ctx.fillStyle = C.white;
+  ctx.fillRect(VIEW_X - 2, VIEW_Y - 2, VIEW_W + 4, SCREEN_H - VIEW_Y - 4);
+  ctx.fillStyle = C.black;
+  ctx.fillRect(VIEW_X - 1, VIEW_Y - 1, VIEW_W + 2, SCREEN_H - VIEW_Y - 6);
+}
+function drawMarquee(ctx) {
+  const text = MARQUEE[state.story] || MARQUEE.dare;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(VIEW_X, SCREEN_H - 22, VIEW_W, 16); ctx.clip();
+  drawBig(ctx, text, VIEW_X + VIEW_W - menu.marquee, SCREEN_H - 20, C.bwhite, MARQUEE_K);
+  ctx.restore();
 }
 
 /** Text at double size, as the original's wide italic face reads. */
@@ -42,7 +71,7 @@ function drawTitleBox(ctx) {
 }
 
 function drawMenu(ctx) {
-  drawFrame(ctx);
+  drawTitleFrame(ctx);
   ctx.save();
   ctx.translate(VIEW_X, VIEW_Y);
   ctx.fillStyle = C.black;
@@ -54,7 +83,7 @@ function drawMenu(ctx) {
   drawTitleBox(ctx);
   // the page, its lines each in a colour of their own that keeps changing
   ctx.save();
-  ctx.beginPath(); ctx.rect(0, 56, VIEW_W, VIEW_H - 56); ctx.clip();
+  ctx.beginPath(); ctx.rect(0, 56, VIEW_W, SCREEN_H - 24 - VIEW_Y - 56); ctx.clip();   // down to the running line
   const tick = Math.floor(state.phase * 10);
   const lines = MENU_PAGES[menu.page];
   const y0 = 64 - menu.scroll;
@@ -68,7 +97,7 @@ function drawMenu(ctx) {
   const on = cheatsOn();
   if (on.length) drawText(ctx, "CHEATS: " + on.join(" "), 4, VIEW_H - 9, C.bmagenta);
   ctx.restore();
-  drawPanel(ctx, state);
+  drawMarquee(ctx);
 }
 
 // ------------------------------------------------------------------ the intro
