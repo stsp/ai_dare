@@ -26,8 +26,8 @@ door, `PARTS` fits all five parts and starts the eleven-minute countdown,
 ## The mission
 
 The alien boss's hollowed-out asteroid is on a collision course with Earth. Ai has
-two hours to find the five SDS keys — one in each colour-coded sector — and
-carry them to the self-destruct room.
+two hours to find the five parts of its self-destruct mechanism — one in each
+colour-coded sector — and carry them to the self-destruct room.
 
 As in the original there are no lives: running out of energy gets Ai captured
 and dumped in a cell, costing ten minutes off the clock. His guards patrol and
@@ -68,11 +68,11 @@ let Ai reach, linked only as the original let him move. Nothing is generated.
 
 ## What is in so far
 
-The survey from a fresh start reaches **24 rooms**: the surface, the sector
-below it and its lifts, down to the self-destruct room. The original opens the
-door to each further sector when a part of the self-destruct mechanism is
-brought back and fitted, so the survey has to be resumed from that state; that
-is the next piece of work, and until then the game has one sector.
+The surveys, resumed from each state the fitted parts open up, reach **121
+rooms** across all five sectors — the surface, every sector below it and its
+lifts, the hologram room and the way back to the ship. `level.json` is built
+from them, and `tools/emu/route_follow.js` walks the whole recorded
+walkthrough through the recreation: 293 moves of 293 with every part fitted.
 
 A play-test harness walks the recreation the same way the survey walked the
 original, so a room the survey reached but the recreation cannot is caught

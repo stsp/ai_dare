@@ -27,7 +27,7 @@ const STORY = {
   "INTRUDER ALERT !": ["ЧУЖОЙ НА РАЙОНЕ !"],
   "AI IS NOW IN SECTOR #": ["МЕНТ ТЕПЕРЬ В КВАРТАЛЕ #"],
   "\"I SAY....IT'S A HOLOGRAM !\"": ["\"ГЛЯДИ-КА... ЭТО ГОЛОГРАММА !\""],
-  "\"NO! PUT THAT DOWN!\"": ["\"НЕТ! ПОЛОЖИ НА МЕСТО!\""],
+  "\"NO! PUT THAT DOWN!\"": ["\"МЕНТ! ПОЛОЖИ НА МЕСТО!\""],
   "THE SELF DESTRUCT ROOM": ["СОРТИРОВОЧНАЯ СТАНЦИЯ"],
   "AI CAN CRUSH FLOOR GUNS": ["МЕНТ ДАВИТ НАПОЛЬНЫЕ ПУШКИ"],
   "WALK TO THE LEFT|TO FIT THE PART": ["ИДИ ВЛЕВО,", "ЧТОБЫ СДАТЬ ЯЩИК"],

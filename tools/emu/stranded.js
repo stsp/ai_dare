@@ -18,22 +18,26 @@ const { chromium } = require('playwright-core');
         const cx = Math.round((pd.x0 + pd.x1) / 2) * 8;
         state.clearedRooms.delete(key); state.deadGuards.delete(key);
         state.mode = 'play'; guards = []; state.pursuer = null; resetAi(cx, pd.y * 8 - AI_H); enterRoom(key, cx, pd.y * 8 - AI_H); ai.invuln = 1e9;
+        for (let i = 0; i < 120; i++) updateAi(1 / 60);            // let him come to rest: put down he may drop, or stand on a block
+        if (state.mode !== 'play' || state.room !== key || !ai.onGround) continue;   // he did not stay where he was put
         guards = [];
         const gx = Math.round((pg.x0 + pg.x1) / 2) * 8;
         if (guardInWall(key, gx, pg.y * 8 - GUARD_H)) continue;
         const g = { id: state.guardSeq++, x: gx, y: pg.y * 8 - GUARD_H, x0: pg.x0 * 8, x1: pg.x1 * 8 - GUARD_W, dir: 1, anim: 0, dead: false, react: 0, lifts: false };
         guards.push(g);
         if (liftToAi(g, key)) continue;                    // a lift would bring him: another test's business
-        if (!wayToAi(key, ROOMS[key])) continue;          // no doorway onto Ai's floor: he keeps his beat, rightly
+        if (!wayToAi(key, ROOMS[key])) continue;          // no doorway onto the floor he came to rest on: he keeps his beat, rightly
+        const hisFloors = aiFloors(ROOMS[key]).map((p) => p.y * 8);   // the floor a guard would have to reach to be with him
         cases++;
         let gone = false, came = false;
         for (let i = 0; i < 15 * 60; i++) {
           if (state.mode !== 'play' || state.room !== key) break;
           updateAi(1 / 60); updateGuards(1 / 60); updateLasers(1 / 60);
           if (g.gone) gone = true;
-          if (guards.some((t) => !t.dead && t !== g && Math.abs(t.y + GUARD_H - (ai.y + AI_H)) < 12)) came = true;
+          if (guards.some((t) => !t.dead && t !== g && hisFloors.some((f) => Math.abs(t.y + GUARD_H - f) < 12))) came = true;
           if (gone && came) break;
         }
+        if (state.mode !== 'play' || state.room !== key) continue;   // knocked out of the room mid-test: nothing to judge
         if (!gone && !g.leaving && g.noWay && g.noWay.size && !guardLeaves(g, key)) { noEdge++; continue; }   // walls on every way out
         if (!gone && !guardLeaves(g, key) && !(g.noWay && g.noWay.size)) { noEdge++; continue; }
         if (gone) left++; if (came) arrived++;
