@@ -6,10 +6,29 @@
  * "WELL DONE SIR! THIS COULD GET YOU YOUR KNIGHTHOOD!" on black; then GAME
  * OVER plaques, each in its own colours, pile up over the screen for three
  * seconds, and the title page comes back. Running out of time ends with the
- * plaques too. */
+ * plaques too.
+ *
+ * The postal story ends its own way: no countdown, because nothing was armed.
+ * The skeleton comes on the link to say what the boxes really held, and then
+ * Mars goes up. */
 
-const ENDING_PHASES = { getaway: 2.4, countdown: 2.0, blast: 3.4, knighthood: 2.0, banner: 2.6, plaques: 3.2 };
-const ENDING_NEXT = { getaway: "countdown", countdown: "blast", blast: "knighthood", knighthood: "plaques", banner: "plaques", plaques: null };
+const ENDING_PHASES = { getaway: 2.4, countdown: 2.0, skeleton: SKELETON_CALL.reduce((t, p) => t + p[1], 0), blast: 3.4, knighthood: 2.0, banner: 2.6, plaques: 3.2 };
+const ENDING_NEXT = { getaway: "countdown", countdown: "blast", skeleton: "blast", blast: "knighthood", knighthood: "plaques", banner: "plaques", plaques: null };
+/** The postal story tells the end differently: the skeleton on the link in
+ *  place of the countdown, and Mars where the asteroid hung. */
+function endingNext(phase) {
+  if (phase === "getaway" && state.story === "postal") return "skeleton";
+  return ENDING_NEXT[phase];
+}
+/** Which of the skeleton's pages is up at `t`, and how far into it we are. */
+function skeletonPage(t) {
+  let at = 0;
+  for (const [lines, secs] of SKELETON_CALL) {
+    if (t < at + secs) return { lines, into: t - at };
+    at += secs;
+  }
+  return { lines: SKELETON_CALL[SKELETON_CALL.length - 1][0], into: 0 };
+}
 const COUNTDOWN = ["FIVE", "FOUR", "THREE", "TWO", "ONE"];
 const PLAQUE_COLOURS = [[C.byellow, C.bred], [C.bcyan, C.bblue], [C.bgreen, C.black], [C.white, C.bmagenta]];
 const PLAQUE_W = 48, PLAQUE_H = 32, PLAQUES_PER_SECOND = 36;
@@ -20,6 +39,7 @@ const ENDING_SOUNDS = {
   getaway: [[0, () => rattle(35)], [0.105, () => zap()], [0.225, () => zap()]],
   blast: [[0, () => zap()], [0.095, () => rattle(30)], [0.4, () => zap()], [1.85, () => zap()], [2.2, () => zap()], [2.235, () => rattle(30)], [2.36, () => zap()]],
   plaques: [[0.5, () => zap()], [0.62, () => zap()], [1.55, () => rattle(65)], [2.55, () => zap()], [2.67, () => zap()], [2.7, () => rattle(30)]],
+  skeleton: [[0, () => rattle(40)], [3.0, () => zap()], [6.8, () => rattle(70)]],
 };
 
 let ending = null;
@@ -72,23 +92,25 @@ function updateEnding(dt) {
     }
   }
   if (e.t >= ENDING_PHASES[e.phase] || tapped.Escape) {
-    const next = tapped.Escape ? null : ENDING_NEXT[e.phase];
+    const next = tapped.Escape ? null : endingNext(e.phase);
     if (!next) { ending = null; state.mode = "title"; menu.t = 0; return; }
     e.phase = next; e.t = 0;
   }
 }
 
-/** The asteroid: a globe, the alien boss's world, its lands in green on cyan seas. */
+/** The asteroid: a globe, the alien boss's world, its lands in green on cyan
+ *  seas - or, in the postal story, Mars, red with its yellow deserts. */
 function drawGlobe(ctx, x, y, r, white) {
-  ctx.fillStyle = white ? C.bwhite : C.bcyan;
+  const mars = state.story === "postal";
+  ctx.fillStyle = white ? C.bwhite : (mars ? C.bred : C.bcyan);
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   if (white) return;
   ctx.save();
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
-  ctx.fillStyle = C.bgreen;
+  ctx.fillStyle = mars ? C.byellow : C.bgreen;
   ctx.beginPath(); ctx.ellipse(x - 3, y - 2, 4, 3, 0.4, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x + 3, y + 3, 3, 2.2, -0.5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = C.bblue;                            // the shadowed limb
+  ctx.fillStyle = mars ? C.red : C.bblue;             // the shadowed limb
   ctx.beginPath(); ctx.arc(x + 3, y - 3, r, 0, Math.PI * 2); ctx.rect(x - r, y - r, r * 2, r * 2);
   ctx.fill("evenodd");
   ctx.restore();
@@ -112,6 +134,27 @@ function drawEndingCity(ctx, offset) {
       ctx.fillStyle = C.byellow; ctx.fillRect(x + 1, y - 14, 3, 2);
     }
   }
+}
+
+/** The link window, as the panel's viewer shows it in play: a framed screen
+ *  that locks on out of interference, then his face behind the scan lines. */
+function drawLink(ctx, x, y, s, t) {
+  ctx.fillStyle = C.white; ctx.fillRect(x - 1, y - 1, s + 2, s + 2);
+  ctx.fillStyle = C.black; ctx.fillRect(x, y, s, s);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, s, s); ctx.clip();
+  if (t < 0.5) {
+    for (let j = 0; j < s; j += 3) {
+      ctx.fillStyle = (Math.floor(state.phase * 40) + j) % 6 < 3 ? C.white : C.black;
+      ctx.fillRect(x, y + j, s, 2);
+    }
+  } else {
+    ctx.fillStyle = "#0a1a2a"; ctx.fillRect(x, y, s, s);
+    drawBossHead(ctx, x, y + 2, s, state.phase * 6);
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    for (let j = 0; j < s; j += 2) ctx.fillRect(x, y + j, s, 1);
+  }
+  ctx.restore();
 }
 
 function drawPlaque(ctx, p) {
@@ -149,6 +192,12 @@ function drawEnding(ctx) {
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1);
       }
     }
+  } else if (e.phase === "skeleton") {
+    drawStarfield(ctx, "space");
+    drawGlobe(ctx, GLOBE.x, GLOBE.y, GLOBE.r, false);
+    const page = skeletonPage(e.t);
+    drawLink(ctx, 20, 78, 48, e.t);
+    drawMessage(ctx, page.lines, true);
   } else if (e.phase === "knighthood") {
     drawMessage(ctx, tx(["WELL DONE SIR! THIS COULD", "GET YOU YOUR KNIGHTHOOD!"]), true);
   } else if (e.phase === "banner") {
