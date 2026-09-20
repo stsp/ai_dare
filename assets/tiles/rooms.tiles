@@ -1,0 +1,389 @@
+# Ai Dare - room tileset
+#
+# Original artwork, drawn for this project. Nothing here is traced from or
+# extracted out of any other game.
+#
+# Format:
+#   tile <name> ink=<colour> paper=<colour> [bright] [tiles=h|v|hv]
+#   followed by exactly 8 rows of 8 characters ('#' = ink, '.' = paper)
+#
+# Colours are the 8 ZX Spectrum attribute names:
+#   black blue red magenta green cyan yellow white
+# "bright" selects the bright half of the palette. A single 8x8 cell carries
+# exactly one ink and one paper, which is the constraint the original hardware
+# imposed and the look this project is after.
+#
+# "tiles=" records which directions a cell repeats seamlessly, so the room
+# builder knows which cells it may run in a strip.
+
+# ---------------------------------------------------------------- floors
+
+tile floor_deck ink=cyan paper=black tiles=h
+########
+########
+#...#...
+.#...#..
+..#...#.
+########
+........
+........
+
+tile floor_edge_l ink=cyan paper=black
+.#######
+.#######
+.#..#...
+.#...#..
+.#....#.
+.#######
+........
+........
+
+tile floor_edge_r ink=cyan paper=black
+#######.
+#######.
+...#..#.
+..#...#.
+.#....#.
+#######.
+........
+........
+
+tile floor_grate ink=cyan paper=black tiles=hv
+########
+#.#.#.#.
+#.#.#.#.
+########
+#.#.#.#.
+#.#.#.#.
+########
+#.#.#.#.
+
+# -------------------------------------------------------------- platforms
+
+tile platform ink=yellow paper=black tiles=h
+........
+........
+########
+########
+#.#.#.#.
+########
+........
+........
+
+tile platform_end_l ink=yellow paper=black
+........
+........
+.#######
+.#######
+.#.#.#.#
+.#######
+........
+........
+
+tile platform_end_r ink=yellow paper=black
+........
+........
+#######.
+#######.
+#.#.#.#.
+#######.
+........
+........
+
+# ------------------------------------------------------------- lift rails
+
+tile lift_rail ink=white paper=black tiles=v
+..#..#..
+..#..#..
+..#..#..
+..####..
+..#..#..
+..#..#..
+..#..#..
+..####..
+
+tile lift_car ink=yellow paper=black bright
+..#..#..
+.######.
+#.#..#.#
+########
+#......#
+.######.
+..#..#..
+..#..#..
+
+tile rail_h ink=white paper=black tiles=h
+........
+########
+#.#..#.#
+########
+........
+........
+........
+........
+
+# ---------------------------------------------------------------- columns
+
+tile column_cap ink=white paper=black
+########
+########
+.######.
+.#....#.
+.#.##.#.
+.#.##.#.
+.#....#.
+.#....#.
+
+tile column_mid ink=white paper=black tiles=v
+.#....#.
+.#.##.#.
+.#.##.#.
+.#....#.
+.#....#.
+.#.##.#.
+.#.##.#.
+.#....#.
+
+tile column_base ink=white paper=black
+.#....#.
+.#.##.#.
+.#.##.#.
+.#....#.
+.######.
+########
+########
+........
+
+# ------------------------------------------------------------------ pipes
+
+tile pipe_h ink=green paper=black tiles=h
+........
+########
+#......#
+#.####.#
+#......#
+########
+........
+........
+
+tile pipe_v ink=green paper=black tiles=v
+.#.#..#.
+.#.#..#.
+.#.#..#.
+.######.
+.#.#..#.
+.#.#..#.
+.#.#..#.
+.######.
+
+tile pipe_bend_rd ink=green paper=black
+........
+.#######
+.#......
+.#.#####
+.#.#....
+.#.#..#.
+.#.#..#.
+.#.#..#.
+
+tile pipe_bend_ld ink=green paper=black
+........
+#######.
+......#.
+#####.#.
+....#.#.
+.#..#.#.
+.#..#.#.
+.#..#.#.
+
+tile pipe_bend_ru ink=green paper=black
+.#.#..#.
+.#.#..#.
+.#.#..#.
+.#.#####
+.#......
+.#######
+........
+........
+
+tile pipe_bend_lu ink=green paper=black
+.#..#.#.
+.#..#.#.
+.#..#.#.
+#####.#.
+......#.
+#######.
+........
+........
+
+tile pipe_joint ink=green paper=black
+........
+########
+##....##
+##.##.##
+##.##.##
+##....##
+########
+........
+
+# ------------------------------------------------------------ doors, gates
+
+tile door_top ink=magenta paper=black bright
+########
+#......#
+#.####.#
+#.#..#.#
+#.#..#.#
+#.####.#
+#......#
+#......#
+
+tile door_bot ink=magenta paper=black bright
+#......#
+#......#
+#....##.
+#....##.
+#......#
+#......#
+#......#
+########
+
+tile door_open ink=magenta paper=black bright
+########
+##....##
+##....##
+##....##
+##....##
+##....##
+##....##
+########
+
+tile gate ink=red paper=black tiles=v
+#.#..#.#
+#.#..#.#
+#.#..#.#
+########
+#.#..#.#
+#.#..#.#
+#.#..#.#
+########
+
+# ------------------------------------------------------------------- lamps
+
+tile lamp ink=yellow paper=black bright
+..####..
+.#....#.
+##....##
+.#....#.
+..####..
+...##...
+..#..#..
+.#....#.
+
+# ------------------------------------------------------------------ panels
+
+tile panel_wall ink=white paper=black
+########
+#.#..#.#
+#......#
+#......#
+#......#
+#......#
+#.#..#.#
+########
+
+tile panel_control ink=cyan paper=black bright
+########
+#.####.#
+#.#..#.#
+#.####.#
+#......#
+#.#.#.#.
+#......#
+########
+
+tile wall_plate ink=blue paper=black bright tiles=hv
+.#######
+.#......
+.#......
+.#......
+.#......
+.#......
+.#......
+.#......
+
+# ------------------------------------------------------------------ props
+
+tile crate ink=yellow paper=black
+########
+#.####.#
+##.##.##
+#.#..#.#
+#.#..#.#
+##.##.##
+#.####.#
+########
+
+tile cup ink=yellow paper=black bright
+........
+.######.
+.#....#.
+.#....##
+.#....#.
+.#....##
+..####..
+...##...
+
+# ------------------------------------------------------------------- guns
+
+tile gun_turret ink=red paper=black bright
+........
+..###...
+.#...###
+.#...###
+.#####..
+.#####..
+#######.
+########
+
+tile gun_tripod ink=red paper=black bright
+..#####.
+.##...##
+..#####.
+...##...
+...##...
+..#..#..
+.#....#.
+##....##
+
+tile gun_wall ink=red paper=black bright
+##......
+##......
+#####...
+##..####
+##..####
+#####...
+##......
+##......
+
+# --------------------------------------------------------------- mechanism
+
+tile mechanism_gear ink=magenta paper=black
+.##..##.
+.##..##.
+########
+###..###
+###..###
+########
+.##..##.
+.##..##.
+
+tile mechanism_piston ink=magenta paper=black
+########
+#......#
+#.####.#
+#......#
+...##...
+...##...
+...##...
+...##...
