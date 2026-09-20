@@ -508,6 +508,7 @@ function resetAi(x, y) {
     x, y, vx: 0, vy: 0, face: 1,
     onGround: false, kneeling: false, turning: 0,
     onLift: null, liftLatch: false, shaftFall: false, jumpT: 0, jumping: false, anim: 0, hurt: 0, invuln: 0, fireCool: 0, stun: 0,
+    airTop: y + AI_H,        // the highest his feet have been since he left the ground
   };
 }
 
@@ -826,6 +827,9 @@ function updateAi(dt) {
       if (ai.jumpT > 0) ai.jumpT -= dt; else ai.vx = 0;
     }
 
+    // how high he has been since leaving the ground: what he comes down from
+    const feetNow = ai.y + AI_H;
+    ai.airTop = ai.onGround ? feetNow : Math.min(ai.airTop, feetNow);
     ai.vy += GRAVITY * dt;
     const h = ai.kneeling ? AI_KNEEL_H : AI_H;
     const yOff = AI_H - h;
