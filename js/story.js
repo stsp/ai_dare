@@ -15,7 +15,7 @@ Object.assign(GLYPHS, {
 
 // the original's lines, joined by |, and what the policeman's story says instead
 const STORY = {
-  "AI DARE": ["МЕНТ ДАРЕ"],
+  "AI DARE": ["ДАН ДАРЕ"],
   "COP'S ADVENTURE": ["ПРИКЛЮЧЕНИЯ МЕНТА"],
   "PRESS 'FIRE' TO PLAY": ["ЖМИ 'ОГОНЬ' ЧТОБЫ ИГРАТЬ"],
   "OR '1' FOR OPTIONS": ["ИЛИ '1' ДЛЯ НАСТРОЕК"],
@@ -57,9 +57,9 @@ const STORY = {
   "CONTROL  OPTIONS": ["НАСТРОЙКИ"],
   "KEYBOARD Q,A,O,P,SPACE": ["КЛАВИШИ Q,A,O,P,ПРОБЕЛ"],
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
-  "STORY: AI DARE": ["СЮЖЕТ: МЕНТ ДАРЕ"],
+  "STORY: AI DARE": ["СЮЖЕТ: ДАН ДАРЕ"],
   "THE ASTEROID IS COMING.": ["ПОЧТА ПРОПАЛА."],
-  "AI DARE GOES IN ALONE.": ["МЕНТ ДАРЕ ИДЁТ ОДИН."],
+  "AI DARE GOES IN ALONE.": ["ДАН ДАРЕ ИДЁТ ОДИН."],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
   "PRESS SPACE": ["НАЖМИ ПРОБЕЛ"],
 };
