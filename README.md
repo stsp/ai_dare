@@ -101,6 +101,14 @@ game can animate them, and `--button` finds the call buttons beside them,
 which blink while a lift is moving as the original's do: the two take turns,
 magenta and red, swapping every four frames, both blue as the ride begins.
 
+The game itself keeps no picture of a room. `tools/make_tiles.py` takes those
+cleaned screens apart into the 8x8 cells the original builds its rooms from -
+324 of them for all 121 rooms, `assets/tiles.png`, 3.5 kB - and writes each
+room as a layout over that set (`js/rooms_tiles.js`); `js/tiles.js` lays the
+layouts out at load. Redrawing the world means redrawing the tiles. What each
+tile is - floor, ledge, column, pipe, rail, lamp, panel, gun, door, mechanism -
+is in [docs/tiles.md](docs/tiles.md) and `docs/tile-chart.png`.
+
 Ai, the guards and the alien boss are the project's own figures, drawn as
 vectors (`js/figures.js`), with Ai's head from the project's own renders.
 
@@ -122,6 +130,9 @@ python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/
     --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
     --objects data/emu/guns.json --solid data/emu/solid.json --button data/emu/room_146.scr:4:16 --arrow data/emu/masks/arrow_83.scr:12:23 \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
+python3 tools/make_tiles.py --check                         # -> assets/tiles.png + js/rooms_tiles.js, checked against the screens
+python3 tools/inventory_tiles.py                            # what the rooms are made of -> docs/tile-chart.png
+NODE_PATH=... node tools/check_tiles.js out.png             # the rooms the game builds from the tiles, saved to compare
 ```
 
 ## Lifts only where the original has them
