@@ -1,5 +1,5 @@
 "use strict";
-/* Ai Dare: Pilot of the Future - a recreation of a ZX Spectrum game.
+/* Ai Dare: Cop's Adventure - a recreation of a ZX Spectrum game.
  *
  * The level geometry is derived from the game's screen map by
  * tools/extract_level.py; this file is the engine that plays it.
@@ -1465,7 +1465,7 @@ function drawSplash(ctx) {
   const k = canvas.width / SCREEN_W;                // screen pixels per game pixel
   if (img) ctx.drawImage(img, 0, 0, SCREEN_W * k, SCREEN_H * k);
   // the plaque: 2..176 by 2..41 on the picture's 256x192
-  const [a, b] = [tx(["AI DARE"])[0], tx(["PILOT OF THE FUTURE"])[0]];
+  const [a, b] = [tx(["AI DARE"])[0], tx(["COP'S ADVENTURE"])[0]];
   ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
   ctx.fillStyle = C.byellow;
   ctx.font = `bold ${Math.round(21 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
@@ -1497,8 +1497,8 @@ function drawTitle() {
   ctx.scale(2, 2);
   drawText(ctx, tx(["AI DARE"])[0], 0, 0, C.byellow);
   ctx.restore();
-  drawText(ctx, "PILOT OF THE FUTURE",
-           (VIEW_W - textWidth("PILOT OF THE FUTURE")) / 2, 34, C.bwhite);
+  drawText(ctx, "COP'S ADVENTURE",
+           (VIEW_W - textWidth("COP'S ADVENTURE")) / 2, 34, C.bwhite);
 
   const lines = [
     "THE MEKON'S ASTEROID IS ON",
