@@ -611,7 +611,6 @@ function note(lines, secs) {
 }
 
 function startGame() {
-  music.stop();                                   // the game has its own noises
   state.mode = "play";
   state.timeLeft = START_TIME;
   state.energy = ENERGY_MAX;
@@ -1667,7 +1666,7 @@ function frame(now) {
   state.phase += dt;
 
   if (state.mode === "splash") {
-    if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; music.start(); }
+    if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; music.start("title"); }
   } else if (state.mode === "title") {
     updateMenu(dt);
     if (tapped.Enter || tapped.Space) beginIntro();
