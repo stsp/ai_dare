@@ -177,8 +177,8 @@ original was filmed doing with its gun routine put back:
 * a wall gun (a fist, facing left or right) fires the way it faces; one hit
   from the rifle and it is gone, the wall bare where it hung;
 * a ceiling gun (a visor, high on the wall) fires down at a slant; it can be
-  shot only from a floor level with it - most cannot be - and leaves a ragged
-  hole in the wall.
+  shot only from a floor level with it - most cannot be - and what is left of
+  it is its own drawing with most of its pixels blown out of it.
 
 A shot moves a cell every three frames and ends at the screen's edge, in a
 floor or wall, or in Ai. Each frame the original rolls one chance in four of
