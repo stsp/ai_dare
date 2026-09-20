@@ -57,6 +57,8 @@ let ending = null;
 function beginEnding(outcome) {
   state.mode = "ending";
   state.msgTop = state.msgBottom = null;
+  // a loss opens on the banner, which is already the closing screen
+  if (outcome !== "won") music.start("ending");
   ending = {
     outcome, phase: outcome === "won" ? "getaway" : "banner", t: 0,
     sparks: [], plaques: [], due: 0, bursts: 0, r: rng((Date.now() & 0xffff) ^ 0xe11d), played: new Set(), sounds: [],
@@ -118,8 +120,11 @@ function updateEnding(dt) {
   if (e.t >= ENDING_PHASES[e.phase] || tapped.Escape) {
     const next = tapped.Escape ? null : endingNext(e.phase);
     if (!next || next === "plaques") hush(e);          // nothing sounds over the plaques
-    if (!next) { ending = null; state.mode = "title"; menu.t = 0; return; }
+    if (!next) { ending = null; state.mode = "title"; menu.t = 0; music.start("title"); return; }
     e.phase = next; e.t = 0;
+    // the closing theme comes in once the blast is behind us, so it does not
+    // play against the world going up
+    if (next === "knighthood" || next === "banner") music.start("ending");
   }
 }
 

@@ -1670,7 +1670,7 @@ function frame(now) {
   state.phase += dt;
 
   if (state.mode === "splash") {
-    if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; }
+    if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; music.start("title"); }
   } else if (state.mode === "title") {
     updateMenu(dt);
     if (tapped.Enter || tapped.Space) beginIntro();

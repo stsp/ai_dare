@@ -105,6 +105,7 @@ function drawMenu(ctx) {
 const intro = { t: 0, phase: 0, ship: { x: 60, y: 96, vy: 0 }, shots: [], foes: [], bursts: [], nextFoe: 0, scroll: 0, score: 0 };
 
 function beginIntro() {
+  music.stop();                                   // the theme ends with the menu
   state.mode = "intro";
   state.timeLeft = START_TIME;
   state.score = 0;
