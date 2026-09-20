@@ -55,7 +55,7 @@ const DIR = process.argv[3] || 'bfs';
     let last = await state(), still = 0, fellAt = null;
     for (let t = 0; t < 900; t += 6) {
       // jumping as he goes: a pit or a gap in a walkway is crossed this way.
-      // The laser is tapped, not held, so it keeps firing at the Treens in
+      // The laser is tapped, not held, so it keeps firing at the guards in
       // the way; something on the floor that stops him is hopped over
       const fire = Math.floor(t / 6) % 2 === 0;
       const hop = still > 0 && still % 6 === 0;

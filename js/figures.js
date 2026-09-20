@@ -4,8 +4,8 @@
    drawn in screen units (the canvas is scaled up, so curves stay smooth) and
    these are original designs, not the game's bitmaps.
 
-   The Treens are the Mekon's soldiers: tall green reptile-men in dark
-   uniform, a knitted hat pulled low and a rifle held out before them. The Mekon is a
+   The guards are the alien boss's soldiers: tall green reptile-men in dark
+   uniform, a knitted hat pulled low and a rifle held out before them. The alien boss is a
    tiny green body under a vast domed skull, riding a floating dish. */
 
 const FIG = {
@@ -36,9 +36,9 @@ function figEllipse(ctx, fill, cx, cy, rx, ry, width) {
   figShape(ctx, fill, (c) => c.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2), width);
 }
 
-/** A Treen guard facing right, feet at the bottom of the box (bx, by, bw, bh).
+/** A guard facing right, feet at the bottom of the box (bx, by, bw, bh).
  *  `phase` runs the walk (0..1 per stride); `flip` turns him to the left. */
-function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
+function drawGuardFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   ctx.save();
   ctx.translate(bx + bw / 2, by + bh);         // origin between his feet
   if (flip) ctx.scale(-1, 1);
@@ -147,9 +147,9 @@ function drawTreenFigure(ctx, bx, by, bw, bh, phase, flip, act) {
   ctx.restore();
 }
 
-/** The Mekon's head, filling a square of side `s` at (x, y): the great dome,
+/** The alien boss's head, filling a square of side `s` at (x, y): the great dome,
  *  the small face beneath it. `t` moves the eyes a little. */
-function drawMekonHead(ctx, x, y, s, t) {
+function drawBossHead(ctx, x, y, s, t) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s / 26, s / 26);
@@ -181,9 +181,9 @@ function drawMekonHead(ctx, x, y, s, t) {
   ctx.restore();
 }
 
-/** The Mekon seated on his floating dish, drawn in the box (bx, by, bw, bh);
+/** The alien boss seated on his floating dish, drawn in the box (bx, by, bw, bh);
  *  `t` drives the eyes and the dish's glow. */
-function drawMekonSeated(ctx, bx, by, bw, bh, t) {
+function drawBossSeated(ctx, bx, by, bw, bh, t) {
   ctx.save();
   ctx.translate(bx, by);
   const k = bw / 24;
@@ -204,7 +204,7 @@ function drawMekonSeated(ctx, bx, by, bw, bh, t) {
   });
   figEllipse(ctx, FIG.skin, 6.5, 21, 1.3, 1, 0.4);
   figEllipse(ctx, FIG.skin, 17.5, 21, 1.3, 1, 0.4);
-  drawMekonHead(ctx, 3, 0, 18, t);
+  drawBossHead(ctx, 3, 0, 18, t);
   ctx.restore();
 }
 
@@ -212,7 +212,7 @@ function drawMekonSeated(ctx, bx, by, bw, bh, t) {
    cap, rifle out before him. `pose` is "stand", "run", "jump", "kneel" or
    "fire"; `phase` runs the stride (0..1) and the muzzle flash. The box is
    Ai's hit box, feet at its bottom, as with the rendered frames. */
-const DAN_FIG = {
+const AI_FIG = {
   skin: "#f1c9a0", skinShade: "#c99468", hair: "#3b2a1a",
   cap: "#5f7d3a", capShade: "#3d5325", capBand: "#1d2736", peak: "#151515",
   tunic: "#5a7a35", tunicShade: "#3c5322", tunicLight: "#8cae5c",
@@ -242,7 +242,7 @@ function headForScale(hs, k) {
   return cur;
 }
 
-function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
+function drawAiFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   ctx.save();
   ctx.translate(bx + bw / 2, by + bh);
   if (flip) ctx.scale(-1, 1);
@@ -264,8 +264,8 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   // the body seen from the side, as the head is: one shoulder before the
   // other, a narrow chest, both arms out along the rifle, legs in profile
   const leg = (dx, swing, back) => {
-    const cloth = back ? DAN_FIG.trouserShade : DAN_FIG.trouser;
-    const boot = back ? DAN_FIG.bootShade : DAN_FIG.boot;
+    const cloth = back ? AI_FIG.trouserShade : AI_FIG.trouser;
+    const boot = back ? AI_FIG.bootShade : AI_FIG.boot;
     const shoe = (ax, ay) => figShape(ctx, boot, (c) => {           // a boot from the side: toe forward, a heel
       c.moveTo(ax - 1.4, ay - 2.4); c.lineTo(ax + 1.2, ay - 2.4); c.lineTo(ax + 3.4, ay - 0.8);
       c.lineTo(ax + 3.2, ay); c.lineTo(ax - 1.6, ay);
@@ -297,18 +297,18 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   };
   leg(-0.4, -stride, true);
   // torso in profile: a straight back, the chest out in front, the shoulder rounded at the top
-  figShape(ctx, DAN_FIG.tunic, (c) => {
+  figShape(ctx, AI_FIG.tunic, (c) => {
     c.moveTo(-1.9 + lean * 0.4, hip);
     c.lineTo(-2.1 + lean, top + 1.5);
     c.quadraticCurveTo(-2 + lean, top - 0.3, 0.2 + lean, top - 0.3);
     c.quadraticCurveTo(2.6 + lean, top - 0.3, 2.7 + lean, top + 2.5);
     c.quadraticCurveTo(3 + lean, top + 6, 2.2 + lean * 0.4, hip);
   });
-  ctx.fillStyle = DAN_FIG.tunicShade;
+  ctx.fillStyle = AI_FIG.tunicShade;
   ctx.fillRect(-1.9 + lean * 0.4, hip - 2.6, 4.1, 1.3);   // belt
-  ctx.fillStyle = DAN_FIG.buckle;
+  ctx.fillStyle = AI_FIG.buckle;
   ctx.fillRect(1.2 + lean * 0.4, hip - 2.8, 1, 1.7);
-  ctx.fillStyle = DAN_FIG.tunicLight;
+  ctx.fillStyle = AI_FIG.tunicLight;
   ctx.fillRect(-0.6 + lean, top + 0.8, 1.6, 0.7);       // shoulder flash
   leg(0.4, stride, false);
   // the far arm, behind the near one, reaching to the gun's fore-end
@@ -316,7 +316,7 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   const gy = top + 6;
   ctx.save();
   if (lift) { ctx.translate(sx, sy); ctx.rotate(0.95); ctx.translate(-sx, -sy); }   // arms and gun swung down at his side
-  figShape(ctx, DAN_FIG.tunicShade, (c) => {
+  figShape(ctx, AI_FIG.tunicShade, (c) => {
     c.moveTo(sx - 0.6, sy - 0.2); c.lineTo(sx + 1.6, sy - 0.6); c.lineTo(sx + 5.4, gy - 0.4); c.lineTo(sx + 8.4, gy - 0.2);
     c.lineTo(sx + 8.4, gy + 1.6); c.lineTo(sx + 5, gy + 1.6); c.lineTo(sx + 1.4, sy + 2.2);
   });
@@ -324,50 +324,50 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
   // receiver with sights, a pistol grip and a curved magazine hanging under
   // it, a short barrel out front
   const g = lean;
-  figShape(ctx, DAN_FIG.gunShade, (c) => {                          // stock: a bar back to the butt plate
+  figShape(ctx, AI_FIG.gunShade, (c) => {                          // stock: a bar back to the butt plate
     c.moveTo(-1 + g, gy + 0.3); c.lineTo(-4.4 + g, gy + 0.3); c.lineTo(-4.4 + g, gy - 0.3); c.lineTo(-5.2 + g, gy - 0.3);
     c.lineTo(-5.2 + g, gy + 2.6); c.lineTo(-4.4 + g, gy + 2.6); c.lineTo(-4.4 + g, gy + 1.2); c.lineTo(-1 + g, gy + 1.2);
   }, 0.5);
-  figShape(ctx, DAN_FIG.gun, (c) => {                               // receiver and barrel
+  figShape(ctx, AI_FIG.gun, (c) => {                               // receiver and barrel
     c.moveTo(-1.6 + g, gy - 0.5); c.lineTo(9 + g, gy - 0.5); c.lineTo(9 + g, gy + 0.2); c.lineTo(12.3 + g, gy + 0.2);
     c.lineTo(12.3 + g, gy + 1.3); c.lineTo(9 + g, gy + 1.3); c.lineTo(9 + g, gy + 2); c.lineTo(-1.6 + g, gy + 2);
   }, 0.5);
-  ctx.fillStyle = DAN_FIG.gunShade;
+  ctx.fillStyle = AI_FIG.gunShade;
   ctx.fillRect(-1.6 + g, gy + 1.3, 10.6, 0.7);                     // the receiver's underside
   ctx.fillRect(-0.6 + g, gy - 1.3, 0.8, 0.8);                      // rear sight
   ctx.fillRect(8 + g, gy - 1.3, 0.7, 0.8);                         // front sight
   ctx.fillRect(12.2 + g, gy, 1, 1.5);                              // muzzle
-  ctx.fillStyle = DAN_FIG.gunLight;
+  ctx.fillStyle = AI_FIG.gunLight;
   ctx.fillRect(-1.2 + g, gy - 0.2, 10, 0.5);                       // light along the top of the receiver
-  figShape(ctx, DAN_FIG.gunShade, (c) => {                          // pistol grip, raked back
+  figShape(ctx, AI_FIG.gunShade, (c) => {                          // pistol grip, raked back
     c.moveTo(4.4 + g, gy + 2); c.lineTo(6.2 + g, gy + 2); c.lineTo(5.6 + g, gy + 5); c.lineTo(3.7 + g, gy + 5);
   }, 0.5);
-  figShape(ctx, DAN_FIG.gunShade, (c) => {                          // the magazine, curving forward
+  figShape(ctx, AI_FIG.gunShade, (c) => {                          // the magazine, curving forward
     c.moveTo(7 + g, gy + 2); c.lineTo(8.8 + g, gy + 2); c.lineTo(9.6 + g, gy + 5.4); c.quadraticCurveTo(9.8 + g, gy + 7, 8.6 + g, gy + 7.2);
     c.lineTo(7.4 + g, gy + 7); c.quadraticCurveTo(7.6 + g, gy + 4.6, 7 + g, gy + 2);
   }, 0.5);
-  ctx.fillStyle = DAN_FIG.glow;
+  ctx.fillStyle = AI_FIG.glow;
   ctx.fillRect(12.4 + g, gy + 0.3, 1, 1);                          // the muzzle's charge
   if (pose === "fire") {                              // the shot leaving the muzzle
-    ctx.fillStyle = DAN_FIG.flash;
+    ctx.fillStyle = AI_FIG.flash;
     ctx.beginPath();
     ctx.moveTo(13.4 + g, gy + 0.8); ctx.lineTo(17.5 + g, gy - 1.5); ctx.lineTo(16 + g, gy + 0.8); ctx.lineTo(17.5 + g, gy + 3);
     ctx.closePath(); ctx.fill();
   }
   // the near arm: down from the shoulder to the elbow, forward to the grip
-  figShape(ctx, DAN_FIG.tunic, (c) => {
+  figShape(ctx, AI_FIG.tunic, (c) => {
     c.moveTo(sx - 1.4, sy); c.lineTo(sx + 1, sy - 0.4); c.lineTo(sx + 3.4, gy - 0.2); c.lineTo(sx + 5, gy);
     c.lineTo(sx + 5, gy + 1.8); c.lineTo(sx + 2.6, gy + 1.8); c.lineTo(sx + 0.2, sy + 2.6);
   });
-  figEllipse(ctx, DAN_FIG.skin, sx + 4.8, gy + 2.2, 1.5, 1.2, 0.5);    // the near hand on the pistol grip
-  figEllipse(ctx, DAN_FIG.skin, sx + 8.4, gy + 1.6, 1.5, 1.1, 0.5);    // the far hand at the magazine's front
+  figEllipse(ctx, AI_FIG.skin, sx + 4.8, gy + 2.2, 1.5, 1.2, 0.5);    // the near hand on the pistol grip
+  figEllipse(ctx, AI_FIG.skin, sx + 8.4, gy + 1.6, 1.5, 1.1, 0.5);    // the far hand at the magazine's front
   ctx.restore();
-  // head: the rendered one (assets/dan_head.png, cut from the run frame) on
+  // head: the rendered one (assets/ai_head.png, cut from the run frame) on
   // a short neck; drawn by hand only until it has loaded
   const hx = lean + 0.2, hy = top - 1;
-  ctx.fillStyle = DAN_FIG.skinShade;
+  ctx.fillStyle = AI_FIG.skinShade;
   ctx.fillRect(hx - 1.2, hy - 1.2, 2.4, 2);          // neck
-  const hs = typeof SHEETS !== "undefined" && SHEETS.dan_head;
+  const hs = typeof SHEETS !== "undefined" && SHEETS.ai_head;
   if (hs) {
     const w = hs.meta.w / hs.meta.scale, h = hs.meta.h / hs.meta.scale;   // his head in screen units
     const m = ctx.getTransform(); const src = headForScale(hs, Math.hypot(m.a, m.b));   // the canvas scale, whichever way he lies
@@ -378,37 +378,37 @@ function drawDanFigure(ctx, bx, by, bw, bh, pose, phase, flip) {
     ctx.restore();
     return;
   }
-  figShape(ctx, DAN_FIG.skin, (c) => {
+  figShape(ctx, AI_FIG.skin, (c) => {
     c.moveTo(hx - 2.6, hy - 5.5); c.lineTo(hx - 2.6, hy - 2.2); c.quadraticCurveTo(hx - 2.5, hy - 0.8, hx - 0.6, hy - 0.8);
     c.lineTo(hx + 1.6, hy - 0.8); c.quadraticCurveTo(hx + 3.2, hy - 1.2, hx + 3.2, hy - 3); c.lineTo(hx + 3.2, hy - 5.5);
   }, 0.5);
-  ctx.fillStyle = DAN_FIG.hair;
+  ctx.fillStyle = AI_FIG.hair;
   ctx.fillRect(hx - 2.6, hy - 5.6, 1.4, 1.8);         // sideburn
-  ctx.fillStyle = DAN_FIG.skinShade;
+  ctx.fillStyle = AI_FIG.skinShade;
   ctx.fillRect(hx + 1.2, hy - 4.2, 1.6, 0.5);         // brow
   ctx.fillRect(hx + 2.4, hy - 3.6, 0.9, 1.3);         // nose
   ctx.fillRect(hx + 0.6, hy - 1.9, 1.8, 0.5);         // mouth
-  ctx.fillStyle = DAN_FIG.hair;
+  ctx.fillStyle = AI_FIG.hair;
   ctx.fillRect(hx + 1.4, hy - 3.7, 0.9, 0.8);         // eye
   // the cap of the renders: a dark band with a gold strap round the head,
   // a low olive crown that reaches back and rises to its front, where the
   // badge sits, and a short black peak angled down over the eyes
-  figShape(ctx, DAN_FIG.capBand, (c) => {             // the band
+  figShape(ctx, AI_FIG.capBand, (c) => {             // the band
     c.moveTo(hx - 3.6, hy - 5.0); c.lineTo(hx + 4.0, hy - 5.0); c.lineTo(hx + 4.0, hy - 6.3); c.lineTo(hx - 3.6, hy - 6.3);
   }, 0.45);
-  ctx.fillStyle = DAN_FIG.buckle;
+  ctx.fillStyle = AI_FIG.buckle;
   ctx.fillRect(hx - 1.6, hy - 5.9, 5.2, 0.5);         // the strap across the front
-  figShape(ctx, DAN_FIG.cap, (c) => {                 // the crown: its top a straight rise from the back to a sharp corner at the front
+  figShape(ctx, AI_FIG.cap, (c) => {                 // the crown: its top a straight rise from the back to a sharp corner at the front
     c.moveTo(hx - 5.6, hy - 6.3);
     c.lineTo(hx - 4.8, hy - 7.4);
     c.lineTo(hx + 4.4, hy - 9.2);                     // the sharp top corner
     c.lineTo(hx + 5.8, hy - 6.3);
   }, 0.45);
-  ctx.fillStyle = DAN_FIG.capShade;
+  ctx.fillStyle = AI_FIG.capShade;
   ctx.fillRect(hx - 5.4, hy - 6.8, 11, 0.5);          // the crown's seam
-  ctx.fillStyle = DAN_FIG.buckle;
+  ctx.fillStyle = AI_FIG.buckle;
   ctx.fillRect(hx + 2.8, hy - 8.3, 1.2, 1.1);         // badge at the front of the crown
-  figShape(ctx, DAN_FIG.peak, (c) => {                // the peak: a sharp point out over the eyes
+  figShape(ctx, AI_FIG.peak, (c) => {                // the peak: a sharp point out over the eyes
     c.moveTo(hx + 1.6, hy - 5.3); c.lineTo(hx + 8.2, hy - 4.0); c.lineTo(hx + 6.0, hy - 3.6); c.lineTo(hx + 1.6, hy - 4.3);
   }, 0.45);
   ctx.restore();

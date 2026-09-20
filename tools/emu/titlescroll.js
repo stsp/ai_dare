@@ -1,5 +1,5 @@
 // the original's title screen from the z80 the emulator boots with: step frames, measure the bottom line's scroll
-const { boot } = require('/home/user/dandare/tools/emu/emu_lib');
+const { boot } = require('./emu_lib');
 (async () => {
   const E = await boot();
   const p = E.page;

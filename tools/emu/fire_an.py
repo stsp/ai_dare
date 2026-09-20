@@ -7,7 +7,7 @@ def bits(d):
     return img
 fs=sorted(glob.glob(f'{name}_[0-9][0-9][0-9].scr')); imgs=[bits(open(f,'rb').read()) for f in fs]
 st=np.stack(imgs); bg=(st.mean(axis=0)>0.5)
-# dan sprite bbox from frame 0 diff vs bg? use the union of diffs in a narrow band: find the bullet row = row with most diff frames
+# ai sprite bbox from frame 0 diff vs bg? use the union of diffs in a narrow band: find the bullet row = row with most diff frames
 diffc=np.array([ (im!=bg)[:152].sum(axis=1) for im in imgs]).sum(axis=0)
 row=int(np.argmax(diffc)); print('bullet row', row, 'frames', len(imgs))
 # per-frame dash cells on the row

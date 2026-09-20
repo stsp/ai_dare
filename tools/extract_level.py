@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Derive the level data from the speccy.cz screen map.
 
-The map (https://maps.speccy.cz/maps/DanDare1.png) is a montage of the game's
+The map, published at maps.speccy.cz, is a montage of the game's
 rooms. Measured from the image:
 
   * a room is 240x144 px - 30x18 character cells - matching the play window in
@@ -38,7 +38,11 @@ from collections import deque
 import numpy as np
 from PIL import Image
 
-MAP_URL = "https://maps.speccy.cz/maps/DanDare1.png"
+# The screen map is not in the repository: it is the original's, and the
+# site that publishes it names the game. Pass the file as the `map`
+# argument, or set AIDARE_MAP_URL to where a copy can be fetched from.
+MAP_URL = os.environ.get("AIDARE_MAP_URL", "")
+MAP_SITE = "maps.speccy.cz"
 
 X0, Y0, RW, RH, CS = 31, 39, 240, 144, 8
 TW, TH = RW // CS, RH // CS            # 30 x 18 cells
@@ -64,7 +68,10 @@ EMPTY, DECOR, RAIL, BAND, WALL, FIELD = 0, 1, 2, 3, 4, 5
 def load_map(path):
     if path:
         return Image.open(path).convert("RGB")
-    tmp = os.path.join(tempfile.gettempdir(), "DanDare1.png")
+    if not MAP_URL:
+        sys.exit(f"pass the screen map's file, or set AIDARE_MAP_URL to a copy "
+                 f"of it (the map is published at {MAP_SITE})")
+    tmp = os.path.join(tempfile.gettempdir(), "screen_map.png")
     if not os.path.exists(tmp):
         print(f"downloading {MAP_URL} ...", file=sys.stderr)
         urllib.request.urlretrieve(MAP_URL, tmp)
@@ -448,7 +455,7 @@ def main():
         rooms[key]["reach"] = 1 if key in seen else 0
 
     level = {
-        "source": MAP_URL,
+        "source": MAP_SITE,
         "grid": {"rows": reader.rows, "cols": reader.cols},
         "room": {"w": TW, "h": TH, "cell": CS},
         "sectors": sectors,
@@ -462,7 +469,7 @@ def main():
     js = os.path.join(os.path.dirname(args.out) or ".", "js", "level.js")
     if os.path.isdir(os.path.dirname(js)):
         with open(js, "w") as f:
-            f.write("window.DANDARE_LEVEL=")
+            f.write("window.AIDARE_LEVEL=")
             json.dump(level, f, separators=(",", ":"))
             f.write(";\n")
     print(f"{len(rooms)} rooms, {len(sectors)} sectors; "

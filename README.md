@@ -2,7 +2,7 @@
 
 A browser game after a ZX Spectrum platformer of the 1980s, built by reading the game's room layouts out of the
 published screen map at
-[maps.speccy.cz](https://maps.speccy.cz/maps/DanDare1.png).
+[maps.speccy.cz](https://maps.speccy.cz/).
 
 Open `index.html` in a browser. No build step, no dependencies, no server.
 
@@ -52,7 +52,7 @@ leaves him hanging in the field to step off onto an upper floor. The scripts
 are in `tools/emu/`, with what they need and where the numbers come from.
 
 **What each room looks like** comes from the published map at
-[maps.speccy.cz](https://maps.speccy.cz/maps/DanDare1.png), which is a montage
+[maps.speccy.cz](https://maps.speccy.cz/), which is a montage
 of the game's screens. Measured from it: a room is 240×144 px (30×18 cells),
 rooms tile at `x = 31 + 240·col, y = 39 + 144·row`, and that origin sits on
 the Spectrum's attribute grid (99.7% of cells hold at most two colours).
@@ -115,10 +115,10 @@ python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/g
     --geometry level_map.json --parts 83:5,148:6,185:26,255:23,56:12 --slot 143 --from-screen 117 \
     --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 --clear 143:13:22:6:14 \
     --fake-lifts data/emu/phantom_lifts.json -o level.json                                            # -> level.json + js/level.js
-python3 tools/make_sprites.py                               # the pose renders (kept out of the repository) -> assets/dan.png
+python3 tools/make_sprites.py                               # the pose renders (kept out of the repository) -> assets/ai.png
 python3 tools/make_title.py                                 # the render -> assets/title.png
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
-    --erase data/emu/masks/dan_14.scr:11:16:3:6,data/emu/masks/treen_212.scr:10:15:1:4,data/emu/masks/treen_89.scr:6:10:20:23 \
+    --erase data/emu/masks/ai_14.scr:11:16:3:6,data/emu/masks/guard_212.scr:10:15:1:4,data/emu/masks/guard_89.scr:6:10:20:23 \
     --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
     --objects data/emu/guns.json --solid data/emu/solid.json --button data/emu/room_146.scr:4:16 --arrow data/emu/masks/arrow_83.scr:12:23 \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
@@ -208,7 +208,9 @@ thirty-year-old game's design, not an attempt to reissue it.
 
 ## Sources
 
-* Screen map — [maps.speccy.cz](https://maps.speccy.cz/maps/DanDare1.png)
-* Screenshots and release data — [Spectrum Computing](https://spectrumcomputing.co.uk/entry/1235/ZX-Spectrum/Dan_Dare_Pilot_of_the_Future)
-* [MZY Games' *DARE*](https://mzygames.itch.io/dare), a modern remake, whose
-  gameplay clips informed the sprite work and panel layout
+* Screen map — the original's room montage, published at
+  [maps.speccy.cz](https://maps.speccy.cz/). It is not in this repository;
+  `tools/extract_level.py` takes it as an argument.
+* Screenshots and release data — [Spectrum Computing](https://spectrumcomputing.co.uk/)
+* [MZY Games' *DARE*](https://mzygames.itch.io/dare), a modern remake of the
+  same game, whose gameplay clips informed the sprite work and panel layout

@@ -16,28 +16,28 @@ const { chromium } = require('playwright-core');
       for (const pd of wide) for (const pg of wide) {
         if (Math.abs(pd.y - pg.y) < 2) continue;
         const cx = Math.round((pd.x0 + pd.x1) / 2) * 8;
-        state.clearedRooms.delete(key); state.deadTreens.delete(key);
-        state.mode = 'play'; treens = []; state.pursuer = null; resetDan(cx, pd.y * 8 - DAN_H); enterRoom(key, cx, pd.y * 8 - DAN_H); dan.invuln = 1e9;
-        treens = [];
+        state.clearedRooms.delete(key); state.deadGuards.delete(key);
+        state.mode = 'play'; guards = []; state.pursuer = null; resetAi(cx, pd.y * 8 - AI_H); enterRoom(key, cx, pd.y * 8 - AI_H); ai.invuln = 1e9;
+        guards = [];
         const gx = Math.round((pg.x0 + pg.x1) / 2) * 8;
-        if (treenInWall(key, gx, pg.y * 8 - TREEN_H)) continue;
-        const g = { id: state.treenSeq++, x: gx, y: pg.y * 8 - TREEN_H, x0: pg.x0 * 8, x1: pg.x1 * 8 - TREEN_W, dir: 1, anim: 0, dead: false, react: 0, lifts: false };
-        treens.push(g);
-        if (liftToDan(g, key)) continue;                    // a lift would bring him: another test's business
-        if (!wayToDan(key, ROOMS[key])) continue;          // no doorway onto Ai's floor: he keeps his beat, rightly
+        if (guardInWall(key, gx, pg.y * 8 - GUARD_H)) continue;
+        const g = { id: state.guardSeq++, x: gx, y: pg.y * 8 - GUARD_H, x0: pg.x0 * 8, x1: pg.x1 * 8 - GUARD_W, dir: 1, anim: 0, dead: false, react: 0, lifts: false };
+        guards.push(g);
+        if (liftToAi(g, key)) continue;                    // a lift would bring him: another test's business
+        if (!wayToAi(key, ROOMS[key])) continue;          // no doorway onto Ai's floor: he keeps his beat, rightly
         cases++;
         let gone = false, came = false;
         for (let i = 0; i < 15 * 60; i++) {
           if (state.mode !== 'play' || state.room !== key) break;
-          updateDan(1 / 60); updateTreens(1 / 60); updateLasers(1 / 60);
+          updateAi(1 / 60); updateGuards(1 / 60); updateLasers(1 / 60);
           if (g.gone) gone = true;
-          if (treens.some((t) => !t.dead && t !== g && Math.abs(t.y + TREEN_H - (dan.y + DAN_H)) < 12)) came = true;
+          if (guards.some((t) => !t.dead && t !== g && Math.abs(t.y + GUARD_H - (ai.y + AI_H)) < 12)) came = true;
           if (gone && came) break;
         }
-        if (!gone && !g.leaving && g.noWay && g.noWay.size && !treenLeaves(g, key)) { noEdge++; continue; }   // walls on every way out
-        if (!gone && !treenLeaves(g, key) && !(g.noWay && g.noWay.size)) { noEdge++; continue; }
+        if (!gone && !g.leaving && g.noWay && g.noWay.size && !guardLeaves(g, key)) { noEdge++; continue; }   // walls on every way out
+        if (!gone && !guardLeaves(g, key) && !(g.noWay && g.noWay.size)) { noEdge++; continue; }
         if (gone) left++; if (came) arrived++;
-        if (!gone) stuck.push(`${key}: guard on feet ${pg.y * 8} (beat ${g.x0}-${g.x1}) never left, at ${g.x.toFixed(0)}, Ai on ${pd.y * 8}; room now ${state.room} dan ${dan.x.toFixed(0)},${dan.y.toFixed(0)} ground ${dan.onGround} mode ${state.mode} wayToDan ${wayToDan(key, ROOMS[key])} apart ${(g.apart || 0).toFixed(1)} leaving ${g.leaving} noWay ${[...(g.noWay || [])]}`);
+        if (!gone) stuck.push(`${key}: guard on feet ${pg.y * 8} (beat ${g.x0}-${g.x1}) never left, at ${g.x.toFixed(0)}, Ai on ${pd.y * 8}; room now ${state.room} ai ${ai.x.toFixed(0)},${ai.y.toFixed(0)} ground ${ai.onGround} mode ${state.mode} wayToAi ${wayToAi(key, ROOMS[key])} apart ${(g.apart || 0).toFixed(1)} leaving ${g.leaving} noWay ${[...(g.noWay || [])]}`);
         else if (!came) bad.push(`${key}: guard left but none came to Ai's floor ${pd.y * 8} in 15 s`);
       }
     }

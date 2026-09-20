@@ -1,4 +1,4 @@
-// Film a Treen being shot in the original: screen dumps every 2 frames while firing.
+// Film a guard being shot in the original: screen dumps every 2 frames while firing.
 const { boot, OUT } = require('./emu_lib');
 const fs = require('fs');
 const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1], SP: [7, 1] };

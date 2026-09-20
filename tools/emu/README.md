@@ -25,18 +25,18 @@ edge; every room's screen is dumped as `room_N.scr`. The game keeps its
 room number at `0x6297`, Ai's position at `0xC012` (y) and `0xC013` (x, in
 cells), found by watching which bytes follow the keys.
 
-    DANDARE_WORK=work node tools/emu/emu_bfs.js start.json
+    AIDARE_WORK=work node tools/emu/emu_bfs.js start.json
 
 `tools/match_rooms.py` then says which room of the map each screen is, and
 `tools/build_level.py` assembles the level from the graph and the map's
 geometry. `--gate a:b:n` puts a door between two rooms that opens after `n`
 parts, `--label N:seed:blockers` announces the rooms reachable from `seed`
 (inside its zone, not through `blockers`) as sector `N` and shifts the later
-sectors up by one, and `--boss room:cell:row` seats the Mekon hologram.
+sectors up by one, and `--boss room:cell:row` seats the alien boss hologram.
 
 ## The rest of the harness
 
-All scripts take the working directory from `DANDARE_WORK` (default: the
+All scripts take the working directory from `AIDARE_WORK` (default: the
 current directory) and the browser from `CHROME`; the game is expected on
 `http://127.0.0.1:8801/` (the repository root served as is) and the
 emulator page on `http://127.0.0.1:8802/`.
@@ -94,7 +94,7 @@ emulator page on `http://127.0.0.1:8802/`.
 * `shot.js ROOM CELL OUT.png [fire|kneel]` draws one frame of the game with
   Ai put down at that cell (`FITTED=n` sets the parts fitted) and saves the
   canvas at 4x: how a change looks is checked here, next to the original's
-  screen, before it is pushed. `treenwalls.js` runs every room's every floor
+  screen, before it is pushed. `guardwalls.js` runs every room's every floor
   for twenty seconds of guards and reports any guard inside a wall.
   `clearroom.js` shoots the guards of every floor of every room as they come
   and fails a floor where one is left alive off screen or inside a wall, or
@@ -108,7 +108,7 @@ emulator page on `http://127.0.0.1:8802/`.
   of the pickup (the screen turned over), the gap between pulses and the
   messages, and logs when the flash and each message come and go: as the
   original was filmed, the flash for 0.48 s, "NOW TAKE IT" for 3.3 s from
-  its end, two seconds of quiet, then the Mekon for 3.5 s. `rewindtest.js`
+  its end, two seconds of quiet, then the alien boss for 3.5 s. `rewindtest.js`
   walks Ai for eight seconds, presses Backspace, and checks he and all else
   are as they were five seconds before.
 * `titlescroll.js` boots the original past its loading picture and measures

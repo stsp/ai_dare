@@ -15,24 +15,24 @@ const { chromium } = require('playwright-core');
       if (unguardedRoom(key, r) || entryOnlyRoom(key, r)) continue;
       for (const p of r.platforms.filter((p) => p.x1 - p.x0 >= 5)) {
         const cx = Math.round((p.x0 + p.x1) / 2) * 8;
-        state.clearedRooms.delete(key); state.deadTreens.delete(key);
-        state.mode = 'play'; treens = []; state.pursuer = null; resetDan(cx, p.y * 8 - DAN_H); enterRoom(key, cx, p.y * 8 - DAN_H); dan.invuln = 1e9;
+        state.clearedRooms.delete(key); state.deadGuards.delete(key);
+        state.mode = 'play'; guards = []; state.pursuer = null; resetAi(cx, p.y * 8 - AI_H); enterRoom(key, cx, p.y * 8 - AI_H); ai.invuln = 1e9;
         floors++;
         let kills = 0, hidden = null;
         for (let i = 0; i < 60 * 60 && !state.clearedRooms.has(key); i++) {
           if (state.mode !== 'play' || state.room !== key) break;
-          state.treenClock += 0.1;
-          updateDan(1 / 60); updateTreens(1 / 60); updateLasers(1 / 60);
-          for (const t of treens) {
+          state.guardClock += 0.1;
+          updateAi(1 / 60); updateGuards(1 / 60); updateLasers(1 / 60);
+          for (const t of guards) {
             if (t.dead) continue;
-            if ((t.x < 0 || t.x + TREEN_W > VIEW_W) && !t.riding) hidden = `alive off screen at ${t.x.toFixed(1)},${t.y}`;
-            if (!t.riding && treenInWall(key, t.x, t.y)) hidden = `alive in a wall at ${t.x.toFixed(1)},${t.y}`;
-            if (i % 30 === 0 && !t.riding) { killTreen(t); kills++; }
+            if ((t.x < 0 || t.x + GUARD_W > VIEW_W) && !t.riding) hidden = `alive off screen at ${t.x.toFixed(1)},${t.y}`;
+            if (!t.riding && guardInWall(key, t.x, t.y)) hidden = `alive in a wall at ${t.x.toFixed(1)},${t.y}`;
+            if (i % 30 === 0 && !t.riding) { killGuard(t); kills++; }
           }
           if (hidden) break;
         }
         if (hidden) bad.push(`${key} feet ${p.y * 8}: ${hidden}`);
-        else if (!state.clearedRooms.has(key)) bad.push(`${key} feet ${p.y * 8}: not safe after ${kills} kills, alive ${treens.filter((t) => !t.dead).length}, dead here ${(state.deadTreens.get(key) || new Set()).size}`);
+        else if (!state.clearedRooms.has(key)) bad.push(`${key} feet ${p.y * 8}: not safe after ${kills} kills, alive ${guards.filter((t) => !t.dead).length}, dead here ${(state.deadGuards.get(key) || new Set()).size}`);
       }
     }
     return { floors, bad };

@@ -15,22 +15,22 @@ const { chromium } = require('playwright-core');
       const plats = r.platforms.filter((p) => p.x1 - p.x0 >= 5);
       for (const p of plats) {
         const cx = Math.round((p.x0 + p.x1) / 2) * 8;
-        state.mode = 'play'; treens = []; state.pursuer = null; resetDan(cx, p.y * 8 - DAN_H); enterRoom(key, cx, p.y * 8 - DAN_H); dan.invuln = 1e9; dan.energy = 999;
+        state.mode = 'play'; guards = []; state.pursuer = null; resetAi(cx, p.y * 8 - AI_H); enterRoom(key, cx, p.y * 8 - AI_H); ai.invuln = 1e9; ai.energy = 999;
         state.clearedRooms.delete(key);
         seen.rooms++;
         for (let i = 0; i < 20 * 60; i++) {
           if (state.mode !== 'play') break;
-          state.treenClock += 0.5;                               // hurry them in
-          updateDan(1 / 60); updateTreens(1 / 60);
+          state.guardClock += 0.5;                               // hurry them in
+          updateAi(1 / 60); updateGuards(1 / 60);
           if (state.room !== key) break;
-          for (const t of treens) {
+          for (const t of guards) {
             if (t.dead || t.riding) continue;
-            for (const wl of wallsOf(key)) if (overlaps(t.x, t.y, TREEN_W, TREEN_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
+            for (const wl of wallsOf(key)) if (overlaps(t.x, t.y, GUARD_W, GUARD_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) {
               bad.push(`${key} feet ${p.y * 8}: guard at ${t.x.toFixed(1)},${t.y} in wall ${wl.x0}-${wl.x1} rows ${wl.y0 / 8}-${wl.y1 / 8}${t.entering ? ' entering' : ''}`);
               t.dead = true;
             }
           }
-          seen.spawned = Math.max(seen.spawned, treens.length);
+          seen.spawned = Math.max(seen.spawned, guards.length);
         }
       }
     }

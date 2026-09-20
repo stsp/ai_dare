@@ -1,6 +1,6 @@
 #!/bin/bash
 # Play the RZX in Fuse at real speed and save a snapshot every INTERVAL seconds between START and END (wall = game seconds).
-S=${DANDARE_WORK:-$PWD}   # holds dandare.rzx; snapshots go to $S/OUTDIR
+S=${AIDARE_WORK:-$PWD}   # holds original.rzx; snapshots go to $S/OUTDIR
 START=$1; END=$2; INTERVAL=$3; OUTDIR=$4
 mkdir -p $S/$OUTDIR; cd $S/$OUTDIR
 Xvfb :95 -screen 0 800x600x24 -nolisten tcp > /dev/null 2>&1 &
@@ -8,7 +8,7 @@ XPID=$!
 sleep 2
 export DISPLAY=:95
 T0=$(date +%s.%N)
-fuse --playback $S/dandare.rzx --speed 100 --no-sound --no-autosave-settings > $S/fuse_snaps.log 2>&1 &
+fuse --playback $S/original.rzx --speed 100 --no-sound --no-autosave-settings > $S/fuse_snaps.log 2>&1 &
 FPID=$!
 sleep 3
 WID=$(xdotool search --name Fuse | head -1)

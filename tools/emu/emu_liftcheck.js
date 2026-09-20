@@ -2,7 +2,7 @@
 // him to the call's cell, press up or down, and watch his height. A grav-lift carries him steadily;
 // a jump peaks ten pixels up and comes back; a fall needs no key at all. Calls that do not ride are
 // phantoms - a jump or a fall at a gap's edge that the survey took for a ride.
-//   node emu_liftcheck.js SNAP_INDEX.json OUT.json [--place]   (DANDARE_WORK holds the snapshots; level.json in cwd)
+//   node emu_liftcheck.js SNAP_INDEX.json OUT.json [--place]   (AIDARE_WORK holds the snapshots; level.json in cwd)
 // With --place, the calls no walk could reach are retried with Ai put straight on the cell (his x and y poked).
 const { boot, OUT, POKES } = require('./emu_lib');
 const fs = require('fs');

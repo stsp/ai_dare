@@ -33,7 +33,7 @@ const [snap, name, script] = process.argv.slice(2);
     const recs = await E.page.evaluate(([k, n, t]) => __run(k, n, t), [keys, +n, t]);
     for (const r of recs) {
       if (r.scr) fs.writeFileSync(`${OUT}${name}_${String(r.t).padStart(4, '0')}.scr`, Buffer.from(r.scr));
-      if (r.guns) { const g = []; for (let i = 0; i < 32 && !(r.guns[i] === 255 && r.guns[i + 1] === 255); i += 4) g.push(`${r.guns[i].toString(16)}:${r.guns[i + 1].toString(16)}`); if (r.vars) vars.push([r.t, r.vars]); log.push(`${r.t} room ${r.room} dan ${r.x},${r.y} guns ${g.join(' ')} shots ${r.shots.map((b) => b.toString(16)).join(' ')}`); }
+      if (r.guns) { const g = []; for (let i = 0; i < 32 && !(r.guns[i] === 255 && r.guns[i + 1] === 255); i += 4) g.push(`${r.guns[i].toString(16)}:${r.guns[i + 1].toString(16)}`); if (r.vars) vars.push([r.t, r.vars]); log.push(`${r.t} room ${r.room} ai ${r.x},${r.y} guns ${g.join(' ')} shots ${r.shots.map((b) => b.toString(16)).join(' ')}`); }
     }
     t += +n;
   }
