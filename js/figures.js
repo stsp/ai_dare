@@ -450,23 +450,46 @@ function drawPartBox(ctx, x, y) {
  *  and back, a step every four frames, the ends held twice - a cycle of 64
  *  frames - and all the lit ones run together. The others stay green. */
 const SPHERES = [[-8, -80.5], [8, -80.5], [-16, -64.5], [0, -64.5], [16, -64.5]];   // where the original's lie
+// the original's spheres on its own screen: the top-left cell of each one's
+// two by two, in order of lighting (top pair, then the row of three)
+const SPHERE_CELLS = [[16, 6], [18, 6], [15, 8], [17, 8], [19, 8]];
+const SPHERE_TMP = document.createElement("canvas"); SPHERE_TMP.width = SPHERE_TMP.height = 16;
+const SPHERE_MASKS = new Map();
+/** The ink of a sphere's cells, white on clear, cut once from the room sheet. */
+function sphereMask(sh, x, y) {
+  const key = x + ":" + y;
+  if (SPHERE_MASKS.has(key)) return SPHERE_MASKS.get(key);
+  const cv = document.createElement("canvas"); cv.width = cv.height = 16;
+  const c = cv.getContext("2d");
+  c.drawImage(sh.img, x, y, 16, 16, 0, 0, 16, 16);
+  const d = c.getImageData(0, 0, 16, 16);
+  for (let i = 0; i < d.data.length; i += 4) {
+    const ink = d.data[i] + d.data[i + 1] + d.data[i + 2] > 60;
+    d.data[i] = d.data[i + 1] = d.data[i + 2] = 255; d.data[i + 3] = ink ? 255 : 0;
+  }
+  c.putImageData(d, 0, 0);
+  SPHERE_MASKS.set(key, cv);
+  return cv;
+}
 function drawMechanism(ctx, cx, floor, fitted, phase, spheresOnly) {
   const SPHERE_RUN = [C.black, C.bblue, C.bred, C.bmagenta, C.bgreen, C.bcyan, C.byellow, C.bwhite];   // the palette, 0..7
   const y = floor;
   if (spheresOnly) {                                   // over the original's own screen: only the lights change
+    // a lit sphere is the original's own drawing with its ink run through the
+    // palette - as the original does it, by the cells' colour, the bitmap
+    // untouched; an unlit one is left exactly as the screen has it
+    const sh = typeof SHEETS !== "undefined" && SHEETS.rooms;
+    if (!sh || !sh.img || !fitted) return;
     const step = Math.floor(phase * 50 / 4) % 16;
     const run = SPHERE_RUN[step < 8 ? step : 15 - step];
-    SPHERES.forEach(([dx, dy], i) => {
-      const lit = i < fitted, sx = cx + dx, sy = y + dy;
-      ctx.save();
-      ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.clip();
-      // the original's sphere: its dark side in green, its lit side white, a
-      // dither of black over both; a lit one runs the palette all over
-      ctx.fillStyle = lit ? run : C.bgreen; ctx.fillRect(sx - 8, sy - 8, 8, 16);
-      ctx.fillStyle = lit ? run : C.bwhite; ctx.fillRect(sx, sy - 8, 8, 16);
-      ctx.fillStyle = C.black;
-      for (let j = -8; j < 8; j++) for (let k = -8; k < 8; k++) if ((j + k) & 1) ctx.fillRect(sx + j, sy + k, 1, 1);
-      ctx.restore();
+    const [sx, sy] = sh.meta.rooms[SDS_ROOM];
+    SPHERE_CELLS.slice(0, fitted).forEach(([c, r]) => {
+      const m = sphereMask(sh, sx + c * 8, sy + r * 8);
+      ctx.fillStyle = C.black; ctx.fillRect(c * 8, r * 8, 16, 16);
+      const t = SPHERE_TMP; const tc = t.getContext("2d");
+      tc.globalCompositeOperation = "source-over"; tc.clearRect(0, 0, 16, 16); tc.drawImage(m, 0, 0);
+      tc.globalCompositeOperation = "source-in"; tc.fillStyle = run; tc.fillRect(0, 0, 16, 16);
+      ctx.drawImage(t, c * 8, r * 8);
     });
     return;
   }
