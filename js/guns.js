@@ -196,11 +196,15 @@ function gunsBlockAi(h, yOff) {
   }
 }
 
-/** Coming down on a floor gun from above crushes it into a hat. */
+/** Coming down on a floor gun from a height crushes it into a hat. A hop off
+ *  the flat rises ten pixels, two above the gun, and that is not enough in the
+ *  original: he has to drop on it from a course higher than its top. */
+const GUN_CRUSH_DROP = 8;
 function gunsUnderAi(prevFeet) {
   const feet = ai.y + AI_H;
   for (const g of guns) {
     if (g.dead || g.type !== GUN_FLOOR) continue;
+    if (ai.airTop > g.cy - GUN_CRUSH_DROP) continue;
     if (prevFeet <= g.cy + 1 && feet >= g.cy && ai.x + AI_W > g.x && ai.x < g.x + 16) {
       g.dead = true;
       state.deadGuns.add(g.id);
