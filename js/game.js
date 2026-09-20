@@ -51,6 +51,7 @@ const CAPTURE_PENALTY = 600;   // ten minutes
 
 const AI_W = 10, AI_H = 32, AI_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
 const GUARD_W = 10, GUARD_H = 32;
+const FIG_OVER = 8;              // how far a drawn figure rises above its box: the guards' hats, Ai's cap
 const GUARD_DEATH = 0.2;         // seconds a shot guard stands with his arms up before he is gone, the room flashing
 
 // --------------------------------------------------------------- level utils
@@ -203,6 +204,7 @@ const GUARD_LIFT_CHANCE = 0.6;   // the share of guards who take the grav-lifts 
 const GUARD_CHASE = 3;           // seconds a guard counts as giving chase after he last had Ai in range
 const GUARD_LEAVE = 1.5;         // seconds a guard stranded on another floor waits before he runs out to come in on Ai's
 const GUARD_RETURN = [0.8, 2.0]; // and how soon after that he is in again
+const GUARD_RETRY = 0.25;        // and how long the spawner waits when it finds no way in at all
 const GUARD_RUN = 60, GUARD_REACT = 0.6;      // pixels a second; the pause before he fires
 function unguardedRoom(key, room) { return (room.label || room.zone) === 4; }
 // where none is about when Ai walks in, and they only run in after him:
@@ -211,6 +213,19 @@ function entryOnlyRoom(key, room) { return key === START.key || (LEVEL.boss && L
 
 /** How many of a room's guards have been shot, over the whole game. */
 function deadHere(key) { return (state.deadGuards.get(key) || new Set()).size; }
+
+/** Put the room's standing guards aside while Ai is elsewhere: the ones still
+ *  on their feet, as they stand. Those shot, gone or riding out are not kept -
+ *  they have had their turn - and neither is a room already cleared. */
+function keepGuards(key) {
+  const staying = guards.filter((t) => !t.dead && !t.riding);
+  for (const t of staying) {   // he goes back to his beat: no chase, no aim, no errand left over
+    t.leaving = null; t.lift = null; t.apart = 0; t.apartFrom = null; t.noWay = null;
+    t.chase = 0; t.react = 0; t.shot = 0; t.fire = false;
+  }
+  if (staying.length && !state.clearedRooms.has(key)) state.roomGuards.set(key, staying);
+  else state.roomGuards.delete(key);
+}
 
 function makeGuards(key, room) {
   if (unguardedRoom(key, room) || entryOnlyRoom(key, room)) return [];
@@ -246,16 +261,33 @@ function guardWalled(t, key) {
   if (hit && (t.x < 0 || t.x + GUARD_W > VIEW_W)) { t.dead = true; t.gone = true; }
   return hit;
 }
+/** How deep the room draws its own side wall in front of the figures at the
+ *  height a guard walks: the cells he would stand behind if he stepped in on
+ *  the very edge. He steps in past them, so no rifle floats out of a wall. */
+function doorInset(key, y, side) {
+  const rows = SHEETS.rooms && SHEETS.rooms.meta.solid && SHEETS.rooms.meta.solid[key];   // the room has its own screen, so it draws its walls in front of him
+  if (!rows) return 0;
+  const r0 = Math.max(0, Math.floor((y + 4) / 8)), r1 = Math.min(17, Math.floor((y + GUARD_H - 5) / 8));
+  let n = 0;
+  while (n < 3) {
+    const c = side === "left" ? n : 29 - n;
+    let any = false;
+    for (let r = r0; r <= r1; r++) if (rows[r] & (1 << c)) any = true;
+    if (!any) break;
+    n++;
+  }
+  return n * 8;
+}
 /** Whether a guard standing at (x, y) would be inside one of the room's walls. */
 function guardInWall(key, x, y) {
   return wallsOf(key).some((wl) => overlaps(x, y, GUARD_W, GUARD_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
 }
 
 function spawnGuard(key, room) {
-  const aiFeet = ai.y + AI_H;
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5 && p.x1 * 8 - GUARD_W > p.x0 * 8);
   // Ai's own floor first, widest first; another floor when no doorway on his lets one in
-  const level = wide.filter((p) => Math.abs(p.y * 8 - aiFeet) < 6).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
+  const his = aiFloors(room);
+  const level = wide.filter((p) => his.includes(p)).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   const others = wide.filter((p) => !level.includes(p)).sort((a, b) => (b.x1 - b.x0) - (a.x1 - a.x0));
   for (const p of [...level, ...others]) {
     const x0 = p.x0 * 8, x1 = p.x1 * 8 - GUARD_W;
@@ -272,14 +304,19 @@ function spawnGuard(key, room) {
     const justIn = state.roomAge < GUARD_BEHIND_TIME;                 // the rule is for the moment he steps in, not for ever
     const side = way[farSide] ? farSide : way[nearSide] && (clear >= GUARD_BEHIND || !onHisFloor || !justIn) ? nearSide : null;
     if (!side) continue;
-    // he steps in at the edge cell, whole, as the original's sprites do - under the
-    // door frame where the room has one - and runs in from there
-    const x = side === "right" ? VIEW_W - GUARD_W : 0;
+    // he steps in at the edge cell, whole, as the original's sprites do - clear
+    // of the side wall the room draws in front of him - and runs in from there
+    let inset = doorInset(key, y, side);
+    let x = side === "right" ? VIEW_W - GUARD_W - inset : inset;
+    if (x < x0 || x > x1 || guardInWall(key, x, y)) {          // the step in would put him off his beat or in a wall
+      inset = 0;
+      x = side === "right" ? VIEW_W - GUARD_W : 0;
+    }
     guards.push({ id: state.guardSeq++, x, y, x0, x1, dir: ai.x > x ? 1 : -1, anim: 0, dead: false, react: 0, entering: true, lifts: Math.random() < GUARD_LIFT_CHANCE });
     if (!state.alerted.has(key)) { state.alerted.add(key); say(tx(["INTRUDER ALERT !"]), 2.5); }
     return;
   }
-  state.guardClock = state.guardNext;         // no way in just now: try again next frame
+  state.guardClock = Math.max(0, state.guardNext - GUARD_RETRY);   // no way in just now: look again in a moment, not every frame
 }
 
 /** A guard who uses the lifts: Ai on another floor of this room, and a lift
@@ -318,16 +355,37 @@ function guardLeaves(t, key) {
 /** The edges of a floor a guard can step in through: a doorway on that floor
  *  (its link, or one with no floor recorded) whose door is open, and no wall
  *  where he would stand. */
-function waysOnto(key, p) {
+function waysOnto(key, p, anyDoor) {
   const e = EXITS[key], feet = p.y * 8, y = feet - GUARD_H;
   const doorAt = (list) => list.find((l) => l.feet == null || Math.abs(l.feet - feet) <= 14);   // on this floor, no stand-in
-  return { left: p.x0 === 0 && isOpen(doorAt(e.lefts)) && !guardInWall(key, 0, y),
-           right: p.x1 >= 29 && isOpen(doorAt(e.rights)) && !guardInWall(key, VIEW_W - GUARD_W, y) };
+  const usable = (l) => (anyDoor ? !!l : isOpen(l));            // shut now, but still a doorway
+  return { left: p.x0 === 0 && usable(doorAt(e.lefts)) && !guardInWall(key, 0, y),
+           right: p.x1 >= 29 && usable(doorAt(e.rights)) && !guardInWall(key, VIEW_W - GUARD_W, y) };
+}
+/** Whether any guard could ever run into this room: some floor wide enough
+ *  for him reaches an edge with a doorway on it, its door shut or open.
+ *  False for the rooms the lifts alone lead to - nobody can come, so nobody
+ *  is left to shoot, and the room is safe the moment it stands empty. */
+function wayIntoRoom(key, room) {
+  return room.platforms.some((p) => p.x1 - p.x0 >= 5 && p.x1 * 8 - GUARD_W > p.x0 * 8 &&
+                                    (({ left, right }) => left || right)(waysOnto(key, p, true)));
+}
+/** The floors Ai counts as standing on: the one under his feet, or - when he
+ *  is up on a block or a step - the floor that block stands on, since a guard
+ *  who comes in there can walk right up to him. */
+function aiFloors(room) {
+  const feet = ai.y + AI_H;
+  const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
+  const level = wide.filter((p) => Math.abs(p.y * 8 - feet) < 6);
+  if (level.length) return level;
+  const below = wide.filter((p) => p.y * 8 > feet && p.y * 8 - feet <= AI_H);   // no higher than he could step down
+  if (!below.length) return [];
+  const y = Math.min(...below.map((p) => p.y * 8));
+  return below.filter((p) => p.y * 8 === y);
 }
 /** Whether a guard could come in on the floor Ai stands on. */
 function wayToAi(key, room) {
-  const aiFeet = ai.y + AI_H;
-  return room.platforms.some((p) => p.x1 - p.x0 >= 5 && Math.abs(p.y * 8 - aiFeet) < 6 && (({ left, right }) => left || right)(waysOnto(key, p)));
+  return aiFloors(room).some((p) => p.x1 * 8 - GUARD_W > p.x0 * 8 && (({ left, right }) => left || right)(waysOnto(key, p)));
 }
 function guardToLift(t, dt) {
   const dx = t.lift.x - t.x;
@@ -387,12 +445,14 @@ const state = {
   cheat: {},             // doors | parts | time, typed as codes; they last the session
   story: "dare",         // whose words: the pilot's, or the policeman's (options page)
   msgBottom: null,       // second box, as the original uses for asides
-  messageTimer: 0,
+  messageTimer: 0,        // the top box's own clock
+  noteTimer: 0,           // the lower box's, so one box never cuts the other short or holds it over
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
   taunts: 0, nextTaunt: 40,   // the alien boss's calls
   clearedRooms: new Set(),
+  roomGuards: new Map(),   // room -> the guards standing in it while Ai is away
   guardSeq: 0,           // ids for the guards that arrive, per game
   guardClock: 0, guardNext: 0,   // the next arrival
   deadGuards: new Map(),   // room -> which of its guards have been shot
@@ -429,13 +489,17 @@ function enterRoom(key, x, y) {
   // a guard riding the lift out after Ai is still on his way when Ai arrives
   const chaser = guards.find((t) => !t.dead && t.riding && t.riding.out && t.riding.to === key);
   if (chaser) state.pursuer = { room: key, x: chaser.x, dir: chaser.riding.dir, stop: chaser.riding.stop };
+  // the room Ai is leaving keeps its guards as they stand, so stepping out and
+  // back finds them where they were, not a fresh draw
+  if (state.room != null && state.room !== key) keepGuards(state.room);
   state.room = key;
   // the original ends the game the moment Ai steps into the launch bay -
   // "AI DARE MAKES A GETAWAY!" - which lies behind the last gate
   if (key === ESCAPE_ROOM && state.mode === "play") { state.score += 5000; beginEnding("won"); }
   const room = currentRoom();
   if (x != null) { ai.x = x; ai.y = y; ai.vx = 0; ai.vy = 0; }   // where he arrives: the guards keep clear of it
-  guards = state.clearedRooms.has(key) ? [] : makeGuards(key, room);
+  guards = state.clearedRooms.has(key) ? [] : (state.roomGuards.get(key) || makeGuards(key, room));
+  state.roomGuards.delete(key);                    // held only while he is away
   state.guardClock = 0;
   state.roomAge = 0;
   const wait = guards.length ? GUARD_AGAIN : GUARD_FIRST;
@@ -503,13 +567,20 @@ function runCues(dt) {
 /** Narration box at the top of the play area; one box, one sentence. */
 function say(lines, secs) {
   state.msgTop = lines;
-  state.messageTimer = Math.max(state.messageTimer, secs);
+  state.messageTimer = secs;
+}
+
+/** Each box keeps its own clock and clears itself when it runs out, so a
+ *  narration and an aside never cut each other short nor hold each other over. */
+function tickMessages(dt) {
+  if (state.messageTimer > 0 && (state.messageTimer -= dt) <= 0) state.msgTop = null;
+  if (state.noteTimer > 0 && (state.noteTimer -= dt) <= 0) state.msgBottom = null;
 }
 
 /** Aside in the lower box. */
 function note(lines, secs) {
   state.msgBottom = lines;
-  state.messageTimer = Math.max(state.messageTimer, secs);
+  state.noteTimer = secs;
 }
 
 function startGame() {
@@ -521,6 +592,7 @@ function startGame() {
   state.alerted = new Set();
   state.clearedRooms = new Set();
   state.deadGuards = new Map();
+  state.roomGuards = new Map();
   state.deadGuns = new Set();
   state.takenItems = new Set();
   sdsParts = placeParts();
@@ -967,12 +1039,13 @@ function updateLasers(dt) {
   }
   lasers = lasers.filter((l) => l.cells > 0 || l.trail.length);
 
-  if (deadHere(state.room) >= GUARD_MAX && !guards.some((t) => !t.dead)) {   // two shot here and none left: the room is safe
-    const key = state.room;
-    if (!state.clearedRooms.has(key)) {
-      state.clearedRooms.add(key);
-      note(tx(["THIS ROOM IS SAFE"]), 1.8);
-    }
+  // the room is safe once it stands empty and no more can come: its share of
+  // two is spent, or no doorway anywhere in it can let another in
+  const safeKey = state.room, safeRoom = currentRoom();
+  if (!guards.some((t) => !t.dead) && !unguardedRoom(safeKey, safeRoom) && !state.clearedRooms.has(safeKey) &&
+      (deadHere(safeKey) >= GUARD_MAX || !wayIntoRoom(safeKey, safeRoom))) {
+    state.clearedRooms.add(safeKey);
+    if (deadHere(safeKey) > 0) note(tx(["THIS ROOM IS SAFE"]), 1.8);   // nothing to announce where nothing was ever there
   }
 }
 
@@ -1200,10 +1273,11 @@ function drawForeground(ctx, key) {
   const s = SHEETS.rooms, rows = state.backdrop && s.meta.solid && s.meta.solid[key];
   if (!rows) return;
   const [sx, sy] = s.meta.rooms[key];
-  // the figures' full width, rifle and all: the drawn figure is wider than the
-  // hit box, and a rifle pushed into a wall goes behind it whole, not in part
-  const boxes = [[ai.x - 20, ai.y, AI_W + 40, AI_H]];
-  for (const t of guards) if (!t.dead || t.dying > 0) boxes.push([t.x - 10, t.y, GUARD_W + 20, GUARD_H]);
+  // the figures' full reach, rifle and hat and all: the drawn figure is wider
+  // than the hit box and rises above it, so a rifle pushed into a wall goes
+  // behind it whole, not in part, and no hat shows through a door frame
+  const boxes = [[ai.x - 20, ai.y - FIG_OVER, AI_W + 40, AI_H + FIG_OVER]];
+  for (const t of guards) if (!t.dead || t.dying > 0) boxes.push([t.x - 10, t.y - FIG_OVER, GUARD_W + 20, GUARD_H + FIG_OVER]);
   const done = new Set();
   for (const [bx, by, bw, bh] of boxes) {
     const c0 = Math.max(0, Math.floor(bx / 8)), c1 = Math.min(29, Math.floor((bx + bw - 1) / 8));
@@ -1432,12 +1506,8 @@ function draw() {
       ctx.stroke();
     }
   }
-  if (state.messageTimer > 0) {
-    if (state.msgTop) drawMessage(ctx, state.msgTop, true);
-    if (state.msgBottom) drawMessage(ctx, state.msgBottom, false, state.viewer === "boss");
-  } else {
-    state.msgTop = state.msgBottom = null;
-  }
+  if (state.msgTop && state.messageTimer > 0) drawMessage(ctx, state.msgTop, true);
+  if (state.msgBottom && state.noteTimer > 0) drawMessage(ctx, state.msgBottom, false, state.viewer === "boss");
   ctx.restore();
 
   drawPanel(ctx, state);
@@ -1541,10 +1611,10 @@ function frame(now) {
     updateEnding(dt);
   } else {
     if (!state.cheat.time) state.timeLeft -= dt * CLOCK_RATE;
-    if (state.messageTimer > 0) state.messageTimer -= dt;
+    tickMessages(dt);
     if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
     if (state.viewerStatic > 0) state.viewerStatic -= dt;
-    if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0) taunt();
+    if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0 && state.noteTimer <= 0) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.flash > 0) state.flash -= dt;
     if (state.invert > 0) state.invert -= dt;

@@ -11,7 +11,7 @@ const { chromium } = require('playwright-core');
     startGame(); state.timeLeft = 99999;
     const r = ROOMS['113']; const p = widestPlatform(r); resetAi(24, p.y - AI_H); enterRoom('113', 24, p.y - AI_H);
     const dt = 1 / 60, trail = [];
-    const tick = () => { state.timeLeft -= dt; if (state.messageTimer > 0) state.messageTimer -= dt; updateAi(dt); updateGuards(dt); updateGuns(dt); updateLasers(dt); updatePickups(); runCues(dt); remember(dt); };
+    const tick = () => { state.timeLeft -= dt; tickMessages(dt); updateAi(dt); updateGuards(dt); updateGuns(dt); updateLasers(dt); updatePickups(); runCues(dt); remember(dt); };
     let t = 0;
     for (let i = 0; i < 8 * 60; i++) {
       keys.ArrowRight = (i % 120) < 60;                  // a second right, a second still
