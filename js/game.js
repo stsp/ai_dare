@@ -1254,6 +1254,35 @@ function zap() {
   } catch (e) { /* no audio available */ }
 }
 
+/** A world going up, in the beeper's own voice: one square wave whose
+ *  half-period is drawn from a band that widens as it goes, so a sharp crack
+ *  falls away into a rumble, and the level fades with it. Nothing else is
+ *  playing under it. The source comes back so the ending can cut it short.
+ *  `low` is the deeper, slower roll the rocket's engines make. */
+function boom(secs, low) {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const sr = actx.sampleRate, n = Math.ceil((secs || 1) * sr);
+    const buf = actx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+    const r = rng(0x5eed ^ Math.floor(secs * 1000));
+    let up = true, i = 0;
+    while (i < n) {
+      const u = i / n;                                  // how far through it is
+      const band = (low ? 0.0016 : 0.00035) + (low ? 0.0030 : 0.0034) * u;
+      const half = Math.max(1, Math.round(sr * band * (0.25 + 1.5 * r())));
+      const fade = (1 - u) * (1 - u);
+      const v = (up ? 0.85 : -0.5) * fade;
+      for (let k = 0; k < half && i < n; k++, i++) d[i] = v;
+      up = !up;
+    }
+    const src = actx.createBufferSource(), g = actx.createGain();
+    src.buffer = buf; g.gain.value = low ? 0.1 : 0.16;
+    src.connect(g); g.connect(actx.destination);
+    src.start();
+    return src;
+  } catch (e) { return null; }
+}
+
 /** The beam striking Ai, as the original's beeper rattles it: runs of seven
  *  toggles in the ratio 2:1:2:3:2:1:2 at a random pitch, a pause between them,
  *  for about a tenth of a second. */

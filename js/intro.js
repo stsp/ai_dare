@@ -14,10 +14,11 @@ const MENU_PAGES = [
 const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhite];
 
 /* The line that runs along the foot of the title screen: the tale of the
-   mission, or the story's tale of the post. */
+   mission, or the story's tale of the mail rocket held on the skeleton's
+   cosmodrome. */
 const MARQUEE = {
   dare: "THE ALIEN'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS GANG GUARDS EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      TWO HOURS.      NO ONE ELSE IS COMING.        ",
-  postal: "НА РАЙОНЕ ПРОПАЛА ПОЧТА.      БАНДИТ-ПРИШЕЛЕЦ, ГЛАВНЫЙ ПО РАЙОНУ, ПЕРЕХВАТИЛ ПОЧТОВЫЙ ФУРГОН И РАСКИДАЛ ПЯТЬ ПОСЫЛОК ПО ПЯТИ КВАРТАЛАМ, А ЕГО ПАЦАНЫ СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, ДОНЕСТИ ИХ НА СОРТИРОВОЧНУЮ СТАНЦИЮ И УСПЕТЬ ДО КОНЦА СМЕНЫ.      МАШИНА ЖДЁТ У ВЪЕЗДА.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+  postal: "ПОЧТОВАЯ РАКЕТА ШЛА НА МАРС, ПОКА ЕЁ НЕ ПЕРЕХВАТИЛ СКЕЛЕТ И НЕ ЗАСТАВИЛ СЕСТЬ НА СВОЙ КОСМОДРОМ.      ПЯТЬ ЯЩИКОВ С ПОЧТОЙ ЕГО ПАЦАНЫ РАСТАЩИЛИ ПО ПЯТИ СЕКТОРАМ И СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, СНЕСТИ ИХ В ГРУЗОВОЙ ОТСЕК И ОТПРАВИТЬ РАКЕТУ ДАЛЬШЕ.      ДВА ЧАСА.      ПОМОЩИ НЕ БУДЕТ.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
 };
 const MARQUEE_SPEED = 4 * 50 / 1.5;       // pixels a second: the original's four a frame, slowed by half again to be read
 const MARQUEE_K = 2;                      // the big face, two pixels to one
@@ -114,13 +115,15 @@ function beginIntro() {
 }
 
 const INTRO_FLY = 4.5, INTRO_CALL = 3.5, INTRO_FIGHT = 16, INTRO_SHIP = 3.5;
+/** How long the call is held: the skeleton says more than the original's boss did. */
+function introCall() { return state.story === "postal" ? 6.5 : INTRO_CALL; }
 
 function updateIntro(dt) {
   intro.t += dt;
   intro.scroll += dt * 48;
   const s = intro.ship;
-  if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), INTRO_CALL); }
-  else if (intro.phase === 1 && intro.t > INTRO_CALL) { intro.phase = 2; intro.t = 0; }
+  if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), introCall()); }
+  else if (intro.phase === 1 && intro.t > introCall()) { intro.phase = 2; intro.t = 0; }
   else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.msgTop = null; }
   else if (intro.phase === 3 && intro.t > INTRO_SHIP) { startGame(); state.score += intro.score; return; }
   if (tapped.Enter || tapped.Escape) { startGame(); state.score += intro.score; return; }   // skip the fight
@@ -160,7 +163,9 @@ function updateIntro(dt) {
     for (const b of intro.bursts) { b.x += b.vx * dt; b.y += b.vy * dt; b.t -= dt; }
     intro.bursts = intro.bursts.filter((b) => b.t > 0);
   } else {
-    s.y = 96 + Math.sin(intro.t * 2) * 2;
+    // a tall box of the skeleton's would cover her, so she rides higher over it
+    const tall = intro.phase === 1 && (state.msgBottom || []).length > 2;
+    s.y = (tall ? 62 : 96) + Math.sin(intro.t * 2) * 2;
   }
   tickMessages(dt);
   if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";

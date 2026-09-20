@@ -199,7 +199,7 @@ const GLYPHS = {
   "0": "699996", "1": "262227", "2": "69124f", "3": "e1611e", "4": "99f111",
   "5": "f8e11e", "6": "68e996", "7": "f12244", "8": "696996", "9": "699716",
   ".": "000004", ",": "000044", ":": "004004", "!": "444404", "?": "691202",
-  "'": "440000", "-": "00f000", "*": "0a4a00", "/": "012480",
+  "'": "440000", "\"": "aa0000", "-": "00f000", "*": "0a4a00", "/": "012480",
   "(": "248842", ")": "842248", "+": "04f400", "©": "69b960",
 };
 
@@ -306,11 +306,12 @@ function drawPanel(ctx, state) {
     for (let i = 0; i < 18; i++) {
       ctx.fillRect(vx + Math.floor(r() * vs), vy + Math.floor(r() * vs), 1, 1);
     }
-    ctx.fillStyle = C.bcyan;
+    const mars = state.story === "postal";          // in the postal story the world on the screen is Mars
+    ctx.fillStyle = mars ? C.bred : C.bcyan;
     ctx.beginPath();
     ctx.arc(vx + vs / 2, vy + vs / 2, 7, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = C.cyan;
+    ctx.fillStyle = mars ? C.red : C.cyan;
     ctx.fillRect(vx + vs / 2 - 7, vy + vs / 2 + 1, 14, 3);
   }
 }
