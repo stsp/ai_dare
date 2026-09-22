@@ -1,4 +1,4 @@
-# Ai Dare — web recreation
+# Ai Dare — fully AI-written game
 
 A browser game after a ZX Spectrum platformer of the 1980s, built by reading the game's room layouts out of the
 published screen map at
