@@ -1,0 +1,27 @@
+{
+  "_why": "Corrections to the surveyed level, each backed by the original itself: the floor probe (data/emu/floor.json) recorded Ai standing where the built level has nothing, or a course away from where it puts him. The level cannot be rebuilt here - build_level.py needs the map image, which is not in the repository - so tools/apply_level_fixes.py writes these into js/level.js. Re-apply them after any rebuild.",
+  "rooms": {
+    "88": {
+      "why": "the probe stood at feet 72 on cells 25-29; the ledge at y 8 over cells 27-30 is a course above that and caught him first",
+      "drop": [{"y": 8, "x0": 27, "x1": 30}]
+    },
+    "93": {
+      "why": "the probe stood at feet 64 on cells 0-4 and the level has no floor there at all",
+      "add": [{"y": 8, "x0": 0, "x1": 6}]
+    },
+    "149": {
+      "why": "the probe stood at feet 128 on cells 19-20; the floor stopped at cell 20 and he dropped through it",
+      "replace": [{"from": {"y": 16, "x0": 0, "x1": 20}, "to": {"y": 16, "x0": 0, "x1": 21}}],
+      "holes": [[21, 24]]
+    },
+    "211": {
+      "why": "the room draws a floor over cells 2-13 of its bottom course and the original's object table stands two cups on it (cells 7 and 8); the probe never reached it, so the build read the whole left of the room as a pit",
+      "add": [{"y": 16, "x0": 2, "x1": 14}],
+      "holes": [[0, 2], [14, 19]]
+    },
+    "248": {
+      "why": "the probe stood at feet 64 on cell 16; the ledge was laid a course higher, so he walked above the floor",
+      "replace": [{"from": {"y": 7, "x0": 14, "x1": 30}, "to": {"y": 8, "x0": 14, "x1": 30}}]
+    }
+  }
+}

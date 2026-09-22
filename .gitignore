@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+screen_map.png
+node_modules/
