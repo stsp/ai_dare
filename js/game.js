@@ -686,13 +686,19 @@ function liftUnder(x, w, y, h, lifts) {
 
 const keys = {};
 const tapped = {};
+/** A key going down - from the keyboard, or from a finger on the screen, which
+ *  the game cannot tell apart. The first frame of a press is a tap. */
+function pressKey(code) {
+  if (!keys[code]) tapped[code] = true;
+  keys[code] = true;
+}
+function releaseKey(code) { keys[code] = false; }
 addEventListener("keydown", (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
-  if (!keys[e.code]) tapped[e.code] = true;
-  keys[e.code] = true;
+  pressKey(e.code);
   typeCheat(e.code);
 });
-addEventListener("keyup", (e) => { keys[e.code] = false; });
+addEventListener("keyup", (e) => { releaseKey(e.code); });
 
 const held = {
   left: () => !(ai.stun > 0) && (keys.ArrowLeft || keys.KeyO),
@@ -1320,7 +1326,12 @@ const ctx = canvas.getContext("2d");
  *  drawn figures and Ai's rendered head get every pixel the display has. */
 function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  const k = Math.max(2, Math.min(9, Math.floor(Math.min(window.innerWidth * 0.96 / SCREEN_W, window.innerHeight * 0.88 / SCREEN_H) * dpr)));
+  // on a tablet the target button stands beside the screen - along it when the
+  // tablet is on its side, under it when it is upright - and wants its room
+  const wide = window.innerWidth > window.innerHeight;
+  const availW = TOUCH ? window.innerWidth - (wide ? TOUCH_PAD : 8) : window.innerWidth * 0.96;
+  const availH = TOUCH ? window.innerHeight - (wide ? 8 : TOUCH_PAD) : window.innerHeight * 0.88;
+  const k = Math.max(2, Math.min(9, Math.floor(Math.min(availW / SCREEN_W, availH / SCREEN_H) * dpr)));
   if (canvas.width !== SCREEN_W * k) {
     canvas.width = SCREEN_W * k;
     canvas.height = SCREEN_H * k;
@@ -1329,6 +1340,7 @@ function fitCanvas() {
   canvas.style.height = (canvas.height / dpr) + "px";
   ctx.imageSmoothingEnabled = false;         // (a resize resets the context)
 }
+initTouch();                                 // the screen controls, on a tablet
 fitCanvas();
 window.addEventListener("resize", fitCanvas);
 
@@ -1480,6 +1492,7 @@ function aiFrame() {
 }
 
 function draw() {
+  clearTapZones();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = C.black;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1490,7 +1503,10 @@ function draw() {
   if (state.mode === "title") return drawMenu(ctx);
   if (state.mode === "options") return drawOptions(ctx);
   if (state.mode === "intro") return drawIntro(ctx);
-  if (state.mode === "ending") return drawEnding(ctx);
+  if (state.mode === "ending") {
+    tapZone(0, 0, SCREEN_W, SCREEN_H, "Escape");   // a tap anywhere moves the credits on
+    return drawEnding(ctx);
+  }
 
   drawFrame(ctx);
   ctx.save();
@@ -1614,6 +1630,7 @@ function drawSplash(ctx) {
   ctx.fillText(a, 89 * k, 27 * k, 168 * k);
   ctx.font = `bold ${Math.round(8 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
   ctx.fillText(b, 89 * k, 38 * k, 168 * k);
+  tapZone(0, 168, SCREEN_W, 24, "Space");     // the "PRESS SPACE" line answers a tap
   if (Math.floor(state.phase * 2) % 2) {
     ctx.font = `bold ${Math.round(6 * k)}px Plaque, "DejaVu Serif", Georgia, serif`;
     ctx.lineWidth = 3 * k / 4; ctx.strokeStyle = C.black; ctx.fillStyle = C.bwhite;

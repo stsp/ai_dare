@@ -119,6 +119,7 @@ function drawOptions(ctx) {
   const lines = [tx(["KEYBOARD Q,A,O,P,SPACE"])[0], tx(["CURSOR KEYS AND SPACE"])[0], tx(["STORY: AI DARE"])[0]];
   lines.forEach((ln, i) => {
     const y = 82 + i * 13, lit = i + 1 === options.control || (i === 2 && state.story === "postal");
+    tapZone(VIEW_X + 2, VIEW_Y + y - 3, VIEW_W - 4, 15, "Digit" + (i + 1));   // a tap picks the line
     if (lit) { ctx.fillStyle = C.black; ctx.fillRect(2, y - 2, VIEW_W - 4, 11); }
     const col = lit ? CYCLE[(tick + i) % CYCLE.length] : C.white;
     drawBig(ctx, String(i + 1), 12, y, col, 1.6);
@@ -126,6 +127,7 @@ function drawOptions(ctx) {
   });
   const foot = tx(["PRESS 'ENTER' WHEN DONE."])[0];
   drawBig(ctx, foot, 120 - textWidth(foot) * 0.8, 126, C.white, 1.6);
+  tapZone(VIEW_X, VIEW_Y + 123, VIEW_W, 18, "Enter");
   ctx.restore();
   drawPanel(ctx, state);
 }
