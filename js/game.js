@@ -694,13 +694,148 @@ addEventListener("keydown", (e) => {
 });
 addEventListener("keyup", (e) => { keys[e.code] = false; });
 
-const held = {
-  left: () => !(ai.stun > 0) && (keys.ArrowLeft || keys.KeyO),
-  right: () => !(ai.stun > 0) && (keys.ArrowRight || keys.KeyP),
-  up: () => !(ai.stun > 0) && (keys.ArrowUp || keys.KeyQ),
-  down: () => !(ai.stun > 0) && (keys.ArrowDown || keys.KeyA),
-  fire: () => !(ai.stun > 0) && (keys.Space || keys.KeyM),
+// Touch / pointer controls state
+const touchControls = {
+  left: false,
+  right: false,
+  up: false,
+  down: false,
+  fire: false,
 };
+
+const held = {
+  left: () => !(ai.stun > 0) && (keys.ArrowLeft || keys.KeyO || touchControls.left),
+  right: () => !(ai.stun > 0) && (keys.ArrowRight || keys.KeyP || touchControls.right),
+  up: () => !(ai.stun > 0) && (keys.ArrowUp || keys.KeyQ || touchControls.up),
+  down: () => !(ai.stun > 0) && (keys.ArrowDown || keys.KeyA || touchControls.down),
+  fire: () => !(ai.stun > 0) && (keys.Space || keys.KeyM || touchControls.fire),
+};
+
+// Handle target (fire) button events
+const targetBtn = document.getElementById("target-btn");
+if (targetBtn) {
+  const startFire = (e) => {
+    e.preventDefault();
+    touchControls.fire = true;
+    targetBtn.classList.add("active");
+  };
+  const endFire = (e) => {
+    e.preventDefault();
+    touchControls.fire = false;
+    targetBtn.classList.remove("active");
+  };
+  targetBtn.addEventListener("pointerdown", startFire);
+  targetBtn.addEventListener("pointerup", endFire);
+  targetBtn.addEventListener("pointercancel", endFire);
+  targetBtn.addEventListener("pointerleave", endFire);
+}
+
+// Canvas touch / pointer interaction
+// Map active pointer IDs to game regions
+const activePointers = new Map();
+
+function getCanvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = SCREEN_W / rect.width;
+  const scaleY = SCREEN_H / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  return { x, y };
+}
+
+function updateTouchControls() {
+  touchControls.left = false;
+  touchControls.right = false;
+  touchControls.up = false;
+  touchControls.down = false;
+
+  if (state.mode !== "play" && state.mode !== "intro") return;
+
+  for (const pos of activePointers.values()) {
+    const x = pos.x;
+    const y = pos.y;
+    // Map screen x/y (0..256, 0..192) to game regions
+    // Near left wall (x <= 80): run left
+    // Near right wall (x >= 176): run right
+    // Near ceiling (y <= 70): jump / ride up
+    // Near floor (y >= 122): kneel / ride down
+    if (x <= 80) touchControls.left = true;
+    if (x >= 176) touchControls.right = true;
+    if (y <= 70) touchControls.up = true;
+    if (y >= 122) touchControls.down = true;
+  }
+}
+
+function handleCanvasPointerDown(e) {
+  e.preventDefault();
+  const coords = getCanvasCoords(e);
+  activePointers.set(e.pointerId, coords);
+  updateTouchControls();
+
+  // Screen mode transitions and clicks
+  if (state.mode === "splash") {
+    tapped.Space = true;
+  } else if (state.mode === "title") {
+    // Menu layout in view coordinates (VIEW_X = 8, VIEW_Y = 8)
+    // Page 0: line 4 ("PRESS 'FIRE' TO PLAY") ~ y: 105..125
+    // Page 0: line 5 ("OR '1' FOR OPTIONS") ~ y: 125..145
+    const vx = coords.x - VIEW_X;
+    const vy = coords.y - VIEW_Y;
+    if (vy >= 115 && vy <= 145 && vx >= 10 && vx <= 230) {
+      tapped.Digit1 = true;
+    } else if (vy >= 85 && vy < 115 && vx >= 10 && vx <= 230) {
+      tapped.Enter = true;
+    } else if (vy >= 0 && vy < 85 && vx >= 10 && vx <= 230) {
+      tapped.Enter = true;
+    } else {
+      tapped.Enter = true;
+    }
+  } else if (state.mode === "options") {
+    const vy = coords.y - VIEW_Y;
+    // Options items around y = 80..130
+    if (vy >= 75 && vy < 92) {
+      options.control = 1;
+    } else if (vy >= 92 && vy < 105) {
+      options.control = 2;
+    } else if (vy >= 105 && vy < 120) {
+      setStory(state.story === "postal" ? "dare" : "postal");
+    } else if (vy >= 120 || vy < 75) {
+      tapped.Enter = true;
+    }
+  } else if (state.mode === "intro") {
+    // Tap canvas during intro to skip or shoot if in fight
+    if (intro.phase === 2) {
+      // In space fight phase, touch regions work via updateTouchControls
+    } else {
+      tapped.Enter = true;
+    }
+  } else if (state.mode === "ending") {
+    tapped.Escape = true;
+  }
+}
+
+function handleCanvasPointerMove(e) {
+  if (activePointers.has(e.pointerId)) {
+    e.preventDefault();
+    const coords = getCanvasCoords(e);
+    activePointers.set(e.pointerId, coords);
+    updateTouchControls();
+  }
+}
+
+function handleCanvasPointerUp(e) {
+  if (activePointers.has(e.pointerId)) {
+    e.preventDefault();
+    activePointers.delete(e.pointerId);
+    updateTouchControls();
+  }
+}
+
+canvas.addEventListener("pointerdown", handleCanvasPointerDown);
+canvas.addEventListener("pointermove", handleCanvasPointerMove);
+canvas.addEventListener("pointerup", handleCanvasPointerUp);
+canvas.addEventListener("pointercancel", handleCanvasPointerUp);
+
 
 // ----------------------------------------------------------------- Ai update
 
