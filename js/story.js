@@ -17,7 +17,7 @@ Object.assign(GLYPHS, {
 
 // the original's lines, joined by |, and what the policeman's story says instead
 const STORY = {
-  "AI DARE": ["АИ ДАРЕ"],                       // the game's name; the hero himself is Мент Даре
+  "AI DARE": ["ИИ ДАРЕ"],                       // the game's name; the hero himself is Мент Даре
   "COP'S ADVENTURE": ["ПРИКЛЮЧЕНИЯ МЕНТА"],
   "PRESS 'FIRE' TO PLAY": ["ЖМИ 'ОГОНЬ' ЧТОБЫ ИГРАТЬ"],
   "OR '1' FOR OPTIONS": ["ИЛИ '1' ДЛЯ НАСТРОЕК"],
