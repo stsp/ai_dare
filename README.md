@@ -13,7 +13,8 @@ Enter              start              Escape   skip the intro or the ending
 ```
 
 On a tablet or a phone there are no keys, so the screen itself is the
-control (`js/touch.js`; a desktop browser never sees it). In play the screen
+control (`js/touch.js`; the on-screen controls and the layout that makes
+room for them appear on a touch screen alone). In play the screen
 is read as places: a finger near a side wall runs Ai that way, near the
 ceiling jumps him, near the floor kneels him - and up and down ride the
 grav-lifts, as the keys do. Corners answer both at once, so a jump to the
@@ -21,6 +22,12 @@ left is one touch on the top left, and the middle answers nothing, so a
 finger can rest there. The target button beside the game screen fires. On
 the splash and the menus there is nothing to aim at but the words: tap the
 line the game asks for, and it counts as its key.
+
+The mouse plays by those same places, for anyone with neither keys to
+hand nor a tablet: the right button held over the game screen moves Ai -
+wherever the pointer is dragged, the place under it is what he answers -
+and the left button fires. On the splash and the menus the left button
+picks the line.
 
 `1` on the title page opens the options, laid out as the original's: the
 control keys, and a third line the original never had - the story. Chosen,
