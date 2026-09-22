@@ -1,0 +1,41 @@
+// Like emu_film, but first walks Ai to a cell.
+const { boot, OUT } = require('./emu_lib');
+const fs = require('fs');
+const KEYS = { P: [5, 1], O: [5, 2], Q: [2, 1], A: [1, 1], SP: [7, 1], M: [7, 4], N: [7, 8] };
+const [snap, cellArg, scriptJson, everyArg, outName] = process.argv.slice(2);
+const script = JSON.parse(scriptJson);
+(async () => {
+  const E = await boot();
+  const extra = process.env.POKES ? JSON.parse(process.env.POKES) : {};
+  await E.loadFile(snap, { 47714: 201, 44413: 201, ...extra });
+  await E.page.evaluate(() => {
+    const w = window.__workers[0];
+    window.__frames = (n) => new Promise((res) => {
+      let left = n;
+      const h = (e) => { if (e.data.message === 'frameCompleted') { if (--left <= 0) { w.removeEventListener('message', h); res(); } else w.postMessage({ message: 'runFrame', frameBuffer: new ArrayBuffer(26112) }); } };
+      w.addEventListener('message', h);
+      w.postMessage({ message: 'runFrame', frameBuffer: new ArrayBuffer(26112) });
+    });
+    window.__key = (row, mask, down) => w.postMessage({ message: down ? 'keyDown' : 'keyUp', row, mask });
+    window.__step = async (keys, n) => {
+      for (const [r, m] of keys) __key(r, m, true);
+      await __frames(n);
+      for (const [r, m] of keys) __key(r, m, false);
+      const d = await __peek(0xC012, 2); const rm = await __peek(0x6297, 1);
+      return { room: rm[0], y: d[0], x: d[1] };
+    };
+  });
+  const step = (keys, n) => E.page.evaluate(([k, n]) => __step(k, n), [keys.map((k) => KEYS[k]), n]);
+  let s = await step([], 5);
+  if (cellArg !== '-') { const cell = +cellArg; for (let i = 0; i < 200 && s.x !== cell; i++) s = await step([s.x < cell ? 'P' : 'O'], 2); if (!process.env.NOIDLE) s = await step([], 20); }
+  const every = +everyArg; const shots = []; let t = 0;
+  const shoot = async () => { const name = `${outName}_${String(shots.length).padStart(2, '0')}.png`; await E.page.waitForTimeout(40); await E.shot(name); shots.push({ name, t, ...s }); };
+  await shoot();
+  for (const [k, n] of script) {
+    const keys = Array.isArray(k) ? k : [k];
+    for (let i = 0; i < n; i += every) { s = await step(keys, Math.min(every, n - i)); t += Math.min(every, n - i); await shoot(); }
+  }
+  console.log(outName, shots.map((x) => `${x.t}:${x.room}/${x.x}/${x.y}`).join(' '));
+  fs.writeFileSync(OUT + outName + '_list.json', JSON.stringify(shots));
+  await E.browser.close();
+})();
