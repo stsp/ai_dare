@@ -12,6 +12,16 @@ A / ↓              kneel              Space    fire
 Enter              start              Escape   skip the intro or the ending
 ```
 
+On a tablet or a phone there are no keys, so the screen itself is the
+control (`js/touch.js`; a desktop browser never sees it). In play the screen
+is read as places: a finger near a side wall runs Ai that way, near the
+ceiling jumps him, near the floor kneels him - and up and down ride the
+grav-lifts, as the keys do. Corners answer both at once, so a jump to the
+left is one touch on the top left, and the middle answers nothing, so a
+finger can rest there. The target button beside the game screen fires. On
+the splash and the menus there is nothing to aim at but the words: tap the
+line the game asks for, and it counts as its key.
+
 `1` on the title page opens the options, laid out as the original's: the
 control keys, and a third line the original never had - the story. Chosen,
 every message, the panel and the title tell of a policeman sent, in place of

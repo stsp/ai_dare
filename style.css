@@ -36,3 +36,70 @@ html, body {
 #help b {
   color: #ffd800;
 }
+
+/* ------------------------------------------------ playing with fingers
+   Everything under body.touch belongs to a tablet or a phone; the class is
+   only set there, so a desktop keeps the page it always had. */
+
+body.touch {
+  height: 100%;
+  overflow: hidden;                 /* nothing to scroll away from the game */
+  touch-action: none;               /* and nothing to zoom with a stray pinch */
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.touch #wrap {
+  padding: 4px;
+  gap: 6px;
+}
+
+body.touch #help {
+  font-size: 12px;
+  max-width: 92vw;
+}
+
+/* the game screen and the target button, side by side */
+#stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#fire {
+  order: -1;                        /* on its side: the button left of the screen */
+  flex: none;
+  width: 104px;
+  height: 104px;
+  padding: 0;
+  border-radius: 50%;
+  border: 4px solid #00d8d8;
+  background: rgba(0, 216, 216, 0.12);
+  color: #ffd800;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#fire svg {
+  width: 62px;
+  height: 62px;
+  display: block;
+  margin: 0 auto;
+}
+
+#fire.down {
+  background: rgba(255, 216, 0, 0.35);
+  border-color: #ffd800;
+}
+
+/* upright: the button under the screen, at the left of it */
+@media (orientation: portrait) {
+  #stage {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  #fire { order: 1; }
+}

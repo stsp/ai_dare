@@ -13,6 +13,10 @@ const MENU_PAGES = [
 ];
 const CYCLE = [C.bblue, C.bmagenta, C.bred, C.byellow, C.bgreen, C.bcyan, C.bwhite];
 
+/* On a tablet the menu is worked by tapping the line itself: these are the
+   lines of the first page that answer, and the key each one stands for. */
+const MENU_TAPS = { 4: "Enter", 5: "Digit1" };
+
 /* The line that runs along the foot of the title screen: the tale of the
    mission, or the story's tale of the mail rocket held on the skeleton's
    cosmodrome. */
@@ -91,8 +95,15 @@ function drawMenu(ctx) {
     if (!ln) return;
     ln = tx([ln])[0];
     const w = textWidth(ln) * 1.6;
-    drawBig(ctx, ln, Math.max(2, 120 - w / 2), y0 + i * 12, CYCLE[(tick + i * 2) % CYCLE.length], 1.6);
+    const x = Math.max(2, 120 - w / 2), y = y0 + i * 12;
+    drawBig(ctx, ln, x, y, CYCLE[(tick + i * 2) % CYCLE.length], 1.6);
+    // the line answers a tap where it stands, so it carries its place as the
+    // page rolls; only while it is inside the window the page rolls through
+    const code = menu.page === 0 ? MENU_TAPS[i] : null;
+    if (code && y > 52 && y < SCREEN_H - 32) tapZone(VIEW_X + x - 6, VIEW_Y + y - 3, w + 12, 16, code);
   });
+  // the scores page has nothing to aim at, so any tap on it starts the game
+  if (menu.page === 1) tapZone(VIEW_X, VIEW_Y + 56, VIEW_W, SCREEN_H - 32 - VIEW_Y - 56, "Enter");
   ctx.restore();
   const on = cheatsOn();
   if (on.length) drawText(ctx, "CHEATS: " + on.join(" "), 4, VIEW_H - 9, C.bmagenta);
