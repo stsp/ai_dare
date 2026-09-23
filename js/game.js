@@ -553,12 +553,23 @@ function enterRoom(key, x, y) {
   }
   // the alien boss's hologram: he waits on his dais in one room of the fifth sector
   boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
-  if (boss) say(tx(["\"I SAY....IT'S A HOLOGRAM !\""]), 3);   // every time he walks in, as in the original
+  state.cues = state.cues.filter((c) => !c.room);       // a room's own words are not carried out of it
+  if (boss) {
+    // every time he walks in, as in the original: Ai's words, and after a
+    // pause the hologram's answer, which is the room's alarm too
+    say(tx(["\"I SAY....IT'S A HOLOGRAM !\""]), HOLOGRAM_SAY);
+    cue(HOLOGRAM_SAY + HOLOGRAM_PAUSE, "say", ["\"DON'T CALL ME A HOLOGRAM !\"", "\"MORE GUARDS HAVE ARRIVED !\""], HOLOGRAM_ANSWER, key);
+    state.alerted.add(key);
+  }
   if (key === SDS_ROOM) {
     say(tx(["THE SELF DESTRUCT ROOM"]), 2.5);
     if (state.carrying) note(tx(["WALK TO THE LEFT", "TO FIT THE PART"]), 3);
   }
 }
+
+// the hologram room's exchange, as filmed in the original: Ai's line for 3.8 s,
+// 1.9 s of quiet, then the hologram's two lines for 3.1 s
+const HOLOGRAM_SAY = 3.8, HOLOGRAM_PAUSE = 1.9, HOLOGRAM_ANSWER = 3.1;
 
 /** The alien boss on the video link: his face on the screen at the bottom right,
  *  his words in the box at the top. */
@@ -584,10 +595,10 @@ function taunt() {
 
 /** Words due in `t` seconds: a narration (say) or the alien boss's call. Kept as
  *  data, not closures, so a rewind carries them. */
-function cue(t, kind, lines, secs) { state.cues.push({ t, kind, lines, secs }); }
+function cue(t, kind, lines, secs, room) { state.cues.push({ t, kind, lines, secs, room }); }
 function runCues(dt) {
   for (const c of state.cues) c.t -= dt;
-  for (const c of state.cues.filter((c) => c.t <= 0)) (c.kind === "call" ? call : say)(tx(c.lines), c.secs);
+  for (const c of state.cues.filter((c) => c.t <= 0 && (!c.room || c.room === state.room))) (c.kind === "call" ? call : say)(tx(c.lines), c.secs);
   state.cues = state.cues.filter((c) => c.t > 0);
 }
 
