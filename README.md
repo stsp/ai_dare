@@ -128,11 +128,10 @@ layouts out at load. Redrawing the world means redrawing the tiles. What each
 tile is - floor, ledge, column, pipe, rail, lamp, panel, gun, door, mechanism -
 is in [docs/tiles.md](docs/tiles.md) and `docs/tile-chart.png`.
 
-Ai and the guards are the project's own figures, drawn as vectors
-(`js/figures.js`), with Ai's head from the project's own renders. The alien
-boss's hologram on his pedestal is the original's: its three frames of 24 by 40
-were read out of the game's memory in the emulator, and sway 0 1 2 1, twelve
-frames each, as the original's do (`HOLOGRAM_BITS` in `js/game.js`).
+Ai, the guards and the alien boss are the project's own figures, drawn as
+vectors (`js/figures.js`), with Ai's head from the project's own renders. The
+boss's hologram rides his dish over the bare room 63: the original's own
+hologram is taken out of that room's screen.
 
 ## Tools
 

@@ -16,6 +16,7 @@ const FIG = {
   boot: "#1a1a1a", bootShade: "#000000",
   metal: "#8b93a1", metalShade: "#4f5661", glow: "#7ff5ff",
   eye: "#ff4040", eyeDark: "#7a0000",
+  dish: "#9aa6b8", dishShade: "#5b6577", dishGlow: "#66e0ff",
 };
 
 /** Fill a path and outline it. */
@@ -177,6 +178,33 @@ function drawBossHead(ctx, x, y, s, t) {
   ctx.fillStyle = FIG.skinShade;
   ctx.fillRect(12.4, 18.2, 1.2, 1.2);           // nose
   ctx.fillRect(10.5, 20.4, 5, 0.7);             // the mouth, set hard
+  ctx.restore();
+}
+
+/** The alien boss seated on his floating dish, drawn in the box (bx, by, bw, bh);
+ *  `t` drives the eyes and the dish's glow. */
+function drawBossSeated(ctx, bx, by, bw, bh, t) {
+  ctx.save();
+  ctx.translate(bx, by);
+  const k = bw / 24;
+  ctx.scale(k, k);
+  // the dish: a shallow bowl with a lit underside
+  ctx.fillStyle = FIG.dishGlow;
+  ctx.globalAlpha = 0.35 + 0.25 * Math.sin((t || 0) * 3);
+  ctx.beginPath(); ctx.ellipse(12, 30, 9, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  figShape(ctx, FIG.dish, (c) => {
+    c.moveTo(1, 22); c.lineTo(23, 22); c.quadraticCurveTo(20, 29, 12, 29); c.quadraticCurveTo(4, 29, 1, 22);
+  });
+  ctx.fillStyle = FIG.dishShade;
+  ctx.fillRect(2, 22, 20, 1.2);
+  // the small body in a dark robe, arms on the rim
+  figShape(ctx, FIG.cloth, (c) => {
+    c.moveTo(7, 22); c.lineTo(17, 22); c.lineTo(16, 15); c.lineTo(8, 15);
+  });
+  figEllipse(ctx, FIG.skin, 6.5, 21, 1.3, 1, 0.4);
+  figEllipse(ctx, FIG.skin, 17.5, 21, 1.3, 1, 0.4);
+  drawBossHead(ctx, 3, 0, 18, t);
   ctx.restore();
 }
 
