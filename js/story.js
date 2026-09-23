@@ -1,8 +1,9 @@
 /* An alternative story, chosen on the options page: instead of a pilot on
- * the alien boss's asteroid, a policeman riding the mail rocket to Mars. A
- * skeleton cuts the rocket off over his cosmodrome and makes it land; the
- * boxes are scattered through the sectors, and the policeman has to gather
- * them, load them and send the rocket on. Only the words change: every
+ * the alien boss's asteroid, a policeman called out to a cosmodrome. The mail
+ * rocket to Mars flies itself, an AI at the controls; a skeleton cuts it off
+ * and makes it land on his cosmodrome, and the AI calls the police. The boxes
+ * are scattered through the sectors, and the policeman has to gather them and
+ * load them, and the AI flies the rocket on without him. Only the words change: every
  * message, the panel and the title. The original's lines stay the default.
  * The font gains the Cyrillic letters it needs, in the same four-by-six
  * cells. */
@@ -22,13 +23,13 @@ const STORY = {
   "PRESS 'FIRE' TO PLAY": ["ЖМИ 'ОГОНЬ' ЧТОБЫ ИГРАТЬ"],
   "OR '1' FOR OPTIONS": ["ИЛИ '1' ДЛЯ НАСТРОЕК"],
   "BEST  SCORES": ["ЛУЧШИЕ  СЧЕТА"],
-  "AI DARE SPEEDS|OVER THE ASTEROID!": ["РАКЕТА С ПОЧТОВЫМ ГРУЗОМ", "НА МАРС ПЕРЕХВАЧЕНА!"],
-  "THE SHIP STAYS BEHIND|TO AWAIT AI'S RETURN": ["РАКЕТА ЖДЁТ НА СТАРТЕ", "МЕНТА С ЯЩИКАМИ"],
-  "\"YOU WILL NOT SUCCEED, DARE!\"": ["\"САДИСЬ НА КОСМОДРОМ, МЕНТ!",
+  "AI DARE SPEEDS|OVER THE ASTEROID!": ["ИИ ВЕДЁТ ПОЧТОВУЮ РАКЕТУ НА МАРС.", "РАКЕТА ПЕРЕХВАЧЕНА!"],
+  "THE SHIP STAYS BEHIND|TO AWAIT AI'S RETURN": ["РАКЕТА СЕЛА. ИИ ВЫЗЫВАЕТ", "МЕНТА НА КОСМОДРОМ"],
+  "\"YOU WILL NOT SUCCEED, DARE!\"": ["\"САДИСЬ НА КОСМОДРОМ, ЖЕЛЕЗЯКА!",
                                      "НА МАРС ТЕБЕ СЕГОДНЯ НЕ ЛЕТЕТЬ.",
                                      "МОИ ЭНЕРГЕТИЧЕСКИЕ ПОЛЯ",
                                      "СОПРОВОДЯТ ТЕБЯ НА ПОСАДКУ\""],
-  "AI LANDS ON|THE ASTEROID": ["МЕНТ САДИТСЯ НА ЧУЖОЙ", "КОСМОДРОМ"],
+  "AI LANDS ON|THE ASTEROID": ["МЕНТ ДАРЕ ПРИЕХАЛ", "ПО ВЫЗОВУ"],
   "INTRUDER ALERT !": ["ЧУЖОЙ НА КОСМОДРОМЕ !"],
   "AI IS NOW IN SECTOR #": ["МЕНТ ТЕПЕРЬ В СЕКТОРЕ #"],
   "\"I SAY....IT'S A HOLOGRAM !\"": ["\"ОПА... ДА ЭТО ГОЛОГРАММА !\""],
@@ -51,7 +52,7 @@ const STORY = {
   "MY GUARDS WILL|FIND YOU, DARE": ["МОИ ПАЦАНЫ", "ТЕБЯ НАЙДУТ, МЕНТ"],
   "TIME IS RUNNING|OUT, EARTHMAN": ["ВРЕМЯ ВЫХОДИТ,", "ЛЕГАВЫЙ"],
   "GIVE UP, DARE.|EARTH IS FINISHED": ["БРОСЬ ЯЩИКИ, МЕНТ.", "МАРС ПОДОЖДЁТ"],
-  "AI DARE MAKES A GETAWAY!": ["РАКЕТА УХОДИТ НА МАРС!"],
+  "AI DARE MAKES A GETAWAY!": ["ИИ УВОДИТ РАКЕТУ НА МАРС!", "МЕНТ ОСТАЛСЯ НА КОСМОДРОМЕ"],
   "FIVE": ["ПЯТЬ"], "FOUR": ["ЧЕТЫРЕ"], "THREE": ["ТРИ"], "TWO": ["ДВА"], "ONE": ["ОДИН"],
   "WELL DONE SIR! THIS COULD|GET YOU YOUR KNIGHTHOOD!": ["МЕНТ ДАРЕ ОБЪЯВЛЕН В РОЗЫСК", "ПО ВСЕЙ СОЛНЕЧНОЙ СИСТЕМЕ"],
   "OUT OF TIME": ["ВРЕМЯ ВЫШЛО"],
@@ -63,8 +64,8 @@ const STORY = {
   "KEYBOARD Q,A,O,P,SPACE": ["КЛАВИШИ Q,A,O,P,ПРОБЕЛ"],
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
   "STORY: AI DARE": ["СЮЖЕТ: МЕНТ ДАРЕ"],
-  "THE ASTEROID IS COMING.": ["ПОЧТА НЕ ДОШЛА ДО МАРСА."],
-  "AI DARE GOES IN ALONE.": ["МЕНТ ДАРЕ ИДЁТ ОДИН."],
+  "THE ASTEROID IS COMING.": ["ПОЧТОВАЯ РАКЕТА В БЕДЕ."],
+  "AI DARE GOES IN ALONE.": ["МЕНТ ЕДЕТ НА ВЫЗОВ."],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
   "PRESS SPACE": ["НАЖМИ ПРОБЕЛ"],
 };

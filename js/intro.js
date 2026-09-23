@@ -19,10 +19,10 @@ const MENU_TAPS = { 4: "Enter", 5: "Digit1" };
 
 /* The line that runs along the foot of the title screen: the tale of the
    mission, or the story's tale of the mail rocket held on the skeleton's
-   cosmodrome. */
+   cosmodrome and the policeman called out to it. */
 const MARQUEE = {
   dare: "THE ALIEN'S HOLLOW ASTEROID IS ON COURSE FOR EARTH.      THE FIVE PARTS OF ITS SELF-DESTRUCT MECHANISM LIE HIDDEN IN ITS FIVE SECTORS, AND HIS GANG GUARDS EVERY CORRIDOR.      AI DARE MUST FIND THE PARTS, FIT THEM, AND GET BACK TO THE SHIP BEFORE THE ASTEROID GOES UP.      TWO HOURS.      NO ONE ELSE IS COMING.        ",
-  postal: "ПОЧТОВАЯ РАКЕТА ШЛА НА МАРС, ПОКА ЕЁ НЕ ПЕРЕХВАТИЛ СКЕЛЕТ И НЕ ЗАСТАВИЛ СЕСТЬ НА СВОЙ КОСМОДРОМ.      ПЯТЬ ЯЩИКОВ С ПОЧТОЙ ЕГО ПАЦАНЫ РАСТАЩИЛИ ПО ПЯТИ СЕКТОРАМ И СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ, СНЕСТИ ИХ В ГРУЗОВОЙ ОТСЕК И ОТПРАВИТЬ РАКЕТУ ДАЛЬШЕ.      ДВА ЧАСА.      ПОМОЩИ НЕ БУДЕТ.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
+  postal: "ПОЧТОВУЮ РАКЕТУ НА МАРС ВЁЛ ИИ, ПОКА ЕЁ НЕ ПЕРЕХВАТИЛ СКЕЛЕТ И НЕ ЗАСТАВИЛ СЕСТЬ НА СВОЙ КОСМОДРОМ.      ИИ ВЫЗВАЛ МЕНТА.      ПЯТЬ ЯЩИКОВ С ПОЧТОЙ ПАЦАНЫ СКЕЛЕТА РАСТАЩИЛИ ПО ПЯТИ СЕКТОРАМ И СТЕРЕГУТ КАЖДЫЙ УГОЛ.      МЕНТ ДАРЕ ДОЛЖЕН СОБРАТЬ ВСЕ ПЯТЬ И СНЕСТИ ИХ В ГРУЗОВОЙ ОТСЕК, А ДАЛЬШЕ ИИ ДОВЕЗЁТ ПОЧТУ САМ.      ДВА ЧАСА.      ПОМОЩИ НЕ БУДЕТ.      ПОЧТА ДОЛЖНА ДОЙТИ.        ",
 };
 const MARQUEE_SPEED = 4 * 50 / 1.5;       // pixels a second: the original's four a frame, slowed by half again to be read
 const MARQUEE_K = 2;                      // the big face, two pixels to one
