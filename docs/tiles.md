@@ -80,7 +80,7 @@ element lists the tiles it is built from.
 
 ## What is not a tile yet
 
-Six things the original keeps in its rooms are drawn by the game from bitmaps
+Five things the original keeps in its rooms are drawn by the game from bitmaps
 of its own rather than from the tile set, because they move or are taken:
 
 * the **floor gun** (20 of them) and its crushed hat — `GUN_BITS` in
@@ -93,13 +93,14 @@ of its own rather than from the tile set, because they move or are taken:
   `js/figures.js`, in five rooms;
 * the **grav-lift's arrow**, drawn in whatever phase its scroll is in —
   `ROOMS_SHEET.arrow`;
-* the **lift's call button** while it blinks — `LIFT_BUTTON` in `js/game.js`;
-* the **hologram** of the alien boss on his pedestal in room 63 — `HOLOGRAM_BITS`
-  in `js/game.js`, three frames of 24 by 40 read out of the original's memory
-  (0xE010, 0xDF98, 0xE088). It sways, so every dump of the room caught it in a
-  different frame and the cleaned screen had kept only a green smear of
-  what they shared; the backdrop under it is now the bare room.
+* the **lift's call button** while it blinks — `LIFT_BUTTON` in `js/game.js`.
 
-All six were read off the original's screens and are its own drawings; moving
+All five were read off the original's screens and are its own drawings; moving
 them into the tile set would leave the world with one set of graphics to
 replace instead of two.
+
+The alien boss's hologram in room 63 is not in the tile set either: it sways
+between three frames, so every dump of the room caught it in a different one,
+and the cleaned screen kept only a green smear of what they shared. That room's
+screen is now the bare room under him, and the game draws its own figure of
+him there (`drawBossSeated` in `js/figures.js`).
