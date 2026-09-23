@@ -185,10 +185,12 @@ function gunShotHitsAi(x, y, w, h) {
   return true;
 }
 
-/** Floor guns stand in Ai's way: he walks into them and stops. */
+/** Floor guns stand in Ai's way: he walks into them and stops. A jump that
+ *  comes down on one sets him on its top, as a step of one course would. */
 function gunsBlockAi(h, yOff) {
   for (const g of guns) {
     if (g.dead || g.type !== GUN_FLOOR || ai.vy < 0) continue;      // a jump clears it: the box is lower than his hop
+    if (ai.jumping && ai.y + AI_H <= g.cy + GUN_STEP) continue;      // coming down on it: moveY stands him on top
     if (overlaps(ai.x, ai.y + yOff, AI_W, h, g.x, g.cy, 16, 8)) {
       ai.x = ai.vx > 0 || (ai.vx === 0 && ai.x < g.x) ? g.x - AI_W : g.x + 16;
       ai.vx = 0;
@@ -196,21 +198,42 @@ function gunsBlockAi(h, yOff) {
   }
 }
 
-/** Coming down on a floor gun from a height crushes it into a hat. A hop off
- *  the flat rises ten pixels, two above the gun, and that is not enough in the
- *  original: he has to drop on it from a course higher than its top. */
-const GUN_CRUSH_DROP = 8;
-function gunsUnderAi(prevFeet) {
+/** The live floor guns as courses to stand on: a jump lands on top of one. */
+const GUN_STEP = 9;   // the reach of a jump onto a ledge (moveY), a course and a pixel
+function gunTops() {
+  const out = [];
+  for (const g of guns) {
+    if (!g.dead && g.type === GUN_FLOOR) out.push({ y: g.cy, x0: g.x, x1: g.x + 16 });
+  }
+  return out;
+}
+
+/** Coming down on a floor gun crushes it into a hat. A hop off the flat rises
+ *  ten pixels, two above the gun: the first one only sets him on its top and
+ *  the second landing on it crushes it. A drop from a course higher than its
+ *  top - off a ledge, or a hop from the gun itself - crushes it at once. */
+const GUN_CRUSH_DROP = 8, GUN_CRUSH_HOPS = 2;
+function gunsUnderAi(prevFeet, vyBefore) {
   const feet = ai.y + AI_H;
   for (const g of guns) {
     if (g.dead || g.type !== GUN_FLOOR) continue;
-    if (ai.airTop > g.cy - GUN_CRUSH_DROP) continue;
-    if (prevFeet <= g.cy + 1 && feet >= g.cy && ai.x + AI_W > g.x && ai.x < g.x + 16) {
-      g.dead = true;
-      state.deadGuns.add(g.id);
-      state.score += GUN_CRUSH_SCORE;
-      note(tx(["AI CAN CRUSH FLOOR GUNS"]), 2.5);
-      beeperBurst("crush");
+    if (ai.x + AI_W <= g.x || ai.x >= g.x + 16) continue;
+    const onTop = ai.onGround && feet === g.cy;                     // set down on it this frame, or standing there
+    if (!onTop && !(prevFeet <= g.cy + 1 && feet >= g.cy)) continue;
+    if (ai.airTop > g.cy - GUN_CRUSH_DROP) {                         // a hop off the flat, not a drop
+      if (!onTop || !ai.landed) continue;
+      g.hops = (g.hops || 0) + 1;
+      if (g.hops < GUN_CRUSH_HOPS) continue;                         // the first one: he stands on it
+    }
+    g.dead = true;
+    state.deadGuns.add(g.id);
+    state.score += GUN_CRUSH_SCORE;
+    note(tx(["AI CAN CRUSH FLOOR GUNS"]), 2.5);
+    beeperBurst("crush");
+    if (onTop) {                                                     // the gun is gone from under him: on down to the hat
+      ai.onGround = false;
+      ai.landed = false;
+      ai.vy = vyBefore;
     }
   }
 }
