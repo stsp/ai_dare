@@ -209,10 +209,11 @@ function gunTops() {
 }
 
 /** Coming down on a floor gun crushes it into a hat. A hop off the flat rises
- *  ten pixels, two above the gun: the first one only sets him on its top and
- *  the second landing on it crushes it. A drop from a course higher than its
- *  top - off a ledge, or a hop from the gun itself - crushes it at once. */
-const GUN_CRUSH_DROP = 8, GUN_CRUSH_HOPS = 2;
+ *  ten pixels, two above the gun: it only sets him on its top. The second hop
+ *  has to be made from the gun itself, without stepping off it: that one comes
+ *  down from a course above its top, as a drop off a ledge does, and crushes
+ *  it. Step off, and a hop from the floor sets him on it again, nothing more. */
+const GUN_CRUSH_DROP = 8;
 function gunsUnderAi(prevFeet, vyBefore) {
   const feet = ai.y + AI_H;
   for (const g of guns) {
@@ -220,11 +221,7 @@ function gunsUnderAi(prevFeet, vyBefore) {
     if (ai.x + AI_W <= g.x || ai.x >= g.x + 16) continue;
     const onTop = ai.onGround && feet === g.cy;                     // set down on it this frame, or standing there
     if (!onTop && !(prevFeet <= g.cy + 1 && feet >= g.cy)) continue;
-    if (ai.airTop > g.cy - GUN_CRUSH_DROP) {                         // a hop off the flat, not a drop
-      if (!onTop || !ai.landed) continue;
-      g.hops = (g.hops || 0) + 1;
-      if (g.hops < GUN_CRUSH_HOPS) continue;                         // the first one: he stands on it
-    }
+    if (ai.airTop > g.cy - GUN_CRUSH_DROP) continue;                 // a hop off the flat: he stands on it
     g.dead = true;
     state.deadGuns.add(g.id);
     state.score += GUN_CRUSH_SCORE;
