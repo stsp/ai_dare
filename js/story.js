@@ -33,6 +33,8 @@ const STORY = {
   "INTRUDER ALERT !": ["ЧУЖОЙ НА КОСМОДРОМЕ !"],
   "AI IS NOW IN SECTOR #": ["МЕНТ ТЕПЕРЬ В СЕКТОРЕ #"],
   "\"I SAY....IT'S A HOLOGRAM !\"": ["\"ОПА... ДА ЭТО ГОЛОГРАММА !\""],
+  "\"DON'T CALL ME A HOLOGRAM !\"|\"MORE GUARDS HAVE ARRIVED !\"": ["\"НЕ ЗОВИ МЕНЯ ГОЛОГРАММОЙ !\"",
+                                                                "\"ЕЩЁ ПАЦАНЫ ПОДЪЕХАЛИ !\""],
   "\"NO! PUT THAT DOWN!\"": ["\"МЕНТ! НЕ ТРОЖЬ ЯЩИК!\""],
   "THE SELF DESTRUCT ROOM": ["ГРУЗОВОЙ ОТСЕК РАКЕТЫ"],
   "AI CAN CRUSH FLOOR GUNS": ["МЕНТ ДАВИТ НАПОЛЬНЫЕ ПУШКИ"],
