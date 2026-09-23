@@ -215,7 +215,8 @@ const PRISONS = placePrisons();
 // ------------------------------------------------------------------ entities
 
 /** Where the guards come from. In most rooms some are already about when Ai
- *  walks in, placed by a seeded hash of the room; on the surface and in the
+ *  walks in, placed by a hash of the room and the game's seed - the same
+ *  draw all game long, another one the next game; on the surface and in
  *  the alien boss's hologram room there are none to start with. Then, every so often
  *  while fewer than two are about, one runs in from the edge away from Ai on
  *  his floor - at the original's pace, about sixty pixels a second - closes
@@ -255,7 +256,7 @@ function keepGuards(key) {
 
 function makeGuards(key, room) {
   if (unguardedRoom(key, room) || entryOnlyRoom(key, room)) return [];
-  const r = rng(hashKey(key));
+  const r = rng(hashKey(key) ^ state.seed);
   const wide = room.platforms.filter((p) => p.x1 - p.x0 >= 5);
   const n = wide.length === 0 ? 0 : Math.min(Math.floor(r() * 3), GUARD_MAX - deadHere(key));   // the room's share, less the ones shot here
   const out = [];
@@ -266,6 +267,7 @@ function makeGuards(key, room) {
     const x = x0 + r() * (x1 - x0);
     if (Math.abs(x - ai.x) < 80 && Math.abs(p.y * 8 - GUARD_H - ai.y) < 24) continue;   // never near him on his floor: he steps in with room to look about
     if (guardInWall(key, x, p.y * 8 - GUARD_H)) continue;                                 // nor inside a wall
+    if (guardPocket(key, x, p.y * 8 - GUARD_H, x0, x1)) continue;                         // nor wedged behind one at the end of his beat
     if (out.some((t) => Math.abs(t.x - x) < 28 && Math.abs(t.y - (p.y * 8 - GUARD_H)) < 8)) continue;
     out.push({ id: state.guardSeq++, x, y: p.y * 8 - GUARD_H, x0, x1, dir: r() < 0.5 ? -1 : 1, anim: 0, dead: false, react: 0, lifts: r() < GUARD_LIFT_CHANCE });
   }
@@ -307,6 +309,19 @@ function doorInset(key, y, side) {
 /** Whether a guard standing at (x, y) would be inside one of the room's walls. */
 function guardInWall(key, x, y) {
   return wallsOf(key).some((wl) => overlaps(x, y, GUARD_W, GUARD_H - 8, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0));
+}
+
+/** True when the floor free of walls either side of a guard standing at x is
+ *  too short for him to walk: a slip of floor behind a wall at the end of his
+ *  beat, where turning at the beat's end would put him into the wall. */
+function guardPocket(key, x, y, x0, x1) {
+  let lo = x0, hi = x1 + GUARD_W;
+  for (const wl of wallsOf(key)) {
+    if (!(wl.y0 < y + GUARD_H - 8 && wl.y1 > y)) continue;   // not at his height
+    if (wl.x1 <= x) lo = Math.max(lo, wl.x1);
+    else if (wl.x0 >= x + GUARD_W) hi = Math.min(hi, wl.x0);
+  }
+  return hi - lo < 3 * GUARD_W;
 }
 
 function spawnGuard(key, room) {
@@ -480,6 +495,7 @@ const state = {
   clearedRooms: new Set(),
   roomGuards: new Map(),   // room -> the guards standing in it while Ai is away
   guardSeq: 0,           // ids for the guards that arrive, per game
+  seed: 0,               // this game's draw of where the guards stand; kept here so a rewind replays it
   guardClock: 0, guardNext: 0,   // the next arrival
   deadGuards: new Map(),   // room -> which of its guards have been shot
   deadGuns: new Set(),     // the guns crushed or shot this game, by room and index
@@ -621,8 +637,18 @@ function note(lines, secs) {
   state.noteTimer = secs;
 }
 
+/** A fresh seed for each game, so the guards stand elsewhere every time it is
+ *  started; `?seed=N` in the address fixes it, for a run to be repeated. */
+function gameSeed() {
+  const fixed = new URLSearchParams(location.search).get("seed");
+  if (fixed != null && /^\d+$/.test(fixed)) return Number(fixed) >>> 0;
+  if (window.crypto && crypto.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0];
+  return Math.floor(Math.random() * 4294967296) >>> 0;
+}
+
 function startGame() {
   state.mode = "play";
+  state.seed = gameSeed();
   state.timeLeft = START_TIME;
   state.energy = ENERGY_MAX;
   state.score = 0;
@@ -637,6 +663,7 @@ function startGame() {
   state.fitted = 0;
   state.carrying = false;
   state.armed = false;
+  guards = [];   // the last game's, or the room it ended in would keep them into this one
   const spawn = widestPlatform(START.room);
   resetAi(16, spawn.y - AI_H);
   enterRoom(START.key, 16, spawn.y - AI_H);

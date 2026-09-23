@@ -129,6 +129,12 @@ emulator page on `http://127.0.0.1:8802/`.
   its end, two seconds of quiet, then the alien boss for 3.5 s. `rewindtest.js`
   walks Ai for eight seconds, presses Backspace, and checks he and all else
   are as they were five seconds before.
+  Where the guards stand is drawn afresh for every game; the page takes
+  `?seed=N` to fix the draw, and `clearroom.js`, `finite.js`, `stranded.js`
+  and `guardwalls.js` pass `SEED=N` from the environment on to it, so a
+  failure seen once can be run again. `seedtest.js` checks the draw: new
+  games place the guards differently, the same seed places them the same,
+  and within a game a room keeps its draw across re-entering and a rewind.
 * `titlescroll.js` boots the original past its loading picture and measures
   the title screen's running line frame by frame (four pixels a frame).
   `gunshot255.js OUT` films a ceiling gun firing in the game's room 255.
