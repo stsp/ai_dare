@@ -299,6 +299,10 @@ def main():
             if seen: arrows[str(n)] = list(seen.values())
         print(f"{sum(len(v) for v in arrows.values())} lift arrows in {len(arrows)} rooms")
         arrow_bits = [int(v) for v in base]
+    # cells flagged like a doorway (bit 4) that the original still stops him at:
+    # the hologram's table in room 63 (walking right he halts at x cell 17, and
+    # the jump there goes straight up, never over it); screen row -> screen columns
+    BLOCK_ALSO = {"63": {13: (20, 21, 22, 23), 14: (21, 22), 15: (21, 22)}}
     # the cells the original draws in front of the figures: one bit per view column, per view row
     solid, block = {}, {}
     if args.solid:
@@ -309,6 +313,8 @@ def main():
             flags = [[int(rows[r][2 * c:2 * c + 2], 16) for c in range(32)] for r in range(0, 18)]
             solid[room] = [sum(1 << (c - 1) for c in range(1, 31) if flags[r][c] & 0x80) for r in range(0, 18)]
             block[room] = [sum(1 << (c - 1) for c in range(1, 31) if (flags[r][c] & 0xd0) == 0xc0) for r in range(0, 18)]
+            for r, cols in BLOCK_ALSO.get(room, {}).items():
+                for c in cols: block[room][r] |= 1 << (c - 1)
         print(f"foreground and wall maps for {len(solid)} rooms")
     # the lifts' call buttons: the cell's colours cycle while the lift is called or moving
     buttons = {}

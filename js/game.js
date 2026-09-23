@@ -571,7 +571,7 @@ function enterRoom(key, x, y) {
   boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
   state.cues = state.cues.filter((c) => !c.room);       // a room's own words are not carried out of it
   if (boss) {
-    // every time he walks in, as in the original: Ai's words, and after a
+    // every time he walks in, as in the original: Dare's words, and after a
     // pause the hologram's answer, which is the room's alarm too
     say(tx(["\"I SAY....IT'S A HOLOGRAM !\""]), HOLOGRAM_SAY);
     cue(HOLOGRAM_SAY + HOLOGRAM_PAUSE, "say", ["\"DON'T CALL ME A HOLOGRAM !\"", "\"MORE GUARDS HAVE ARRIVED !\""], HOLOGRAM_ANSWER, key);
@@ -583,7 +583,7 @@ function enterRoom(key, x, y) {
   }
 }
 
-// the hologram room's exchange, as filmed in the original: Ai's line for 3.8 s,
+// the hologram room's exchange, as filmed in the original: Dare's line for 3.8 s,
 // 1.9 s of quiet, then the hologram's two lines for 3.1 s
 const HOLOGRAM_SAY = 3.8, HOLOGRAM_PAUSE = 1.9, HOLOGRAM_ANSWER = 3.1;
 
