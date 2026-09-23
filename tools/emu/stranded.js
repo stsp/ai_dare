@@ -4,7 +4,7 @@ const { chromium } = require('playwright-core');
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const page = await browser.newPage({ viewport: { width: 1040, height: 800 } });
   page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
-  await page.goto('http://127.0.0.1:8801/index.html'); await page.waitForTimeout(1500);
+  await page.goto('http://127.0.0.1:8801/index.html' + (process.env.SEED ? '?seed=' + process.env.SEED : '')); await page.waitForTimeout(1500);
   await page.click('#screen'); await page.waitForTimeout(200);
   const out = await page.evaluate(() => {
     startGame(); state.fitted = 9; state.timeLeft = 99999;
