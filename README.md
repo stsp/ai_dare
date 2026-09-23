@@ -31,11 +31,11 @@ picks the line.
 
 `1` on the title page opens the options, laid out as the original's: the
 control keys, and a third line the original never had - the story. Chosen,
-every message, the panel and the title tell of a policeman called out to a
-cosmodrome: the mail rocket to Mars, flown by its AI, has been forced down
-there by a skeleton, and the policeman has to gather the five boxes of mail
-and load them, so that the AI can fly on (`js/story.js`; the font gains
-Cyrillic for it). The original's words
+every message, the panel and the title tell another tale: Ai is now the AI
+that flies the mail rocket to Mars, and Dare is a policeman. A skeleton forces
+the rocket down on his cosmodrome, Ai calls the police, and Dare drives out
+to gather the five boxes of mail and load them, so that Ai can fly on
+(`js/story.js`; the font gains Cyrillic for it). The original's words
 are the default, and the choice is remembered by the browser.
 
 Cheat codes, typed on the title page (or during play): `DOORS` opens every
@@ -173,7 +173,7 @@ one, has no lift at all.
 
 The title is framed to the screen's foot, as the original's is, with a line
 running along the bottom that tells of the mission - or, with the story
-switched to the policeman's, of the mail rocket and the call-out. It goes at two thirds of the
+switched to the policeman's, of Ai's mail rocket and Dare's call-out. It goes at two thirds of the
 original's four pixels a frame, to be read.
 
 ## Rewind

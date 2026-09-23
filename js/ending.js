@@ -8,11 +8,11 @@
  * seconds, and the title page comes back. Running out of time ends with the
  * plaques too.
  *
- * The postal story ends its own way: the AI flies the rocket off and the
- * policeman stays behind on the cosmodrome; no countdown, because nothing was
+ * The postal story ends its own way: Ai flies the rocket off and Dare, the
+ * policeman, stays behind on the cosmodrome; no countdown, because nothing was
  * armed. The skeleton comes on the link to say what the boxes really held,
- * and then Mars goes up - and the policeman who loaded them is the one wanted
- * for it. */
+ * and then Mars goes up - and Dare, who loaded them, is the one wanted for
+ * it. */
 
 const ENDING_PHASES = { getaway: 2.4, countdown: 2.0, skeleton: SKELETON_CALL.reduce((t, p) => t + p[1], 0), blast: 3.4, knighthood: 2.0, banner: 2.6, plaques: 5.2 };
 const ENDING_NEXT = { getaway: "countdown", countdown: "blast", skeleton: "blast", blast: "knighthood", knighthood: "plaques", banner: "plaques", plaques: null };

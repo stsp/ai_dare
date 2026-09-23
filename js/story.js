@@ -1,9 +1,9 @@
 /* An alternative story, chosen on the options page: instead of a pilot on
- * the alien boss's asteroid, a policeman called out to a cosmodrome. The mail
- * rocket to Mars flies itself, an AI at the controls; a skeleton cuts it off
- * and makes it land on his cosmodrome, and the AI calls the police. The boxes
- * are scattered through the sectors, and the policeman has to gather them and
- * load them, and the AI flies the rocket on without him. Only the words change: every
+ * the alien boss's asteroid, Ai is the AI flying the mail rocket to Mars and
+ * Dare is a policeman. A skeleton cuts the rocket off and makes it land on
+ * his cosmodrome, and Ai calls the police. The boxes are scattered through the
+ * sectors, and Dare has to gather them and load them, and Ai flies the rocket
+ * on without him. Only the words change: every
  * message, the panel and the title. The original's lines stay the default.
  * The font gains the Cyrillic letters it needs, in the same four-by-six
  * cells. */
