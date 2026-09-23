@@ -552,7 +552,8 @@ function enterRoom(key, x, y) {
     if (zone > 1) taunt();
   }
   // the alien boss's hologram: he waits on his dais in one room of the fifth sector
-  boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 30, anim: 0 } : null;
+  // (his frames end five rows above the floor he is seated over)
+  boss = LEVEL.boss && LEVEL.boss.room === key ? { x: LEVEL.boss.x, y: LEVEL.boss.feet - 5 - HOLOGRAM_H } : null;
   if (boss) say(tx(["\"I SAY....IT'S A HOLOGRAM !\""]), 3);   // every time he walks in, as in the original
   if (key === SDS_ROOM) {
     say(tx(["THE SELF DESTRUCT ROOM"]), 2.5);
@@ -1204,6 +1205,49 @@ let zapBuffer = null;
 const CUP_BITS = ["...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", ".#..###.",
                   ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........", "........"];
 const CUP8_BITS = [".....###", "...##..#", "..#...##", ".....###", ".#......", ".....###", "........", "........"];
+// the alien boss's hologram on his pedestal, as the original draws it: three
+// frames of 24 by 40 out of its memory (0xE010, 0xDF98, 0xE088), shown in the
+// order 0 1 2 1, twelve frames each, so he sways from side to side
+const HOLOGRAM_BITS = [
+  [
+    ".........#####..........", "......###.#.#.###.......", "....##...#.########.....", "...#....#.##########....",
+    "..#....#.############...", "..#.....#.###########...", ".#.....#.#############..", ".#......#.############..",
+    ".#.....#.#.###########..", ".#......#.#.##########..", ".#.......#.#.#....####..", "..#..####.#.#.####.##...",
+    "..#.######.#.######.#...", "..#.######...######.#...", "..#.######.#.######.....", "...#.#####...#####.#....",
+    "....#......#......#.....", "....###.#.###.#.###.....", ".....###.#...#.###......", "........#######.........",
+    "......#.#######.#.......", "......#.#######.#.......", ".......#.......#........", "........#######.........",
+    "........................", ".........####...........", ".....############.......", "....##.######...##......",
+    "....###..##...####......", "......###...####........", ".....#..##.##...##......", ".....###.#.#...###......",
+    "......###.....###.......", ".......###...###........", "......#.###.###.#.......", ".....###.##.##.###......",
+    "....###..#...#.####.....", "....###.#..#..#.###.....", ".....###..###..###......", ".......#########........",
+  ],
+  [
+    "........................", "........#####...........", ".....###.#.#.###........", "...##...#.########......",
+    "..#....#.##########.....", ".#....#.############....", ".#.....#.###########....", "#.....#.#############...",
+    "#......#.############...", "#.....#.#.###########...", "#......#.#.##########...", "#.......#.#.#....####...",
+    ".#..####.#.#.####.##....", ".#.######.#.######.#....", ".#.######...######.#....", ".#.######.#.######......",
+    "..#.#####...#####.#.....", "...#......#......#......", "...###.#.###.#.###......", "....###.#...#.###.......",
+    ".......#######..........", ".....#.#######.#........", ".....#.#######.#........", "......#.......#.........",
+    ".......#######..........", "........................", "....############........", "...##.######...##.......",
+    "...###..##...####.......", ".....###...####.........", "....#..##.##...##.......", "....###.#.#...###.......",
+    ".....###.....###........", "......###...###.........", ".....#.###.###.#........", "....###.##.##.###.......",
+    "...###..#...#.####......", "...###.#..#..#.###......", "....###..###..###.......", "......#########.........",
+  ],
+  [
+    "..........#####.........", ".......###.#.#.###......", ".....##...#.########....", "....#....#.##########...",
+    "...#....#.############..", "...#.....#.###########..", "..#.....#.#############.", "..#......#.############.",
+    "..#.....#.#.###########.", "..#......#.#.##########.", "..#.......#.#.#....####.", "...#..####.#.#.####.##..",
+    "...#.######.#.######.#..", "...#.######...######.#..", "...#.######.#.######....", "....#.#####...#####.#...",
+    ".....#......#......#....", ".....###.#.###.#.###....", "......###.#...#.###.....", ".........#######........",
+    ".......#.#######.#......", ".......#.#######.#......", "........#.......#.......", ".........#######........",
+    "........................", "......############......", ".....##.######...##.....", ".....###..##...####.....",
+    ".......###...####.......", "......#..##.##...##.....", "......###.#.#...###.....", ".......###.....###......",
+    "........###...###.......", ".......#.###.###.#......", "......###.##.##.###.....", ".....###..#...#.####....",
+    ".....###.#..#..#.###....", "......###..###..###.....", "........#########.......", "........................",
+  ]
+];
+const HOLOGRAM_SWAY = [0, 1, 2, 1];
+const HOLOGRAM_W = 24, HOLOGRAM_H = 40;
 const BURSTS = {
   guardHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
   guardGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
@@ -1358,6 +1402,7 @@ function drawForeground(ctx, key) {
   // behind it whole, not in part, and no hat shows through a door frame
   const boxes = [[ai.x - 20, ai.y - FIG_OVER, AI_W + 40, AI_H + FIG_OVER]];
   for (const t of guards) if (!t.dead || t.dying > 0) boxes.push([t.x - 10, t.y - FIG_OVER, GUARD_W + 20, GUARD_H + FIG_OVER]);
+  if (boss) boxes.push([boss.x, boss.y, HOLOGRAM_W, HOLOGRAM_H]);   // the pedestal's edge stands in front of him too
   const done = new Set();
   for (const [bx, by, bw, bh] of boxes) {
     const c0 = Math.max(0, Math.floor(bx / 8)), c1 = Math.min(29, Math.floor((bx + bw - 1) / 8));
@@ -1374,6 +1419,23 @@ function drawForeground(ctx, key) {
         if (sdsParts.some((k) => k.key === key && c * 8 >= k.x && c * 8 < k.x + 16 && r * 8 >= k.y && r * 8 < k.y + 16)) continue;
         ctx.drawImage(s.img, sx + c * 8, sy + r * 8, 8, 8, c * 8, r * 8, 8, 8);
       }
+    }
+  }
+}
+
+/** The alien boss's hologram in the frame the original would show now, each
+ *  pixel in the ink of the room's cell it falls in, as a Spectrum sprite is. */
+function drawHologram(ctx, key) {
+  const rows = HOLOGRAM_BITS[HOLOGRAM_SWAY[Math.floor(state.phase / (12 * FRAME)) % HOLOGRAM_SWAY.length]];
+  const inks = {};
+  for (let j = 0; j < HOLOGRAM_H; j++) {
+    const y = boss.y + j;
+    for (let i = 0; i < HOLOGRAM_W; i++) {
+      if (rows[j][i] !== "#") continue;
+      const x = boss.x + i, r = Math.floor(y / 8), c = Math.floor(x / 8);
+      if (!((r * 32 + c) in inks)) { const cell = roomCell(key, r, c); inks[r * 32 + c] = cell ? cell.ink : C.bgreen; }
+      ctx.fillStyle = inks[r * 32 + c];
+      ctx.fillRect(x, y, 1, 1);
     }
   }
 }
@@ -1523,11 +1585,7 @@ function draw() {
   drawGuns(ctx);
   if (key === SDS_ROOM) drawMechanism(ctx, SDS_X, room.platforms.reduce((a, b) => (b.y > a.y ? b : a)).y * 8, state.fitted, state.phase, state.backdrop);
 
-  if (boss && !state.backdrop) {                      // the backdrop already holds the original's hologram
-    boss.anim += 0.05;
-    const bob = Math.round(Math.sin(boss.anim) * 2);
-    drawBossSeated(ctx, Math.round(boss.x), Math.round(boss.y + bob), 24, 30, boss.anim);
-  }
+  if (boss) drawHologram(ctx, key);
   for (const t of guards) {
     if (t.dead && !(t.dying > 0)) continue;
     drawGuardFigure(ctx, Math.round(t.x), Math.round(t.y), GUARD_W, GUARD_H, t.anim / 2, t.dir < 0,

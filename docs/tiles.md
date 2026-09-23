@@ -9,15 +9,15 @@ bitmaps used again and again.
 
 The game now works the same way. Nothing of the world is stored as a picture:
 
-* **`assets/tiles.png`** — the tile set. 324 bitmaps of 8x8, 16 across, a set
-  pixel drawn white. 3.5 kB for all 121 rooms.
+* **`assets/tiles.png`** — the tile set. 308 bitmaps of 8x8, 16 across, a set
+  pixel drawn white. 3.3 kB for all 121 rooms.
 * **`js/rooms_tiles.js`** — the layouts. For every room, and for every sector
   door's slab, two grids of 18 rows by 30 cells: which tile stands in each
   cell, and which pair of colours it wears.
 * **`js/tiles.js`** — the game lays those grids out once, at load, into the
   sheet the drawing code reads.
 
-So redrawing the world means redrawing `assets/tiles.png`: 324 little bitmaps,
+So redrawing the world means redrawing `assets/tiles.png`: 308 little bitmaps,
 in place of 121 screens. Nothing else has to change.
 
 ## Building them
@@ -60,14 +60,14 @@ element lists the tiles it is built from.
 
 | element | tiles | cells | rooms | what it is |
 |---|---:|---:|---:|---|
-| empty | 1 | 28972 | 121 | the dark of the room behind everything |
+| empty | 1 | 28988 | 121 | the dark of the room behind everything |
 | band | 6 | 5580 | 100 | the striped courses that top and tail a room; the pattern repeats every four columns |
 | floor course | 4 | 6510 | 120 | a floor or ceiling laid right across the room in one tile |
 | wall or ledge | 89 | 3436 | 108 | what the original's flag map says stops Ai: the walls and the ledges he stands on |
 | side wall | 7 | 3717 | 95 | the two columns of cells down either edge of a room |
 | column or pipe | 12 | 3222 | 99 | one tile laid down a run of six cells or more, away from the edges |
 | fitting in front of Ai | 202 | 12717 | 119 | what the flag map has the original draw over the figures: walkways, shafts, machinery |
-| panel or lamp | 59 | 379 | 5 | the dials, lamps and panels the flag map leaves alone |
+| panel or lamp | 43 | 363 | 5 | the dials, lamps and panels the flag map leaves alone |
 | lift rail | 12 | 188 | 43 | the dotted rails a grav-lift's arrow stands between |
 | lift arrow | 17 | 136 | 75 | the arrow cell beside a shaft: it scrolls a pixel every four frames, so a cleaned backdrop mostly has it blank and the game draws it |
 | lift button | 1 | 8 | 4 | the round call button, whose colours cycle while a lift is called or moving |
@@ -76,11 +76,11 @@ element lists the tiles it is built from.
 | door | 11 | 72 | 6 | the six sector doors' slabs, two cells by six |
 | mechanism | 6 | 20 | 1 | the five spheres of the mechanism, each two cells by two |
 
-313 of the 324 tiles stand in rooms; the other 11 are the door slabs' own.
+297 of the 308 tiles stand in rooms; the other 11 are the door slabs' own.
 
 ## What is not a tile yet
 
-Five things the original keeps in its rooms are drawn by the game from bitmaps
+Six things the original keeps in its rooms are drawn by the game from bitmaps
 of its own rather than from the tile set, because they move or are taken:
 
 * the **floor gun** (20 of them) and its crushed hat — `GUN_BITS` in
@@ -93,8 +93,13 @@ of its own rather than from the tile set, because they move or are taken:
   `js/figures.js`, in five rooms;
 * the **grav-lift's arrow**, drawn in whatever phase its scroll is in —
   `ROOMS_SHEET.arrow`;
-* the **lift's call button** while it blinks — `LIFT_BUTTON` in `js/game.js`.
+* the **lift's call button** while it blinks — `LIFT_BUTTON` in `js/game.js`;
+* the **hologram** of the alien boss on his pedestal in room 63 — `HOLOGRAM_BITS`
+  in `js/game.js`, three frames of 24 by 40 read out of the original's memory
+  (0xE010, 0xDF98, 0xE088). It sways, so every dump of the room caught it in a
+  different frame and the cleaned screen had kept only a green smear of
+  what they shared; the backdrop under it is now the bare room.
 
-All five were read off the original's screens and are its own drawings; moving
+All six were read off the original's screens and are its own drawings; moving
 them into the tile set would leave the world with one set of graphics to
 replace instead of two.
