@@ -863,19 +863,19 @@ function updateAi(dt) {
         if (ai.x + AI_W > p.x0 && ai.x < p.x1 && feet > p.y && feet - p.y <= 9) ai.y = p.y - AI_H;   // a kerb of one course is walked up
       }
     }
-    let catchers = platforms;
+    let catchers = platforms.concat(gunTops());   // a floor gun is a course to land on
     if (ai.shaftFall) {                   // falling down the shaft: only its bottom floor catches him
       const under = platforms.filter((p) => ai.x + AI_W > p.x0 && ai.x < p.x1 && p.y >= ai.y + AI_H - 2);
       const lowest = under.length ? Math.max(...under.map((p) => p.y)) : -1;
       catchers = platforms.filter((p) => p.y === lowest);
     }
-    const feetBefore = ai.y + AI_H, airborne = !ai.onGround;
+    const feetBefore = ai.y + AI_H, airborne = !ai.onGround, vyBefore = ai.vy;
     // a jump lands on a ledge a course above where it started: the original
     // moves him by cells and sets him down on whatever his last cell rests on
     moveY(ai, ai.vy * dt, catchers, AI_W, h, yOff, ai.jumping ? 9 : 0.5);
     ai.landed = airborne && ai.onGround;      // this is the frame he comes down
     if (ai.onGround) ai.jumping = false;
-    if (ai.vy >= 0) gunsUnderAi(feetBefore);   // coming down on a floor gun crushes it
+    if (vyBefore >= 0) gunsUnderAi(feetBefore, vyBefore);   // coming down on a floor gun: stands on it, or crushes it
     if (ai.onGround) ai.shaftFall = false;
   }
 

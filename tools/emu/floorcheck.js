@@ -54,6 +54,8 @@ const floors = JSON.parse(fs.readFileSync(process.argv[2] && process.argv[2] !==
           updateGuns(1 / 60);
           if (state.room !== key) { left = state.room; break; }
           const c = Math.floor((ai.x + AI_W / 2) / 8), f = ai.y + AI_H;
+          // stood on the gun's top after the hop: a course above the floor, not a floor
+          if (ai.onGround && guns.some((g) => !g.dead && g.type === GUN_FLOOR && f === g.cy && ai.x + AI_W > g.x && ai.x < g.x + 16)) continue;
           if (!got.has(c)) got.set(c, new Set());
           got.get(c).add(f);
           if (ai.onGround && ((dir === 'right' && ai.x >= VIEW_W - AI_W - 0.5) || (dir === 'left' && ai.x <= 0.5))) break;
