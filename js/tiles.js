@@ -49,24 +49,6 @@ function attrColours(attr) {
   return [p[attr & 7], p[(attr >> 3) & 7]];
 }
 
-function css(rgb) {
-  return "#" + rgb.map((v) => (v < 16 ? "0" : "") + v.toString(16)).join("");
-}
-
-let ROOM_TILES = null;      // the tile set, read back from assets/tiles.png
-
-/** One cell of a room as the original has it: its bitmap, and the two colours
- *  it wears. The guns read it to put a wall back the way the original leaves
- *  it when one of them is shot out of it. */
-function roomCell(key, r, c) {
-  const t = window.ROOMS_TILES, layout = t && t.rooms[key];
-  if (!ROOM_TILES || !layout || r < 0 || r >= t.h || c < 0 || c >= t.w) return null;
-  const trow = layout.tiles[r];
-  const n = TILE_VALUE[trow[c * 2]] * 64 + TILE_VALUE[trow[c * 2 + 1]];
-  const [ink, paper] = attrColours(t.attrs[TILE_VALUE[layout.colours[r][c]]]);
-  return { bits: ROOM_TILES[n], ink: css(ink), paper: css(paper) };
-}
-
 /** Lay one grid of cells into the sheet's pixels at (x0, y0). */
 function blitLayout(px, stride, x0, y0, layout, tiles, colours, size) {
   for (let r = 0; r < layout.tiles.length; r++) {
@@ -100,7 +82,7 @@ function buildRoomSheet(img) {
     const [x, y, dw, dh] = index.doors[k];
     w = Math.max(w, x + dw); h = Math.max(h, y + dh);
   }
-  const tiles = ROOM_TILES = readTiles(img, t);
+  const tiles = readTiles(img, t);
   const colours = t.attrs.map(attrColours);
 
   const cv = document.createElement("canvas");
