@@ -20,22 +20,36 @@
    answers any of the three.
 
    The screen controls themselves - the target button, the layout that makes
-   room for it, the page that no longer scrolls - belong to a touch screen
-   alone; a desktop keeps the page and the keyboard it always had, and simply
-   gains the mouse. */
+   room for it, the page that no longer scrolls - belong to a machine with a
+   touch screen; a desktop without one keeps the page and the keyboard it
+   always had, and simply gains the mouse. */
 
-/** A tablet or a phone: a coarse pointer with nothing to hover with. A laptop
- *  with a touchscreen keeps its mouse, so it keeps the desktop layout.
- *  `?touch=1` forces the controls on, `?touch=0` off - handy for a look on a
- *  desktop browser. */
-const TOUCH = (() => {
-  try {
-    const forced = new URLSearchParams(location.search).get("touch");
-    if (forced === "1") return true;
-    if (forced === "0") return false;
-    return matchMedia("(hover: none) and (pointer: coarse)").matches;
-  } catch (e) { return false; }
+/** `?touch=1` forces the screen controls on, `?touch=0` off - a look at either
+ *  from the other kind of machine. */
+const FORCED_TOUCH = (() => {
+  try { return new URLSearchParams(location.search).get("touch"); } catch (e) { return null; }
 })();
+
+/** Is there a touch screen to play on? Anything with a finger-sized pointer
+ *  among its inputs counts, however the browser answers for the one in use:
+ *  a tablet with a mouse or a trackpad plugged in says it has something to
+ *  hover with, and a tablet whose stylus hovers says so too, yet both are
+ *  played with fingers and want the target button. A desktop with neither
+ *  keeps the page and the keyboard it always had.
+ *
+ *  Those answers can be wrong all the same, so `initTouch` also waits for a
+ *  first touch on the glass and brings the controls up then. */
+function touchScreenHere() {
+  if (FORCED_TOUCH === "1") return true;
+  if (FORCED_TOUCH === "0") return false;
+  try {
+    if ((navigator.maxTouchPoints || 0) > 0) return true;
+    if ("ontouchstart" in window) return true;
+    return matchMedia("(any-pointer: coarse)").matches;
+  } catch (e) { return false; }
+}
+
+let TOUCH = touchScreenHere();
 
 /** The room the target button wants beside the game screen. */
 const TOUCH_PAD = 128;
@@ -140,7 +154,26 @@ function heldByPlaces() {
 
 function initTouch() {
   initMouse();
-  if (!TOUCH) return;
+  if (TOUCH) return addScreenControls();
+  if (FORCED_TOUCH === "0") return;
+
+  // no touch screen as far as the browser says: believe the first finger over
+  // the browser, and bring the controls up the moment one lands
+  const wake = (e) => {
+    if (e.type !== "touchstart" && e.pointerType !== "touch" && e.pointerType !== "pen") return;
+    window.removeEventListener("touchstart", wake, true);
+    window.removeEventListener("pointerdown", wake, true);
+    TOUCH = true;
+    addScreenControls();
+    fitCanvas();
+  };
+  window.addEventListener("touchstart", wake, true);
+  window.addEventListener("pointerdown", wake, true);
+}
+
+/** The target button, the layout that makes room for it, and the screen that
+ *  answers fingers: a touch screen's own controls. */
+function addScreenControls() {
   document.body.classList.add("touch");
 
   /* The game screen and the target button side by side, so the button takes
