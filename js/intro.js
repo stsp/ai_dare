@@ -102,8 +102,9 @@ function drawMenu(ctx) {
     const code = menu.page === 0 ? MENU_TAPS[i] : null;
     if (code && y > 52 && y < SCREEN_H - 32) tapZone(VIEW_X + x - 6, VIEW_Y + y - 3, w + 12, 16, code);
   });
-  // the scores page has nothing to aim at, so any tap on it starts the game
-  if (menu.page === 1) tapZone(VIEW_X, VIEW_Y + 56, VIEW_W, SCREEN_H - 32 - VIEW_Y - 56, "Enter");
+  // nothing else on the page starts the game: the scores are a joke, not a
+  // button, and the game begins on fire - the target, the space bar - or on
+  // the line that says so
   ctx.restore();
   const on = cheatsOn();
   if (on.length) drawText(ctx, "CHEATS: " + on.join(" "), 4, VIEW_H - 9, C.bmagenta);
