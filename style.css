@@ -37,9 +37,9 @@ html, body {
   color: #ffd800;
 }
 
-/* ------------------------------------------------ playing with fingers
-   Everything under body.touch belongs to a tablet or a phone; the class is
-   only set there, so a desktop keeps the page it always had. */
+/* ------------------------------------- playing with fingers or the pointer
+   The screen controls are there on every machine, so this class is set on
+   every machine; `?touch=0` is the one way to be left without them. */
 
 body.touch {
   height: 100%;
