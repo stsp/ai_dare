@@ -1366,9 +1366,15 @@ function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
   // on a tablet the target button stands beside the screen - along it when the
   // tablet is on its side, under it when it is upright - and wants its room
-  const wide = window.innerWidth > window.innerHeight;
-  const availW = TOUCH ? window.innerWidth - (wide ? TOUCH_PAD : 8) : window.innerWidth * 0.96;
-  const availH = TOUCH ? window.innerHeight - (wide ? 8 : TOUCH_PAD) : window.innerHeight * 0.88;
+  // the visible window, not the laid-out one: a phone's or a tablet's toolbars
+  // sit over the page, and a screen sized for the whole of it puts the target
+  // button below the fold, where nothing can scroll to it
+  const vw = (window.visualViewport && window.visualViewport.width) || window.innerWidth;
+  const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  const roomW = Math.min(window.innerWidth, vw), roomH = Math.min(window.innerHeight, vh);
+  const wide = roomW > roomH;
+  const availW = TOUCH ? roomW - (wide ? TOUCH_PAD : 8) : roomW * 0.96;
+  const availH = TOUCH ? roomH - (wide ? 8 : TOUCH_PAD) : roomH * 0.88;
   const k = Math.max(2, Math.min(9, Math.floor(Math.min(availW / SCREEN_W, availH / SCREEN_H) * dpr)));
   if (canvas.width !== SCREEN_W * k) {
     canvas.width = SCREEN_W * k;
