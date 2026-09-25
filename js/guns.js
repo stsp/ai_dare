@@ -74,8 +74,8 @@ function drawBits(ctx, rows, x, y, colours) {
    under it - the playthrough shows exactly that for every visor shot in it.
    Drawing the wreck as a mask over the visor's own cells, as this used to,
    kept the visor's black lens cells and blue ink and showed a garbled blob.
-   A fist's cells are drawn in the wall's colour on black, so what is left
-   when it goes is the bare wall beside it, which the gun table carries. */
+   A fist is left as bare wall: the original repaints both its cells bright
+   blue with no ink, the colour the gun table carries. */
 function drawShotGun(ctx, g) {
   if (g.type === GUN_CEILING) {
     ctx.fillStyle = C.bblue;

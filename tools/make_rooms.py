@@ -269,8 +269,12 @@ def main():
                 if kind == 3:
                     for cc in range(c, c + 2): t[r, cc] = 0    # the black floor course shows through
                 else:
+                    # a fist, shot, is repainted in attribute 0x4C: its two cells
+                    # bare bright blue wall, whatever stands beside it (in room
+                    # 109 that is a white block, and the wall behind is blue all
+                    # the same - filmed in the original's playthrough)
                     side = c - 1 if c > 0 else c + w
-                    pa = a[r, side]
+                    pa = a[r, side] if kind == 0 else 0x4C
                     fill = PALETTE[(pa >> 3) & 7]
                     if pa & 0x40: fill = fill.replace("d8", "ff")
                 out.append([kind, (c - 1) * 8, r * 8, w * 8, fill])
