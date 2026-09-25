@@ -28,8 +28,11 @@ screen reads it the same way.
 The mouse plays by those same places, for anyone with neither keys to
 hand nor a tablet: the right button held over the game screen moves Ai -
 wherever the pointer is dragged, the place under it is what he answers -
-and the left button fires. On the splash and the menus the left button
-picks the line.
+and the left button fires. The wheel is up and down: a notch forward
+jumps, a notch back kneels, and both ride the grav-lifts. On the splash
+and the menus either button picks the line. Which button fires is the
+fourth line of the options page, and the choice is remembered by the
+browser, as the story is.
 
 `1` on the title page opens the options, laid out as the original's: the
 control keys, and a third line the original never had - the story. Chosen,

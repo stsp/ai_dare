@@ -13,8 +13,11 @@
    The mouse plays by the same places, for anyone without a tablet: the right
    button held over the game screen moves Ai - wherever the pointer is dragged,
    the place under it is what he answers - and the left button fires. On the
-   menus the left button picks the line, as a finger does. A stylus draws where
-   a finger would, and the target button answers any of the three.
+   menus either button picks the line, as a finger does, and the wheel is up and
+   down: a notch forward jumps, a notch back kneels, and both ride the
+   grav-lifts. Which button fires is the fourth option on the options page, and
+   it is remembered. A stylus draws where a finger would, and the target button
+   answers any of the three.
 
    The screen controls themselves - the target button, the layout that makes
    room for it, the page that no longer scrolls - belong to a touch screen
@@ -67,8 +70,18 @@ function zoneAt(p) {
 
 let pointerHeld = [];             // the codes the pointers are holding down now
 const touchPoints = new Map();    // the touches on the game screen, by id
-let mouseDrive = null;            // where the right button is driving, if it is
-let mouseFiring = false;          // the left button, held down on the game screen
+let mouseDrive = null;            // where the driving button is pointing, if it is down
+let mouseFiring = false;          // the firing button, held down on the game screen
+let wheelCode = null;             // the key a notch of the wheel is holding
+let wheelTimer = 0;
+const WHEEL_HOLD = 160;           // ms a notch holds its key: long enough for a jump
+
+/** The wheel's key, let go of - unless a finger or the driving button is on it. */
+function endWheel() {
+  clearTimeout(wheelTimer);
+  if (wheelCode && !pointerHeld.includes(wheelCode)) releaseKey(wheelCode);
+  wheelCode = null;
+}
 
 /** Hold exactly these keys down: what is new goes down, what is gone comes up.
  *  The game cannot tell them from the keyboard's. */
@@ -91,6 +104,7 @@ function letGo() {
   touchPoints.clear();
   mouseDrive = null;
   setHeld([]);
+  endWheel();
   if (mouseFiring) { mouseFiring = false; releaseKey("Space"); }
 }
 
@@ -238,37 +252,40 @@ function initTouch() {
   if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
 }
 
-/** The mouse: the right button drives, the left one fires, and on the menus the
- *  left button picks the line - the same places a finger answers. */
+/** The mouse: one button drives, the other fires, and the wheel goes up and
+ *  down. The left button fires and the right one drives, unless the fourth
+ *  option on the options page swaps them. On the menus either button picks the
+ *  line, whichever way round they are - the same places a finger answers. */
 function initMouse() {
   const where = (e) => atScreen(e, canvas.getBoundingClientRect());
+  const driveButton = () => (options.swapMouse ? 0 : 2);   // 0 the left, 2 the right
+  const fireButton = () => (options.swapMouse ? 2 : 0);
   const stopFire = () => { if (mouseFiring) { mouseFiring = false; releaseKey("Space"); } };
   const stopDrive = () => { if (mouseDrive) { mouseDrive = null; setHeld(heldByPlaces()); } };
 
-  // the right button is a control here, not a menu
+  // over the game screen the right button is a control, not a menu
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
   canvas.addEventListener("mousedown", (e) => {
-    if (e.button === 2) {
-      e.preventDefault();
-      if (!placesAnswer()) return;
-      mouseDrive = where(e);
-      setHeld(heldByPlaces());
-      return;
-    }
-    if (e.button !== 0) return;
-    if (placesAnswer()) {
-      mouseFiring = true;
-      pressKey("Space");
-    } else {
+    if (e.button !== 0 && e.button !== 2) return;
+    e.preventDefault();
+    if (!placesAnswer()) {                       // on the menus either button picks
       const zone = zoneAt(where(e));
       if (zone) tapKey(zone.code);
+      return;
+    }
+    if (e.button === driveButton()) {
+      mouseDrive = where(e);
+      setHeld(heldByPlaces());
+    } else {
+      mouseFiring = true;
+      pressKey("Space");
     }
   });
 
   canvas.addEventListener("mousemove", (e) => {
     if (!mouseDrive) return;
-    if (!(e.buttons & 2)) return stopDrive();     // the button was let go elsewhere
+    if (!(e.buttons & (driveButton() === 0 ? 1 : 2))) return stopDrive();   // let go elsewhere
     mouseDrive = where(e);
     setHeld(heldByPlaces());
   });
@@ -276,9 +293,24 @@ function initMouse() {
   // a button let go anywhere counts, and a pointer that leaves the screen or a
   // window that loses focus leaves nothing held down
   window.addEventListener("mouseup", (e) => {
-    if (e.button === 0) stopFire();
-    if (e.button === 2) stopDrive();
+    if (e.button === fireButton()) stopFire();
+    if (e.button === driveButton()) stopDrive();
   });
   canvas.addEventListener("mouseleave", () => { stopFire(); stopDrive(); });
   window.addEventListener("blur", () => { stopFire(); stopDrive(); });
+
+  /* The wheel is up and down: a notch forward jumps and rides a grav-lift up,
+     a notch back kneels and rides one down. A notch is an instant, and the
+     game reads keys that are held, so each notch holds its key for a moment
+     and the next notch keeps it held. */
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    if (!placesAnswer() || !e.deltaY) return;
+    const code = e.deltaY < 0 ? "ArrowUp" : "ArrowDown";
+    if (wheelCode && wheelCode !== code) endWheel();
+    wheelCode = code;
+    pressKey(code);
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(endWheel, WHEEL_HOLD);
+  }, { passive: false });
 }
