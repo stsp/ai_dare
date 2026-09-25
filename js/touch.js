@@ -13,7 +13,8 @@
    The mouse plays by the same places, for anyone without a tablet: the right
    button held over the game screen moves Ai - wherever the pointer is dragged,
    the place under it is what he answers - and the left button fires. On the
-   menus the left button picks the line, as a finger does.
+   menus the left button picks the line, as a finger does. A stylus draws where
+   a finger would, and the target button answers any of the three.
 
    The screen controls themselves - the target button, the layout that makes
    room for it, the page that no longer scrolls - belong to a touch screen
@@ -161,8 +162,8 @@ function initTouch() {
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     for (const t of e.changedTouches) {
-      if (e.type === "touchstart" || e.type === "touchmove") touchPoints.set(t.identifier, atScreen(t, rect));
-      else touchPoints.delete(t.identifier);
+      if (e.type === "touchstart" || e.type === "touchmove") touchPoints.set("t" + t.identifier, atScreen(t, rect));
+      else touchPoints.delete("t" + t.identifier);
     }
     if (e.type === "touchstart" && !placesAnswer()) {
       const zone = zoneAt(atScreen(e.changedTouches[0], rect));
@@ -174,12 +175,50 @@ function initTouch() {
     canvas.addEventListener(kind, onScreenTouch, { passive: false });
   }
 
-  /* --- the target: held down, it keeps firing, as the space bar does */
+  /* a stylus draws on the glass where a finger would, and has no second button
+     to drive with, so the screen reads it as one more finger */
+  const onScreenPen = (e) => {
+    if (e.pointerType !== "pen") return;
+    e.preventDefault();
+    const key = "p" + e.pointerId;
+    if (e.type === "pointerdown" || e.type === "pointermove") {
+      const p = atScreen(e, canvas.getBoundingClientRect());
+      if (e.type === "pointerdown") {
+        canvas.setPointerCapture(e.pointerId);   // a stylus that slides off still lets go
+        if (!placesAnswer()) {
+          const zone = zoneAt(p);
+          if (zone) tapKey(zone.code);
+        }
+      }
+      touchPoints.set(key, p);
+    } else {
+      touchPoints.delete(key);
+    }
+    setHeld(heldByPlaces());
+  };
+  for (const kind of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
+    canvas.addEventListener(kind, onScreenPen, { passive: false });
+  }
 
-  const fireDown = (e) => { e.preventDefault(); fire.classList.add("down"); pressKey("Space"); };
-  const fireUp = (e) => { e.preventDefault(); fire.classList.remove("down"); releaseKey("Space"); };
-  fire.addEventListener("touchstart", fireDown, { passive: false });
-  for (const kind of ["touchend", "touchcancel"]) {
+  /* --- the target: held down, it keeps firing, as the space bar does.
+         A finger, a stylus and a mouse all press it, so the button answers
+         pointers rather than touches alone: a tablet driven with a pen or a
+         mouse - or a desktop browser showing the tablet's controls - fires
+         too, where a touch-only button stayed silent. */
+
+  const fireDown = (e) => {
+    e.preventDefault();
+    fire.setPointerCapture(e.pointerId);         // a finger that slides off still lets go
+    fire.classList.add("down");
+    pressKey("Space");
+  };
+  const fireUp = (e) => {
+    e.preventDefault();
+    fire.classList.remove("down");
+    releaseKey("Space");
+  };
+  fire.addEventListener("pointerdown", fireDown, { passive: false });
+  for (const kind of ["pointerup", "pointercancel"]) {
     fire.addEventListener(kind, fireUp, { passive: false });
   }
   fire.addEventListener("contextmenu", (e) => e.preventDefault());
