@@ -19,9 +19,11 @@ is read as places: a finger near a side wall runs Ai that way, near the
 ceiling jumps him, near the floor kneels him - and up and down ride the
 grav-lifts, as the keys do. Corners answer both at once, so a jump to the
 left is one touch on the top left, and the middle answers nothing, so a
-finger can rest there. The target button beside the game screen fires. On
-the splash and the menus there is nothing to aim at but the words: tap the
-line the game asks for, and it counts as its key.
+finger can rest there. The target button beside the game screen fires - a
+finger, a stylus or a mouse on a tablet all press it. On the splash and the
+menus there is nothing to aim at but the words: tap the line the game asks
+for, and it counts as its key. A stylus draws where a finger would, and the
+screen reads it the same way.
 
 The mouse plays by those same places, for anyone with neither keys to
 hand nor a tablet: the right button held over the game screen moves Ai -
