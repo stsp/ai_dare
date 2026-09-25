@@ -25,7 +25,8 @@
    always had, and simply gains the mouse. */
 
 /** `?touch=1` forces the screen controls on, `?touch=0` off - a look at either
- *  from the other kind of machine. */
+ *  from the other kind of machine. With the controls forced on, the mouse
+ *  stands in for a finger, so a desktop browser plays the tablet's game. */
 const FORCED_TOUCH = (() => {
   try { return new URLSearchParams(location.search).get("touch"); } catch (e) { return null; }
 })();
@@ -293,6 +294,11 @@ function initMouse() {
   const where = (e) => atScreen(e, canvas.getBoundingClientRect());
   const driveButton = () => (options.swapMouse ? 0 : 2);   // 0 the left, 2 the right
   const fireButton = () => (options.swapMouse ? 2 : 0);
+  // `?touch=1` is the tablet put on a desktop for a look, so there the mouse
+  // stands in for a finger: press, drag and let go of the left button where a
+  // finger would land, and the target button is pressed the same way
+  const asFinger = () => FORCED_TOUCH === "1";
+  const fingerGone = () => { if (touchPoints.delete("mouse")) setHeld(heldByPlaces()); };
   const stopFire = () => { if (mouseFiring) { mouseFiring = false; releaseKey("Space"); } };
   const stopDrive = () => { if (mouseDrive) { mouseDrive = null; setHeld(heldByPlaces()); } };
 
@@ -307,6 +313,12 @@ function initMouse() {
       if (zone) tapKey(zone.code);
       return;
     }
+    if (asFinger()) {
+      if (e.button !== 0) return;
+      touchPoints.set("mouse", where(e));
+      setHeld(heldByPlaces());
+      return;
+    }
     if (e.button === driveButton()) {
       mouseDrive = where(e);
       setHeld(heldByPlaces());
@@ -317,6 +329,13 @@ function initMouse() {
   });
 
   canvas.addEventListener("mousemove", (e) => {
+    if (asFinger()) {
+      if (!touchPoints.has("mouse")) return;
+      if (!(e.buttons & 1)) return fingerGone();  // let go elsewhere
+      touchPoints.set("mouse", where(e));
+      setHeld(heldByPlaces());
+      return;
+    }
     if (!mouseDrive) return;
     if (!(e.buttons & (driveButton() === 0 ? 1 : 2))) return stopDrive();   // let go elsewhere
     mouseDrive = where(e);
@@ -326,11 +345,12 @@ function initMouse() {
   // a button let go anywhere counts, and a pointer that leaves the screen or a
   // window that loses focus leaves nothing held down
   window.addEventListener("mouseup", (e) => {
+    if (asFinger()) return fingerGone();
     if (e.button === fireButton()) stopFire();
     if (e.button === driveButton()) stopDrive();
   });
-  canvas.addEventListener("mouseleave", () => { stopFire(); stopDrive(); });
-  window.addEventListener("blur", () => { stopFire(); stopDrive(); });
+  canvas.addEventListener("mouseleave", () => { fingerGone(); stopFire(); stopDrive(); });
+  window.addEventListener("blur", () => { fingerGone(); stopFire(); stopDrive(); });
 
   /* The wheel is up and down: a notch forward jumps and rides a grav-lift up,
      a notch back kneels and rides one down. A notch is an instant, and the

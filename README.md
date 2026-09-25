@@ -25,6 +25,12 @@ menus there is nothing to aim at but the words: tap the line the game asks
 for, and it counts as its key. A stylus draws where a finger would, and the
 screen reads it the same way.
 
+To see the tablet's game without a tablet, add `?touch=1` to the address:
+the screen controls come up and the mouse stands in for a finger - press
+and drag on the game screen where a finger would land, and click the
+target to fire. `?touch=0` keeps them away on a machine that has a touch
+screen.
+
 The mouse plays by those same places, for anyone with neither keys to
 hand nor a tablet: the right button held over the game screen moves Ai -
 wherever the pointer is dragged, the place under it is what he answers -
