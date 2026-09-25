@@ -1364,8 +1364,8 @@ const ctx = canvas.getContext("2d");
  *  drawn figures and Ai's rendered head get every pixel the display has. */
 function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  // on a tablet the target button stands beside the screen - along it when the
-  // tablet is on its side, under it when it is upright - and wants its room
+  // the target button stands beside the screen - along it when the window is
+  // on its side, under it when it is upright - and wants its room
   // the visible window, not the laid-out one: a phone's or a tablet's toolbars
   // sit over the page, and a screen sized for the whole of it puts the target
   // button below the fold, where nothing can scroll to it
@@ -1384,7 +1384,7 @@ function fitCanvas() {
   canvas.style.height = (canvas.height / dpr) + "px";
   ctx.imageSmoothingEnabled = false;         // (a resize resets the context)
 }
-initTouch();                                 // the screen controls, on a tablet
+initTouch();                                 // the target button and the places
 fitCanvas();
 window.addEventListener("resize", fitCanvas);
 

@@ -13,26 +13,30 @@ Enter              start              Escape   skip the intro or the ending
 ```
 
 On a tablet or a phone there are no keys, so the screen itself is the
-control (`js/touch.js`; the on-screen controls and the layout that makes
-room for them appear on a touch screen alone). In play the screen
+control (`js/touch.js`). It is there on every machine, a desktop included:
+the target button stands beside the game screen wherever the game is
+played, because no browser can be asked whether there are fingers on the
+glass - a tablet with a trackpad plugged in answers like a desktop, and a
+laptop with a touch screen answers like a tablet. In play the screen
 is read as places: a finger near a side wall runs Ai that way, near the
 ceiling jumps him, near the floor kneels him - and up and down ride the
 grav-lifts, as the keys do. Corners answer both at once, so a jump to the
 left is one touch on the top left, and the middle answers nothing, so a
 finger can rest there. The target button beside the game screen fires - a
-finger, a stylus or a mouse on a tablet all press it. On the splash and the
+finger, a stylus or a mouse all press it. On the splash and the
 menus there is nothing to aim at but the words: tap the line the game asks
 for, and it counts as its key. A stylus draws where a finger would, and the
-screen reads it the same way.
+screen reads it the same way. Nothing else on the menus answers: the best
+scores are a joke to read, not a button, so the game starts on the target,
+on the space bar, or on the line that says so.
 
-To see the tablet's game without a tablet, add `?touch=1` to the address:
-the screen controls come up and the mouse stands in for a finger - press
-and drag on the game screen where a finger would land, and click the
-target to fire. `?touch=0` keeps them away on a machine that has a touch
-screen.
+`?touch=1` in the address has the mouse stand in for a finger, for a look
+at the tablet's game from a desktop: press and drag on the game screen
+where a finger would land. `?touch=0` takes the screen controls away and
+leaves the keyboard and the mouse.
 
-The mouse plays by those same places, for anyone with neither keys to
-hand nor a tablet: the right button held over the game screen moves Ai -
+The mouse plays by those same places, for anyone with no keys to
+hand: the right button held over the game screen moves Ai -
 wherever the pointer is dragged, the place under it is what he answers -
 and the left button fires. The wheel is up and down: a notch forward
 jumps, a notch back kneels, and both ride the grav-lifts. On the splash
