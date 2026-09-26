@@ -10,6 +10,10 @@
    drawing code marks each line the game listens for with `tapZone`, and a tap
    on the line is the key it names.
 
+   The menus can also be worked without aiming: the wheel and the keypad's up
+   and down walk a cursor through the lines, and the target picks the one it
+   rests on.
+
    The mouse has buttons of its own and does not aim at the picture at all:
    the left button runs Ai left, the right button runs him right, the middle
    one fires, and the wheel is up and down - a notch forward jumps, a notch
@@ -64,7 +68,7 @@ let zoneMode = null;              // the mode those zones were drawn for
  *  so a line that moves - the menu pages roll - carries its zone with it. */
 function clearTapZones() {
   tapZones.length = 0;
-  if (state.mode !== zoneMode) { zoneMode = state.mode; letGo(); }
+  if (state.mode !== zoneMode) { zoneMode = state.mode; cursor = null; letGo(); }
 }
 
 /** Mark a place on the screen that answers a tap the way `code` does. */
@@ -75,6 +79,66 @@ function tapZone(x, y, w, h, code) {
 /** The zone a point on the game screen falls in, if any. */
 function zoneAt(p) {
   return tapZones.find((z) => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h);
+}
+
+/* ------------------------------------------------------------- the cursor
+   A menu can be worked without aiming at it at all: the wheel and the
+   keypad's up and down walk a cursor through the lines the screen listens
+   for, and the target picks the one it rests on. It is not there until it is
+   asked for - the first notch or press puts it up - so anyone tapping or
+   clicking the lines never sees it. A screen with only one line to aim at has
+   nothing to walk through, so there it stays away. */
+
+let cursor = null;                // the code of the line the cursor rests on
+
+/** The screens the cursor belongs to: the ones that are read, not played. */
+function menuNow() {
+  return state.mode === "splash" || state.mode === "title" ||
+         state.mode === "options" || state.mode === "ending";
+}
+
+/** Walk the cursor by what the frame's up and down did. Called before the
+ *  frame is drawn, so the zones are the ones the player is looking at. */
+function steerCursor() {
+  if (!menuNow()) { cursor = null; return; }
+  const codes = tapZones.map((z) => z.code);
+  const step = (tapped.ArrowDown ? 1 : 0) - (tapped.ArrowUp ? 1 : 0);
+  if (!step || codes.length < 2) return;
+  const at = codes.indexOf(cursor);
+  cursor = at < 0 ? (step > 0 ? codes[0] : codes[codes.length - 1])
+                  : codes[(at + step + codes.length) % codes.length];
+}
+
+/** The zone the cursor rests on, if it is up and its line is on screen: the
+ *  title page rolls, and a line that has rolled away answers nothing. */
+function cursorZone() {
+  return cursor === null ? null : tapZones.find((z) => z.code === cursor) || null;
+}
+
+/** The target, pressed on a menu, picks the line the cursor rests on. True
+ *  when it did, so the target knows not to fire as well. */
+function cursorPick() {
+  const zone = cursorZone();
+  if (!zone) return false;
+  tapKey(zone.code);
+  return true;
+}
+
+/** The mark itself: an arrowhead at the head of the line it rests on. A line
+ *  that runs the width of the screen has no room outside it, so the mark
+ *  keeps inside the frame and takes the margin before the line's first
+ *  letter. */
+function drawCursor(ctx) {
+  const zone = cursorZone();
+  if (!zone) return;
+  const x = Math.max(VIEW_X + 1, zone.x - 7), y = zone.y + zone.h / 2;
+  ctx.fillStyle = C.byellow;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 4);
+  ctx.lineTo(x + 6, y);
+  ctx.lineTo(x, y + 4);
+  ctx.closePath();
+  ctx.fill();
 }
 
 /* ------------------------------------------------- the fingers and the mouse */
@@ -151,9 +215,9 @@ function heldByPlaces() {
 
 /** The keys the fingers on the keypad are holding. The pad is read in thirds
  *  each way, so a finger in a corner holds two and runs while it jumps, and
- *  the middle holds nothing. */
+ *  the middle holds nothing. It answers on the menus as well as in play:
+ *  there its up and down walk the cursor, a line to a press. */
 function heldByPad() {
-  if (!placesAnswer()) return [];
   const codes = [];
   for (const p of padPoints.values()) {
     if (p.fx < 1 / 3) codes.push("ArrowLeft");
@@ -280,15 +344,18 @@ function addScreenControls() {
          mouse - or a desktop browser showing the tablet's controls - fires
          too, where a touch-only button stayed silent. */
 
+  let firePicked = false;                        // the press went to the cursor's line
   const fireDown = (e) => {
     e.preventDefault();
     fire.setPointerCapture(e.pointerId);         // a finger that slides off still lets go
     fire.classList.add("down");
-    pressKey("Space");
+    firePicked = cursorPick();                   // on a menu with the cursor up, it picks
+    if (!firePicked) pressKey("Space");
   };
   const fireUp = (e) => {
     e.preventDefault();
     fire.classList.remove("down");
+    if (firePicked) { firePicked = false; return; }
     releaseKey("Space");
   };
   fire.addEventListener("pointerdown", fireDown, { passive: false });
@@ -407,13 +474,14 @@ function initMouse() {
   });
   window.addEventListener("blur", stopAll);
 
-  /* The wheel is up and down: a notch forward jumps and rides a grav-lift up,
-     a notch back kneels and rides one down. A notch is an instant, and the
-     game reads keys that are held, so each notch holds its key for a moment
-     and the next notch keeps it held. */
+  /* The wheel is up and down: in play a notch forward jumps and rides a
+     grav-lift up, a notch back kneels and rides one down, and on the menus a
+     notch walks the cursor a line. A notch is an instant, and the game reads
+     keys that are held, so each notch holds its key for a moment and the next
+     notch keeps it held. */
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
-    if (!placesAnswer() || !e.deltaY) return;
+    if (!e.deltaY) return;
     const code = e.deltaY < 0 ? "ArrowUp" : "ArrowDown";
     if (wheelCode && wheelCode !== code) endWheel();
     wheelCode = code;

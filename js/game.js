@@ -1544,14 +1544,17 @@ function draw() {
   const scale = canvas.width / SCREEN_W;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
-  if (state.mode === "splash") return drawSplash(ctx);
-  if (state.mode === "title") return drawMenu(ctx);
-  if (state.mode === "options") return drawOptions(ctx);
-  if (state.mode === "intro") return drawIntro(ctx);
-  if (state.mode === "ending") {
-    tapZone(0, 0, SCREEN_W, SCREEN_H, "Escape");   // a tap anywhere moves the credits on
-    return drawEnding(ctx);
+  if (menuNow()) {                                 // the screens the cursor belongs to
+    if (state.mode === "splash") drawSplash(ctx);
+    else if (state.mode === "title") drawMenu(ctx);
+    else if (state.mode === "options") drawOptions(ctx);
+    else {
+      tapZone(0, 0, SCREEN_W, SCREEN_H, "Escape"); // a tap anywhere moves the credits on
+      drawEnding(ctx);
+    }
+    return drawCursor(ctx);
   }
+  if (state.mode === "intro") return drawIntro(ctx);
 
   drawFrame(ctx);
   ctx.save();
@@ -1730,6 +1733,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   state.phase += dt;
+  steerCursor();                     // the wheel and the keypad walk the menus' cursor
 
   if (state.mode === "splash") {
     if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; music.start("title"); }
