@@ -10,9 +10,9 @@
    drawing code marks each line the game listens for with `tapZone`, and a tap
    on the line is the key it names.
 
-   The menus can also be worked without aiming: the wheel and the up and down
-   buttons walk a cursor through the lines, and the target picks the one it
-   rests on.
+   The menus can also be worked without aiming: a cursor rests on one of the
+   lines from the moment the page is up, the wheel and the up and down buttons
+   walk it, and the target picks the line it rests on.
 
    The mouse has buttons of its own and does not aim at the picture at all:
    the left button runs Ai left, the right button runs him right, the middle
@@ -84,14 +84,17 @@ function zoneAt(p) {
 }
 
 /* ------------------------------------------------------------- the cursor
-   A menu can be worked without aiming at it at all: the wheel and the up and
-   down buttons walk a cursor through the lines the screen listens
-   for, and the target picks the one it rests on. It is not there until it is
-   asked for - the first notch or press puts it up - so anyone tapping or
-   clicking the lines never sees it. A screen with only one line to aim at has
-   nothing to walk through, so there it stays away. */
+   A menu can be worked without aiming at it at all: a cursor rests on one of
+   the lines the screen listens for, the wheel and the up and down buttons
+   walk it, and the target picks the one it rests on. It is up from the moment
+   the page is, on its first line, so that a player who has never touched the
+   wheel can still see what the target would pick. A page with no lines to
+   pick - the joke scores, the rolling credits - has nothing to rest on, and
+   there it stays away. */
 
 let cursor = null;                // the code of the line the cursor rests on
+let steeredAt = -1e9;             // when the player last walked it themselves
+const STEER_HOLD = 4;             // seconds a walked cursor holds its page
 
 /* The buttons beside the screen, once they are made: the four ways by name,
    and the target. `showFireSide` moves them between the two columns. */
@@ -104,22 +107,37 @@ function menuNow() {
          state.mode === "options" || state.mode === "ending";
 }
 
-/** Walk the cursor by what the frame's up and down did. Called before the
- *  frame is drawn, so the zones are the ones the player is looking at. */
+/** The zones the cursor can rest on: the lines. A page that answers a tap
+ *  anywhere - the credits - is not a list to walk, so it offers none. */
+function menuLines() {
+  return tapZones.filter((z) => z.w < SCREEN_W || z.h < SCREEN_H);
+}
+
+/** Put the cursor up on the first line, and walk it by what the frame's up
+ *  and down did. Called before the frame is drawn, so the zones are the ones
+ *  the player is looking at. */
 function steerCursor() {
   if (!menuNow()) { cursor = null; return; }
-  const codes = tapZones.map((z) => z.code);
+  const codes = menuLines().map((z) => z.code);
+  if (!codes.length) return;          // nothing to rest on; the cursor waits
+  let at = codes.indexOf(cursor);
+  if (at < 0) { cursor = codes[0]; at = 0; }     // up from the moment the page is
   const step = (tapped.ArrowDown ? 1 : 0) - (tapped.ArrowUp ? 1 : 0);
   if (!step || codes.length < 2) return;
-  const at = codes.indexOf(cursor);
-  cursor = at < 0 ? (step > 0 ? codes[0] : codes[codes.length - 1])
-                  : codes[(at + step + codes.length) % codes.length];
+  cursor = codes[(at + step + codes.length) % codes.length];
+  steeredAt = state.phase;
+}
+
+/** True while the player is working the cursor, which holds a page that would
+ *  otherwise roll on: they are picking a line, not watching the screen. */
+function cursorSteering() {
+  return cursor !== null && state.phase - steeredAt < STEER_HOLD;
 }
 
 /** The zone the cursor rests on, if it is up and its line is on screen: the
  *  title page rolls, and a line that has rolled away answers nothing. */
 function cursorZone() {
-  return cursor === null ? null : tapZones.find((z) => z.code === cursor) || null;
+  return cursor === null ? null : menuLines().find((z) => z.code === cursor) || null;
 }
 
 /** The target, pressed on a menu, picks the line the cursor rests on. True
