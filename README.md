@@ -40,14 +40,15 @@ screen reads it the same way. Nothing else on the menus answers: the best
 scores are a joke to read, not a button, so the game starts on the target,
 on the space bar, or on the line that says so.
 
-The menus can also be worked without aiming at them: the wheel and the up
-and down buttons walk a cursor through the lines the screen listens
-for, and the target picks the one it rests on. The cursor is not there
-until it is asked for - the first notch or press puts it up - so anyone
-tapping or clicking the lines never sees it, and while it is up on the
-title page the page stops taking turns with the scores, so the line it
-rests on does not roll away. A screen with only one line to aim at has
-nothing to walk through, so there it stays away.
+The menus can also be worked without aiming at them: a cursor rests on one
+of the lines the screen listens for, the wheel and the up and down buttons
+walk it, and the target picks the line it rests on. It is up from the
+moment the page is, on the page's first line, so a player who has never
+touched the wheel can see what the target would pick; while it is being
+walked the title page stops taking turns with the scores, so the line it
+rests on does not roll away. A page with no lines to pick - the joke
+scores, the rolling credits - has nothing to rest on, and there it stays
+away.
 
 `?touch=1` in the address has the mouse stand in for a finger, for a look
 at the tablet's game from a desktop: press and drag on the game screen
