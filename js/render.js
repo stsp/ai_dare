@@ -277,7 +277,9 @@ function drawPanel(ctx, state) {
   for (let i = 0; i <= gw; i += 6) ctx.fillRect(gx + i, gy + gh - 3, 1, 3);
 
   drawText(ctx, tx(["SCORE #"], state.score)[0], px + 104, py + 4, C.bwhite);
-  drawText(ctx, tx(["PARTS # OF 5"], state.fitted)[0] + (state.carrying ? " +1" : ""), px + 104, py + 14, C.bcyan);
+  drawText(ctx, tx(["PARTS # OF 5"], state.fitted)[0], px + 104, py + 14, C.bcyan);
+  // a part in hand gets a line of its own, not a "+1" on the counter
+  if (state.carrying) drawText(ctx, tx(["CARRYING A PART"])[0], px + 104, py + 22, C.byellow);
 
   // viewer window at the right: the asteroid, or the alien boss when he taunts you
   const vx = SCREEN_W - 44, vy = py + 2, vs = 26;
