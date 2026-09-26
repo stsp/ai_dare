@@ -482,12 +482,10 @@ const state = {
   carrying: false,     // Ai has a part on him
   armed: false,        // all five parts fitted: the countdown runs
   viewer: "asteroid",
-  msgTop: null,          // narration box over the play area
+  tops: [],              // narration boxes over the play area: {lines, t}, oldest first
   cheat: {},             // doors | parts | time, typed as codes; they last the session
   story: "dare",         // whose words: the pilot's, or the policeman's (options page)
-  msgBottom: null,       // second box, as the original uses for asides
-  messageTimer: 0,        // the top box's own clock
-  noteTimer: 0,           // the lower box's, so one box never cuts the other short or holds it over
+  notes: [],             // the lower boxes, as the original uses for asides: {lines, t, boss}
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
@@ -590,7 +588,7 @@ const HOLOGRAM_SAY = 3.8, HOLOGRAM_PAUSE = 1.9, HOLOGRAM_ANSWER = 3.1;
 /** The alien boss on the video link: his face on the screen at the bottom right,
  *  his words in the box at the top. */
 function call(lines, secs) {
-  note(lines, secs);                 // over the link his words come up in the lower box
+  note(lines, secs, true);           // over the link his words come up in the lower box
   state.viewer = "boss";
   state.viewerTimer = secs;
   state.viewerStatic = 0.5;          // the picture takes a moment to lock on
@@ -618,24 +616,36 @@ function runCues(dt) {
   state.cues = state.cues.filter((c) => c.t > 0);
 }
 
-/** Narration box at the top of the play area; one box, one sentence. */
-function say(lines, secs) {
-  state.msgTop = lines;
-  state.messageTimer = secs;
+// boxes held on the screen at once, per edge; a further one pushes out the oldest
+const MSG_STACK = 3;
+
+/** Puts a box up on one edge's stack. Words already showing there only get
+ *  their time back; new ones go up beside the others instead of over them, so
+ *  "the policeman has arrived" is still read when the alarm comes up. */
+function pushBox(stack, lines, secs, boss) {
+  const same = stack.find((m) => m.lines.join("|") === lines.join("|"));
+  if (same) { same.t = Math.max(same.t, secs); same.boss = same.boss || boss; return; }
+  stack.push({ lines, t: secs, boss });
+  while (stack.length > MSG_STACK) stack.shift();
 }
 
-/** Each box keeps its own clock and clears itself when it runs out, so a
- *  narration and an aside never cut each other short nor hold each other over. */
+/** Narration box at the top of the play area; one box, one sentence. Several
+ *  at once stack downwards, the newest last. */
+function say(lines, secs) { pushBox(state.tops, lines, secs, false); }
+
+/** Aside in the lower box; several stack upwards from the bottom edge. */
+function note(lines, secs, boss) { pushBox(state.notes, lines, secs, !!boss); }
+
+/** Each box keeps its own clock and clears itself when it runs out, so no box
+ *  cuts another short nor holds it over. */
 function tickMessages(dt) {
-  if (state.messageTimer > 0 && (state.messageTimer -= dt) <= 0) state.msgTop = null;
-  if (state.noteTimer > 0 && (state.noteTimer -= dt) <= 0) state.msgBottom = null;
+  for (const m of state.tops) m.t -= dt;
+  for (const m of state.notes) m.t -= dt;
+  state.tops = state.tops.filter((m) => m.t > 0);
+  state.notes = state.notes.filter((m) => m.t > 0);
 }
 
-/** Aside in the lower box. */
-function note(lines, secs) {
-  state.msgBottom = lines;
-  state.noteTimer = secs;
-}
+function clearMessages() { state.tops = []; state.notes = []; }
 
 /** A fresh seed for each game, so the guards stand elsewhere every time it is
  *  started; `?seed=N` in the address fixes it, for a run to be repeated. */
@@ -664,10 +674,11 @@ function startGame() {
   state.carrying = false;
   state.armed = false;
   guards = [];   // the last game's, or the room it ended in would keep them into this one
+  clearMessages();
+  say(tx(["AI LANDS ON", "THE ASTEROID"]), 3);   // first, so the room's own words stack under it
   const spawn = widestPlatform(START.room);
   resetAi(16, spawn.y - AI_H);
   enterRoom(START.key, 16, spawn.y - AI_H);
-  say(tx(["AI LANDS ON", "THE ASTEROID"]), 3);
 }
 
 // ------------------------------------------------------------------ collision
@@ -1642,8 +1653,7 @@ function draw() {
       ctx.stroke();
     }
   }
-  if (state.msgTop && state.messageTimer > 0) drawMessage(ctx, state.msgTop, true);
-  if (state.msgBottom && state.noteTimer > 0) drawMessage(ctx, state.msgBottom, false, state.viewer === "boss");
+  drawMessages(ctx);
   ctx.restore();
 
   drawPanel(ctx, state);
@@ -1752,7 +1762,7 @@ function frame(now) {
     tickMessages(dt);
     if (state.viewerTimer > 0 && (state.viewerTimer -= dt) <= 0) state.viewer = "asteroid";
     if (state.viewerStatic > 0) state.viewerStatic -= dt;
-    if ((state.nextTaunt -= dt) <= 0 && state.messageTimer <= 0 && state.noteTimer <= 0) taunt();
+    if ((state.nextTaunt -= dt) <= 0 && !state.tops.length && !state.notes.length) taunt();
     if (state.burst > 0) state.burst -= dt;
     if (state.flash > 0) state.flash -= dt;
     if (state.invert > 0) state.invert -= dt;
