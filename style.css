@@ -62,12 +62,12 @@ body.touch #help {
   max-width: 92vw;
 }
 
-/* the game screen with the target at one end of it and the keypad at the
-   other. On its side the two are the stage's own children, so each can take
-   an end; upright the box holds them in a row under the screen. */
+/* The game screen with a column of controls at each end. On its side the
+   columns are the stage's own children, so each takes an end; upright the box
+   holds them in a row under the screen, one at each end of that. */
 #stage {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
 }
 
@@ -75,8 +75,20 @@ body.touch #help {
   display: contents;
 }
 
-#fire, #pad {
+/* a column: left or right at the top, then the middle, then the foot */
+.side {
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr;
+  justify-items: center;
+  align-items: center;
   flex: none;
+  width: 104px;
+}
+
+#sideA { order: -1; }
+#sideB { order:  1; }
+
+#fire, .way {
   box-sizing: border-box;           /* the border is part of the 104, as a button's is */
   width: 104px;
   height: 104px;
@@ -88,38 +100,34 @@ body.touch #help {
   -webkit-tap-highlight-color: transparent;
 }
 
-#fire { order: -1; border-radius: 50%; }    /* the target, beside its own mouse button */
-#pad  { order:  1; border-radius: 14px; }
+#fire { border-radius: 50%; }
+.way  { border-radius: 14px; }
 
-/* swapped over, as the mouse buttons are */
-body.fire-right #fire { order:  1; }
-body.fire-right #pad  { order: -1; }
+/* the row each one stands in, whichever column it has been dealt to */
+#left, #right { grid-row: 1; }
+#fire, #up    { grid-row: 2; }
+#down         { grid-row: 3; }
 
 #fire svg { width: 62px; height: 62px; display: block; margin: 0 auto; }
-#pad svg  { width: 84px; height: 84px; display: block; margin: 4px auto; }
+.way svg  { width: 66px; height: 66px; display: block; margin: 0 auto; }
+.way svg path { fill: rgba(0, 216, 216, 0.55); }
 
-#fire.down {
+#fire.down, .way.down {
   background: rgba(255, 216, 0, 0.35);
   border-color: #ffd800;
 }
+.way.down svg path { fill: #ffd800; }
 
-/* the keypad's four ways, each lighting up while it is held */
-#pad svg path { fill: rgba(0, 216, 216, 0.55); }
-#pad.left  .left,
-#pad.right .right,
-#pad.up    .up,
-#pad.down  .down { fill: #ffd800; }
-
-/* upright: the screen on top, the two controls in a row under it */
+/* upright: the screen on top, the two columns in a row under it */
 @media (orientation: portrait) {
   #stage {
     flex-direction: column;
     align-items: stretch;
   }
-  /* the same order puts the target on the same side as it does on its side */
   #controls {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: stretch;
   }
+  .side { height: 344px; }          /* three buttons and the gaps between them */
 }

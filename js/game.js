@@ -1364,9 +1364,9 @@ const ctx = canvas.getContext("2d");
  *  drawn figures and Ai's rendered head get every pixel the display has. */
 function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  // the target and the keypad stand beside the screen - one at each end of it
-  // when the window is on its side, the two in a row under it when the window
-  // is upright - and want their room
+  // a column of controls stands at each end of the screen when the window is
+  // on its side, and the two columns stand in a row under it when the window
+  // is upright - either way they want their room
   // the visible window, not the laid-out one: a phone's or a tablet's toolbars
   // sit over the page, and a screen sized for the whole of it puts the target
   // button below the fold, where nothing can scroll to it
@@ -1375,7 +1375,7 @@ function fitCanvas() {
   const roomW = Math.min(window.innerWidth, vw), roomH = Math.min(window.innerHeight, vh);
   const wide = roomW > roomH;
   const availW = TOUCH ? roomW - (wide ? 2 * TOUCH_PAD : 8) : roomW * 0.96;
-  const availH = TOUCH ? roomH - (wide ? 8 : TOUCH_PAD) : roomH * 0.88;
+  const availH = TOUCH ? roomH - (wide ? 8 : TOUCH_TALL) : roomH * 0.88;
   const k = Math.max(2, Math.min(9, Math.floor(Math.min(availW / SCREEN_W, availH / SCREEN_H) * dpr)));
   if (canvas.width !== SCREEN_W * k) {
     canvas.width = SCREEN_W * k;
@@ -1733,7 +1733,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   state.phase += dt;
-  steerCursor();                     // the wheel and the keypad walk the menus' cursor
+  steerCursor();                     // the wheel and up and down walk the menus' cursor
 
   if (state.mode === "splash") {
     if (tapped.Space || tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; music.start("title"); }
