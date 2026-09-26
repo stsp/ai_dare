@@ -62,20 +62,25 @@ body.touch #help {
   max-width: 92vw;
 }
 
-/* the game screen and the target button, side by side */
+/* the game screen with the target at one end of it and the keypad at the
+   other. On its side the two are the stage's own children, so each can take
+   an end; upright the box holds them in a row under the screen. */
 #stage {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-#fire {
-  order: -1;                        /* on its side: the button left of the screen */
+#controls {
+  display: contents;
+}
+
+#fire, #pad {
   flex: none;
+  box-sizing: border-box;           /* the border is part of the 104, as a button's is */
   width: 104px;
   height: 104px;
   padding: 0;
-  border-radius: 50%;
   border: 4px solid #00d8d8;
   background: rgba(0, 216, 216, 0.12);
   color: #ffd800;
@@ -83,23 +88,38 @@ body.touch #help {
   -webkit-tap-highlight-color: transparent;
 }
 
-#fire svg {
-  width: 62px;
-  height: 62px;
-  display: block;
-  margin: 0 auto;
-}
+#fire { order: -1; border-radius: 50%; }    /* the target, beside its own mouse button */
+#pad  { order:  1; border-radius: 14px; }
+
+/* swapped over, as the mouse buttons are */
+body.fire-right #fire { order:  1; }
+body.fire-right #pad  { order: -1; }
+
+#fire svg { width: 62px; height: 62px; display: block; margin: 0 auto; }
+#pad svg  { width: 84px; height: 84px; display: block; margin: 4px auto; }
 
 #fire.down {
   background: rgba(255, 216, 0, 0.35);
   border-color: #ffd800;
 }
 
-/* upright: the button under the screen, at the left of it */
+/* the keypad's four ways, each lighting up while it is held */
+#pad svg path { fill: rgba(0, 216, 216, 0.55); }
+#pad.left  .left,
+#pad.right .right,
+#pad.up    .up,
+#pad.down  .down { fill: #ffd800; }
+
+/* upright: the screen on top, the two controls in a row under it */
 @media (orientation: portrait) {
   #stage {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
-  #fire { order: 1; }
+  /* the same order puts the target on the same side as it does on its side */
+  #controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
