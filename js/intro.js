@@ -31,6 +31,9 @@ const menu = { page: 0, t: 0, scroll: 0, marquee: 0 };
 
 function updateMenu(dt) {
   menu.t += dt;
+  // a cursor up on the credits page holds the page there: it is being read a
+  // line at a time, and a page that rolls away takes the cursor's line with it
+  if (cursorZone() && menu.page === 0 && menu.scroll === 0) menu.t = 0;
   if (menu.t > 5) {                       // the page rolls up and the other rolls in
     menu.scroll += dt * 140;
     if (menu.scroll > 120) { menu.page = 1 - menu.page; menu.t = 0; menu.scroll = 0; }
