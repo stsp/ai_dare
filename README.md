@@ -26,10 +26,9 @@ finger can rest there. The target button beside the game screen fires - a
 finger, a stylus or a mouse all press it - and a keypad stands at the other
 end of the screen for anyone who would rather aim at a control than at the
 picture; it is read in thirds the same way, so its corners run and jump at
-once. The target keeps company with the button that fires it: with the left
-button firing, the way the game comes, the target is on the left and the
-keypad on the right, and swapping the mouse buttons on the options page
-swaps the two over. On the splash and the
+once. The target stands on the left and the keypad on the right, the way the
+game comes, and the fourth line of the options page puts them the other way
+about. On the splash and the
 menus there is nothing to aim at but the words: tap the line the game asks
 for, and it counts as its key. A stylus draws where a finger would, and the
 screen reads it the same way. Nothing else on the menus answers: the best
@@ -41,17 +40,15 @@ at the tablet's game from a desktop: press and drag on the game screen
 where a finger would land. `?touch=0` takes the screen controls away and
 leaves the keyboard and the mouse.
 
-The mouse plays by those same places, for anyone with no keys to
-hand: the right button held over the game screen moves Ai -
-wherever the pointer is dragged, the place under it is what he answers -
-and the left button fires. The wheel is up and down: a notch forward
-jumps, a notch back kneels, and both ride the grav-lifts. On the splash
-and the menus either button picks the line. Which button fires is the
-fourth line of the options page, and the choice is remembered by the
-browser, as the story is.
+The mouse has buttons of its own and does not aim at the picture at all:
+the left button runs Ai left, the right button runs him right and the
+middle one fires. The wheel is up and down: a notch forward jumps, a notch
+back kneels, and both ride the grav-lifts. Those never change. On the
+splash and the menus any button picks the line under the pointer.
 
 `1` on the title page opens the options, laid out as the original's: the
-control keys, and a third line the original never had - the story. Chosen,
+control keys, a fourth line for which side the target stands on, and a
+third the original never had - the story. Chosen,
 every message, the panel and the title tell another tale: Ai is now the AI
 that flies the mail rocket to Mars, and Dare is a policeman. A skeleton forces
 the rocket down on his cosmodrome, Ai calls the police, and Dare drives out

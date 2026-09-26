@@ -10,24 +10,22 @@
    drawing code marks each line the game listens for with `tapZone`, and a tap
    on the line is the key it names.
 
-   The mouse plays by the same places, for anyone without a tablet: the right
-   button held over the game screen moves Ai - wherever the pointer is dragged,
-   the place under it is what he answers - and the left button fires. On the
-   menus either button picks the line, as a finger does, and the wheel is up and
-   down: a notch forward jumps, a notch back kneels, and both ride the
-   grav-lifts. Which button fires is the fourth option on the options page, and
-   it is remembered. A stylus draws where a finger would, and the target button
-   answers any of the three.
+   The mouse has buttons of its own and does not aim at the picture at all:
+   the left button runs Ai left, the right button runs him right, the middle
+   one fires, and the wheel is up and down - a notch forward jumps, a notch
+   back kneels, and both ride the grav-lifts. Those never change. On the menus
+   any button picks the line under the pointer, as a finger does. A stylus
+   draws where a finger would, and the target button answers any of the three.
 
    Beside the screen stand two controls: the target that fires, and a keypad
    for anyone who would rather aim at a control than at the picture. The
    keypad is read in thirds, so its corners run and jump at once, as the
    screen's own corners do.
 
-   Which side each stands on follows the mouse: the target keeps company with
-   the button that fires it, so with the left button firing - the way the game
-   comes - the target is on the left and the keypad on the right, and swapping
-   the buttons on the options page swaps the two over.
+   Which side each stands on is the fourth line of the options page: the
+   target on the left and the keypad on the right, the way the game comes, or
+   the two the other way about. It is the only thing that line does, and it is
+   remembered.
 
    The screen controls are there on every machine, whatever it is played on.
    A desktop browser shows them too: they are targets to click as well as to
@@ -84,8 +82,8 @@ function zoneAt(p) {
 let pointerHeld = [];             // the codes the pointers are holding down now
 const touchPoints = new Map();    // the touches on the game screen, by id
 const padPoints = new Map();      // the fingers on the keypad, by pointer id
-let mouseDrive = null;            // where the driving button is pointing, if it is down
-let mouseFiring = false;          // the firing button, held down on the game screen
+const mouseRun = new Set();       // the way keys the mouse's own buttons hold
+let mouseFiring = false;          // the middle button, held down on the game screen
 let wheelCode = null;             // the key a notch of the wheel is holding
 let wheelTimer = 0;
 const WHEEL_HOLD = 160;           // ms a notch holds its key: long enough for a jump
@@ -117,7 +115,7 @@ function tapKey(code) {
 function letGo() {
   touchPoints.clear();
   padPoints.clear();
-  mouseDrive = null;
+  mouseRun.clear();
   setHeld([]);
   endWheel();
   if (mouseFiring) { mouseFiring = false; releaseKey("Space"); }
@@ -141,9 +139,7 @@ function atScreen(point, rect) {
 function heldByPlaces() {
   if (!placesAnswer()) return [];
   const codes = [];
-  const spots = [...touchPoints.values()];
-  if (mouseDrive) spots.push(mouseDrive);
-  for (const p of spots) {
+  for (const p of touchPoints.values()) {
     const fx = p.x / SCREEN_W, fy = p.y / SCREEN_H;
     if (fx < BAND_X) codes.push("ArrowLeft");
     else if (fx > 1 - BAND_X) codes.push("ArrowRight");
@@ -168,9 +164,14 @@ function heldByPad() {
   return codes;
 }
 
-/** Everything the screen and the keypad hold between them, held down. */
+/** The way keys the mouse's own buttons are holding. */
+function heldByMouse() {
+  return placesAnswer() ? [...mouseRun] : [];
+}
+
+/** Everything the screen, the keypad and the mouse hold between them. */
 function refreshHeld() {
-  const codes = [...heldByPlaces(), ...heldByPad()];
+  const codes = [...heldByPlaces(), ...heldByPad(), ...heldByMouse()];
   setHeld(codes.filter((c, i) => codes.indexOf(c) === i));
   const pad = document.getElementById("pad");
   if (pad) {
@@ -333,37 +334,37 @@ function addScreenControls() {
   if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
 }
 
-/** The target keeps company with the button that fires it: with the left
- *  button firing - the way the game comes - the target stands on the left of
- *  the screen and the keypad on the right, and the options page's fourth line
- *  swaps the buttons and the two controls together. */
+/** Which side of the screen the target stands on, and the keypad opposite it:
+ *  the target on the left the way the game comes, or the two the other way
+ *  about, as the options page's fourth line says. */
 function showFireSide() {
-  document.body.classList.toggle("fire-right", !!options.swapMouse);
+  document.body.classList.toggle("fire-right", !!options.targetRight);
 }
 
-/** The mouse: one button drives, the other fires, and the wheel goes up and
- *  down. The left button fires and the right one drives, unless the fourth
- *  option on the options page swaps them. On the menus either button picks the
- *  line, whichever way round they are - the same places a finger answers. */
+/** The mouse plays by its own buttons, not by where it points: the left one
+ *  runs Ai left, the right one runs him right and the middle one fires. On
+ *  the menus any button picks the line under the pointer, the same places a
+ *  finger answers. */
 function initMouse() {
   const where = (e) => atScreen(e, canvas.getBoundingClientRect());
-  const driveButton = () => (options.swapMouse ? 0 : 2);   // 0 the left, 2 the right
-  const fireButton = () => (options.swapMouse ? 2 : 0);
-  // `?touch=1` is the tablet put on a desktop for a look, so there the mouse
-  // stands in for a finger: press, drag and let go of the left button where a
-  // finger would land, and the target button is pressed the same way
+  const RUNS = { 0: "ArrowLeft", 2: "ArrowRight" };   // 0 the left button, 2 the right
+  const FIRES = 1;                                    // 1 the middle one
+  const DOWN = { 0: 1, 1: 4, 2: 2 };                  // the same buttons in an event's mask
+  // `?touch=1` is the screen controls put on a desktop for a look, so there
+  // the mouse stands in for a finger instead: press, drag and let go of the
+  // left button where a finger would land
   const asFinger = () => FORCED_TOUCH === "1";
   const fingerGone = () => { if (touchPoints.delete("mouse")) refreshHeld(); };
   const stopFire = () => { if (mouseFiring) { mouseFiring = false; releaseKey("Space"); } };
-  const stopDrive = () => { if (mouseDrive) { mouseDrive = null; refreshHeld(); } };
+  const stopAll = () => { fingerGone(); stopFire(); mouseRun.clear(); refreshHeld(); };
 
   // over the game screen the right button is a control, not a menu
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
   canvas.addEventListener("mousedown", (e) => {
-    if (e.button !== 0 && e.button !== 2) return;
-    e.preventDefault();
-    if (!placesAnswer()) {                       // on the menus either button picks
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+    e.preventDefault();                          // no menu, and no middle-button scrolling
+    if (!placesAnswer()) {                       // on the menus any button picks
       const zone = zoneAt(where(e));
       if (zone) tapKey(zone.code);
       return;
@@ -374,14 +375,11 @@ function initMouse() {
       refreshHeld();
       return;
     }
-    if (e.button === driveButton()) {
-      mouseDrive = where(e);
-      refreshHeld();
-    } else {
-      mouseFiring = true;
-      pressKey("Space");
-    }
+    if (e.button === FIRES) { mouseFiring = true; pressKey("Space"); return; }
+    mouseRun.add(RUNS[e.button]);
+    refreshHeld();
   });
+  canvas.addEventListener("auxclick", (e) => e.preventDefault());
 
   canvas.addEventListener("mousemove", (e) => {
     if (asFinger()) {
@@ -391,21 +389,23 @@ function initMouse() {
       refreshHeld();
       return;
     }
-    if (!mouseDrive) return;
-    if (!(e.buttons & (driveButton() === 0 ? 1 : 2))) return stopDrive();   // let go elsewhere
-    mouseDrive = where(e);
-    refreshHeld();
+    // a button let go where no event reached us is a button no longer down
+    let changed = false;
+    for (const b of [0, 2]) {
+      if (mouseRun.has(RUNS[b]) && !(e.buttons & DOWN[b])) { mouseRun.delete(RUNS[b]); changed = true; }
+    }
+    if (mouseFiring && !(e.buttons & DOWN[FIRES])) stopFire();
+    if (changed) refreshHeld();
   });
 
-  // a button let go anywhere counts, and a pointer that leaves the screen or a
-  // window that loses focus leaves nothing held down
+  // a button let go anywhere counts, wherever the pointer has wandered to, and
+  // a window that loses focus leaves nothing held down
   window.addEventListener("mouseup", (e) => {
     if (asFinger()) return fingerGone();
-    if (e.button === fireButton()) stopFire();
-    if (e.button === driveButton()) stopDrive();
+    if (e.button === FIRES) stopFire();
+    if (RUNS[e.button] && mouseRun.delete(RUNS[e.button])) refreshHeld();
   });
-  canvas.addEventListener("mouseleave", () => { fingerGone(); stopFire(); stopDrive(); });
-  window.addEventListener("blur", () => { fingerGone(); stopFire(); stopDrive(); });
+  window.addEventListener("blur", stopAll);
 
   /* The wheel is up and down: a notch forward jumps and rides a grav-lift up,
      a notch back kneels and rides one down. A notch is an instant, and the

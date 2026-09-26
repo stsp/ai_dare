@@ -66,8 +66,8 @@ const STORY = {
   "KEYBOARD Q,A,O,P,SPACE": ["КЛАВИШИ Q,A,O,P,ПРОБЕЛ"],
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
   "STORY: AI DARE": ["СЮЖЕТ: МЕНТ ДАРЕ"],
-  "MOUSE: FIRE LEFT": ["МЫШЬ: ОГОНЬ ЛЕВОЙ"],
-  "MOUSE: FIRE RIGHT": ["МЫШЬ: ОГОНЬ ПРАВОЙ"],
+  "TARGET ON THE LEFT": ["МИШЕНЬ СЛЕВА"],
+  "TARGET ON THE RIGHT": ["МИШЕНЬ СПРАВА"],
   "THE ASTEROID IS COMING.": ["ПОЧТОВАЯ РАКЕТА В БЕДЕ."],
   "AI DARE GOES IN ALONE.": ["МЕНТ ЕДЕТ НА ВЫЗОВ."],
   "PRESS 'ENTER' WHEN DONE.": ["ГОТОВО - ЖМИ 'ENTER'."],
@@ -94,7 +94,7 @@ function tx(lines, n) {
 // ----------------------------------------------------------- options page
 // As the original's: the control options, one of them lit, and "PRESS
 // 'ENTER' WHEN DONE." - plus the story, which the original never offered.
-const options = { control: 1, swapMouse: loadSwapMouse() };
+const options = { control: 1, targetRight: loadTargetRight() };
 
 function loadStory() {
   try { return localStorage.getItem("aidare.story") === "postal" ? "postal" : "dare"; } catch (e) { return "dare"; }
@@ -104,23 +104,27 @@ function setStory(s) {
   try { localStorage.setItem("aidare.story", s); } catch (e) { /* no storage */ }
 }
 
-/** Which way round the mouse buttons are: the left one fires by default, and
- *  the fourth option swaps it with the one that moves. Remembered, as the
- *  story is. */
-function loadSwapMouse() {
-  try { return localStorage.getItem("aidare.mouse") === "swap"; } catch (e) { return false; }
+/** Which side the target stands on, with the keypad opposite it: the left by
+ *  default, and the fourth option puts it on the right. Remembered, as the
+ *  story is. The mouse has buttons of its own and does not move with it. */
+function loadTargetRight() {
+  try {
+    const side = localStorage.getItem("aidare.controls");
+    if (side !== null) return side === "right";
+    return localStorage.getItem("aidare.mouse") === "swap";   // what the line used to say
+  } catch (e) { return false; }
 }
-function setSwapMouse(on) {
-  options.swapMouse = on;
-  showFireSide();                  // the target follows the button that fires it
-  try { localStorage.setItem("aidare.mouse", on ? "swap" : "normal"); } catch (e) { /* no storage */ }
+function setTargetRight(on) {
+  options.targetRight = on;
+  showFireSide();
+  try { localStorage.setItem("aidare.controls", on ? "right" : "left"); } catch (e) { /* no storage */ }
 }
 
 function updateOptions() {
   if (tapped.Digit1) options.control = 1;
   if (tapped.Digit2) options.control = 2;
   if (tapped.Digit3) setStory(state.story === "postal" ? "dare" : "postal");
-  if (tapped.Digit4) setSwapMouse(!options.swapMouse);
+  if (tapped.Digit4) setTargetRight(!options.targetRight);
   if (tapped.Enter || tapped.Escape) { state.mode = "title"; menu.t = 0; }
 }
 
@@ -135,12 +139,12 @@ function drawOptions(ctx) {
   const head = tx(["CONTROL  OPTIONS"])[0];
   drawBig(ctx, head, 120 - textWidth(head) * 0.8, 62, C.white, 1.6);
   const lines = [tx(["KEYBOARD Q,A,O,P,SPACE"])[0], tx(["CURSOR KEYS AND SPACE"])[0], tx(["STORY: AI DARE"])[0],
-                 tx([options.swapMouse ? "MOUSE: FIRE RIGHT" : "MOUSE: FIRE LEFT"])[0]];
+                 tx([options.targetRight ? "TARGET ON THE RIGHT" : "TARGET ON THE LEFT"])[0]];
   // four lines and the footer want the room the original's three left over
   lines.forEach((ln, i) => {
     const y = 78 + i * 12;
     const lit = i + 1 === options.control || (i === 2 && state.story === "postal") ||
-                (i === 3 && options.swapMouse);
+                (i === 3 && options.targetRight);
     tapZone(VIEW_X + 2, VIEW_Y + y - 2, VIEW_W - 4, 12, "Digit" + (i + 1));   // a tap picks the line
     if (lit) { ctx.fillStyle = C.black; ctx.fillRect(2, y - 2, VIEW_W - 4, 11); }
     const col = lit ? CYCLE[(tick + i) % CYCLE.length] : C.white;
