@@ -10,8 +10,8 @@
    drawing code marks each line the game listens for with `tapZone`, and a tap
    on the line is the key it names.
 
-   The menus can also be worked without aiming: the wheel and the keypad's up
-   and down walk a cursor through the lines, and the target picks the one it
+   The menus can also be worked without aiming: the wheel and the up and down
+   buttons walk a cursor through the lines, and the target picks the one it
    rests on.
 
    The mouse has buttons of its own and does not aim at the picture at all:
@@ -21,15 +21,16 @@
    any button picks the line under the pointer, as a finger does. A stylus
    draws where a finger would, and the target button answers any of the three.
 
-   Beside the screen stand two controls: the target that fires, and a keypad
-   for anyone who would rather aim at a control than at the picture. The
-   keypad is read in thirds, so its corners run and jump at once, as the
-   screen's own corners do.
+   Beside the screen stand five controls, spread to the corners so that no two
+   want the same thumb: the way buttons left and right at the top, one at each
+   end of the screen; the target, which fires, halfway down its own end; and
+   up and down halfway down and at the foot of the other end, clear of it. One
+   thumb runs while the other jumps.
 
-   Which side each stands on is the fourth line of the options page: the
-   target on the left and the keypad on the right, the way the game comes, or
-   the two the other way about. It is the only thing that line does, and it is
-   remembered.
+   Which end the target takes is the fourth line of the options page: the left
+   the way the game comes, or the right. Up and down go to whichever end the
+   target does not, and left and right stay at the ends they are named for. It
+   is the only thing that line does, and it is remembered.
 
    The screen controls are there on every machine, whatever it is played on.
    A desktop browser shows them too: they are targets to click as well as to
@@ -50,10 +51,11 @@ const FORCED_TOUCH = (() => {
 
 const TOUCH = FORCED_TOUCH !== "0";
 
-/** The room one control wants beside the game screen. On its side there is
- *  one at each end of the screen; upright the two stand in a row beneath it,
- *  and between them they want that much height once. */
+/** The room a column of controls wants beside the game screen: its width on
+ *  its side, where a column stands at each end, and its height upright, where
+ *  the two columns stand side by side beneath the screen. */
 const TOUCH_PAD = 128;
+const TOUCH_TALL = 344;           // three buttons and the gaps between them
 
 /** How deep the running and jumping bands reach in from the screen's edges,
  *  as a share of it. The middle answers nothing, so a finger can rest there. */
@@ -82,14 +84,19 @@ function zoneAt(p) {
 }
 
 /* ------------------------------------------------------------- the cursor
-   A menu can be worked without aiming at it at all: the wheel and the
-   keypad's up and down walk a cursor through the lines the screen listens
+   A menu can be worked without aiming at it at all: the wheel and the up and
+   down buttons walk a cursor through the lines the screen listens
    for, and the target picks the one it rests on. It is not there until it is
    asked for - the first notch or press puts it up - so anyone tapping or
    clicking the lines never sees it. A screen with only one line to aim at has
    nothing to walk through, so there it stays away. */
 
 let cursor = null;                // the code of the line the cursor rests on
+
+/* The buttons beside the screen, once they are made: the four ways by name,
+   and the target. `showFireSide` moves them between the two columns. */
+const ways = {};
+let fireButton = null;
 
 /** The screens the cursor belongs to: the ones that are read, not played. */
 function menuNow() {
@@ -145,7 +152,7 @@ function drawCursor(ctx) {
 
 let pointerHeld = [];             // the codes the pointers are holding down now
 const touchPoints = new Map();    // the touches on the game screen, by id
-const padPoints = new Map();      // the fingers on the keypad, by pointer id
+const wayHeld = new Set();        // the way keys the buttons beside the screen hold
 const mouseRun = new Set();       // the way keys the mouse's own buttons hold
 let mouseFiring = false;          // the middle button, held down on the game screen
 let wheelCode = null;             // the key a notch of the wheel is holding
@@ -178,7 +185,7 @@ function tapKey(code) {
  *  moved on to another mode, or the pointer has left it. */
 function letGo() {
   touchPoints.clear();
-  padPoints.clear();
+  wayHeld.clear();
   mouseRun.clear();
   setHeld([]);
   endWheel();
@@ -213,19 +220,12 @@ function heldByPlaces() {
   return codes;
 }
 
-/** The keys the fingers on the keypad are holding. The pad is read in thirds
- *  each way, so a finger in a corner holds two and runs while it jumps, and
- *  the middle holds nothing. It answers on the menus as well as in play:
- *  there its up and down walk the cursor, a line to a press. */
-function heldByPad() {
-  const codes = [];
-  for (const p of padPoints.values()) {
-    if (p.fx < 1 / 3) codes.push("ArrowLeft");
-    else if (p.fx > 2 / 3) codes.push("ArrowRight");
-    if (p.fy < 1 / 3) codes.push("ArrowUp");
-    else if (p.fy > 2 / 3) codes.push("ArrowDown");
-  }
-  return codes;
+/** The keys the way buttons beside the screen are holding. They answer on the
+ *  menus as well as in play: there up and down walk the cursor, a line to a
+ *  press. Two thumbs hold two of them, so running while jumping is one button
+ *  at each end of the screen. */
+function heldByWays() {
+  return [...wayHeld];
 }
 
 /** The way keys the mouse's own buttons are holding. */
@@ -233,17 +233,10 @@ function heldByMouse() {
   return placesAnswer() ? [...mouseRun] : [];
 }
 
-/** Everything the screen, the keypad and the mouse hold between them. */
+/** Everything the screen, the buttons and the mouse hold between them. */
 function refreshHeld() {
-  const codes = [...heldByPlaces(), ...heldByPad(), ...heldByMouse()];
+  const codes = [...heldByPlaces(), ...heldByWays(), ...heldByMouse()];
   setHeld(codes.filter((c, i) => codes.indexOf(c) === i));
-  const pad = document.getElementById("pad");
-  if (pad) {
-    const lit = heldByPad();
-    for (const way of ["left", "right", "up", "down"]) {
-      pad.classList.toggle(way, lit.includes("Arrow" + way[0].toUpperCase() + way.slice(1)));
-    }
-  }
 }
 
 function initTouch() {
@@ -263,13 +256,19 @@ function addScreenControls() {
   canvas.parentNode.insertBefore(stage, canvas);
   stage.appendChild(canvas);
 
-  /* the two controls live in a box of their own, so that upright they can
-     stand in one row under the screen while on its side they take an end of
-     the stage each (the box is `display: contents` there, and they become the
-     stage's own children) */
+  /* The controls live in two columns, one for each end of the screen. The box
+     holding them is `display: contents` on its side, so each column becomes a
+     child of the stage and takes an end of it; upright the box is a row under
+     the screen with a column at each end of that. */
   const controls = document.createElement("div");
   controls.id = "controls";
   stage.appendChild(controls);
+  for (const id of ["sideA", "sideB"]) {
+    const side = document.createElement("div");
+    side.id = id;
+    side.className = "side";
+    controls.appendChild(side);
+  }
 
   const fire = document.createElement("button");
   fire.id = "fire";
@@ -282,17 +281,22 @@ function addScreenControls() {
     '<circle cx="24" cy="24" r="2.5" fill="currentColor"/>' +
     '<path d="M24 1v11M24 36v11M1 24h11M36 24h11" stroke="currentColor" stroke-width="3" ' +
     'stroke-linecap="round"/></svg>';
-  controls.appendChild(fire);
 
-  const pad = document.createElement("div");
-  pad.id = "pad";
-  pad.setAttribute("aria-label", "Move");
-  pad.innerHTML =
-    '<svg viewBox="0 0 48 48" aria-hidden="true">' +
-    '<path class="up" d="M24 2 31 17H17Z"/><path class="down" d="M24 46 31 31H17Z"/>' +
-    '<path class="left" d="M2 24 17 17V31Z"/><path class="right" d="M46 24 31 17V31Z"/></svg>';
-  controls.appendChild(pad);
-  showFireSide();
+  /* the four ways, a button each: an arrowhead pointing where it takes Ai */
+  const ARROWS = {
+    left: "M9 24 30 6V42Z", right: "M39 24 18 6V42Z",
+    up: "M24 9 42 30H6Z", down: "M24 39 42 18H6Z",
+  };
+  for (const [way, d] of Object.entries(ARROWS)) {
+    const button = document.createElement("button");
+    button.id = way;
+    button.type = "button";
+    button.className = "way";
+    button.setAttribute("aria-label", way);
+    button.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="' + d + '"/></svg>';
+    ways[way] = button;
+  }
+  showFireSide();                                // which column each one stands in
 
   /* --- the game screen: places, and the menus' own lines */
 
@@ -363,26 +367,33 @@ function addScreenControls() {
     fire.addEventListener(kind, fireUp, { passive: false });
   }
   fire.addEventListener("contextmenu", (e) => e.preventDefault());
+  fireButton = fire;
+  showFireSide();                                // now the target has a column too
 
-  /* --- the keypad, read in thirds: where the finger sits on it is what it
-         holds, and sliding across it turns Ai round without letting go */
+  /* --- the way buttons: each holds its own key while it is pressed, and a
+         thumb at each end of the screen holds two, so Ai runs while he jumps */
 
-  const onPad = (e) => {
-    e.preventDefault();
-    if (e.type === "pointerdown" || e.type === "pointermove") {
-      if (e.type === "pointerdown") pad.setPointerCapture(e.pointerId);
-      else if (!padPoints.has(e.pointerId)) return;      // a finger merely passing over
-      const r = pad.getBoundingClientRect();
-      padPoints.set(e.pointerId, { fx: (e.clientX - r.left) / r.width, fy: (e.clientY - r.top) / r.height });
-    } else {
-      padPoints.delete(e.pointerId);
+  for (const [way, button] of Object.entries(ways)) {
+    const code = "Arrow" + way[0].toUpperCase() + way.slice(1);
+    const wayDown = (e) => {
+      e.preventDefault();
+      button.setPointerCapture(e.pointerId);     // a thumb that slides off still lets go
+      button.classList.add("down");
+      wayHeld.add(code);
+      refreshHeld();
+    };
+    const wayUp = (e) => {
+      e.preventDefault();
+      button.classList.remove("down");
+      wayHeld.delete(code);
+      refreshHeld();
+    };
+    button.addEventListener("pointerdown", wayDown, { passive: false });
+    for (const kind of ["pointerup", "pointercancel"]) {
+      button.addEventListener(kind, wayUp, { passive: false });
     }
-    refreshHeld();
-  };
-  for (const kind of ["pointerdown", "pointermove", "pointerup", "pointercancel", "pointerleave"]) {
-    pad.addEventListener(kind, onPad, { passive: false });
+    button.addEventListener("contextmenu", (e) => e.preventDefault());
   }
-  pad.addEventListener("contextmenu", (e) => e.preventDefault());
 
   /* --- nothing on the page scrolls, zooms or gets picked up by a stray tap.
          A desktop has nothing to scroll to anyway: the screen is sized to the
@@ -401,11 +412,22 @@ function addScreenControls() {
   if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
 }
 
-/** Which side of the screen the target stands on, and the keypad opposite it:
- *  the target on the left the way the game comes, or the two the other way
- *  about, as the options page's fourth line says. */
+/** Deal the controls out between the two columns. Left and right keep the
+ *  ends they are named for, at the top. The target takes the middle of its
+ *  own end - the left the way the game comes, the right when the options
+ *  page's fourth line says so - and up and down take the middle and the foot
+ *  of the other end, so the two thumbs never reach for the same place. */
 function showFireSide() {
-  document.body.classList.toggle("fire-right", !!options.targetRight);
+  const right = !!options.targetRight;
+  document.body.classList.toggle("fire-right", right);
+  const a = document.getElementById("sideA"), b = document.getElementById("sideB");
+  if (!a || !b) return;
+  if (ways.left) a.appendChild(ways.left);
+  if (ways.right) b.appendChild(ways.right);
+  if (fireButton) (right ? b : a).appendChild(fireButton);
+  const away = right ? a : b;
+  if (ways.up) away.appendChild(ways.up);
+  if (ways.down) away.appendChild(ways.down);
 }
 
 /** The mouse plays by its own buttons, not by where it points: the left one

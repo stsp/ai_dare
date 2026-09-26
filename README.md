@@ -22,21 +22,26 @@ is read as places: a finger near a side wall runs Ai that way, near the
 ceiling jumps him, near the floor kneels him - and up and down ride the
 grav-lifts, as the keys do. Corners answer both at once, so a jump to the
 left is one touch on the top left, and the middle answers nothing, so a
-finger can rest there. The target button beside the game screen fires - a
-finger, a stylus or a mouse all press it - and a keypad stands at the other
-end of the screen for anyone who would rather aim at a control than at the
-picture; it is read in thirds the same way, so its corners run and jump at
-once. The target stands on the left and the keypad on the right, the way the
-game comes, and the fourth line of the options page puts them the other way
-about. On the splash and the
+finger can rest there.
+
+Beside the screen stand five buttons, for anyone who would rather aim at a
+control than at the picture, spread to the corners so that no two want the
+same thumb: the way buttons left and right at the top, one at each end of
+the screen; the target, which fires, halfway down its own end; and up and
+down halfway down and at the foot of the other end, clear of it. One thumb
+runs while the other jumps. A finger, a stylus or a mouse presses any of
+them. The target takes the left end the way the game comes, and the fourth
+line of the options page sends it to the right instead; up and down go to
+whichever end it does not, and left and right keep the ends they are named
+for. On the splash and the
 menus there is nothing to aim at but the words: tap the line the game asks
 for, and it counts as its key. A stylus draws where a finger would, and the
 screen reads it the same way. Nothing else on the menus answers: the best
 scores are a joke to read, not a button, so the game starts on the target,
 on the space bar, or on the line that says so.
 
-The menus can also be worked without aiming at them: the wheel and the
-keypad's up and down walk a cursor through the lines the screen listens
+The menus can also be worked without aiming at them: the wheel and the up
+and down buttons walk a cursor through the lines the screen listens
 for, and the target picks the one it rests on. The cursor is not there
 until it is asked for - the first notch or press puts it up - so anyone
 tapping or clicking the lines never sees it, and while it is up on the
@@ -56,7 +61,7 @@ back kneels, and both ride the grav-lifts. Those never change. On the
 splash and the menus any button picks the line under the pointer.
 
 `1` on the title page opens the options, laid out as the original's: the
-control keys, a fourth line for which side the target stands on, and a
+control keys, a fourth line for which end the target stands at, and a
 third the original never had - the story. Chosen,
 every message, the panel and the title tell another tale: Ai is now the AI
 that flies the mail rocket to Mars, and Dare is a policeman. A skeleton forces

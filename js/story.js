@@ -104,9 +104,9 @@ function setStory(s) {
   try { localStorage.setItem("aidare.story", s); } catch (e) { /* no storage */ }
 }
 
-/** Which side the target stands on, with the keypad opposite it: the left by
- *  default, and the fourth option puts it on the right. Remembered, as the
- *  story is. The mouse has buttons of its own and does not move with it. */
+/** Which end the target stands at, with up and down at the other: the left
+ *  by default, and the fourth option puts it on the right. Remembered, as
+ *  the story is. The mouse has buttons of its own and does not move with it. */
 function loadTargetRight() {
   try {
     const side = localStorage.getItem("aidare.controls");
