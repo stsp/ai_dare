@@ -126,7 +126,7 @@ function beginIntro() {
   state.timeLeft = START_TIME;
   state.score = 0;
   state.viewer = "asteroid";
-  state.msgTop = null; state.msgBottom = null;
+  clearMessages();
   Object.assign(intro, { t: 0, phase: 0, shots: [], foes: [], bursts: [], nextFoe: 1.5, scroll: 0 });
   intro.ship.x = 60; intro.ship.y = 96; intro.ship.vy = 0;
 }
@@ -141,7 +141,7 @@ function updateIntro(dt) {
   const s = intro.ship;
   if (intro.phase === 0 && intro.t > INTRO_FLY) { intro.phase = 1; intro.t = 0; call(tx(["\"YOU WILL NOT SUCCEED, DARE!\""]), introCall()); }
   else if (intro.phase === 1 && intro.t > introCall()) { intro.phase = 2; intro.t = 0; }
-  else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.msgTop = null; }
+  else if (intro.phase === 2 && intro.t > INTRO_FIGHT) { intro.phase = 3; intro.t = 0; state.tops = []; }
   else if (intro.phase === 3 && intro.t > INTRO_SHIP) { startGame(); state.score += intro.score; return; }
   if (tapped.Enter || tapped.Escape) { startGame(); state.score += intro.score; return; }   // skip the fight
 
@@ -181,7 +181,7 @@ function updateIntro(dt) {
     intro.bursts = intro.bursts.filter((b) => b.t > 0);
   } else {
     // a tall box of the skeleton's would cover her, so she rides higher over it
-    const tall = intro.phase === 1 && (state.msgBottom || []).length > 2;
+    const tall = intro.phase === 1 && state.notes.some((m) => m.lines.length > 2);
     s.y = (tall ? 62 : 96) + Math.sin(intro.t * 2) * 2;
   }
   tickMessages(dt);
@@ -284,7 +284,7 @@ function drawIntro(ctx) {
     }
     for (const b of intro.bursts) { ctx.fillStyle = b.c; ctx.fillRect(Math.round(b.x), Math.round(b.y), 2, 2); }
     if (intro.phase === 0) drawMessage(ctx, tx(["AI DARE SPEEDS", "OVER THE ASTEROID!"]), true);
-    if (intro.phase === 1 && state.msgBottom) drawMessage(ctx, state.msgBottom, false, true);
+    if (intro.phase === 1 && state.notes.length) drawMessage(ctx, state.notes[state.notes.length - 1].lines, false, true);
   } else {
     drawMessage(ctx, tx(["THE SHIP STAYS BEHIND", "TO AWAIT AI'S RETURN"]), true);
   }
