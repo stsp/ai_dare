@@ -168,7 +168,7 @@ python3 tools/validate_level.py MAP.png level_map.json 1,5  # draw a room's geom
 python3 tools/match_rooms.py MAP.png data/emu --graph data/emu/graph.json --level level_map.json -o data/emu/match.json
 python3 tools/build_level.py data/emu/graph.json data/emu/graph2.json data/emu/graph3.json \
     data/emu/graph4.json data/emu/graph5.json data/emu/graph6.json --match data/emu/match.json \
-    --geometry level_map.json --parts 83:5,148:6,185:26,255:23,56:12 --slot 143 --from-screen 117 \
+    --geometry level_map.json --parts 83:4,148:5,185:25,255:22,56:11 --slot 143 --from-screen 117 \
     --prisons 50,53,241,192 --gate 185:186:3,159:158:4 --label 4:186:185,217 --boss 63:22:16 --clear 143:13:22:6:14 \
     --fake-lifts data/emu/phantom_lifts.json -o level.json                                            # -> level.json + js/level.js
 python3 tools/make_sprites.py                               # the pose renders (kept out of the repository) -> assets/ai.png
