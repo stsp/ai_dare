@@ -1364,8 +1364,9 @@ const ctx = canvas.getContext("2d");
  *  drawn figures and Ai's rendered head get every pixel the display has. */
 function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  // the target button stands beside the screen - along it when the window is
-  // on its side, under it when it is upright - and wants its room
+  // the target and the keypad stand beside the screen - one at each end of it
+  // when the window is on its side, the two in a row under it when the window
+  // is upright - and want their room
   // the visible window, not the laid-out one: a phone's or a tablet's toolbars
   // sit over the page, and a screen sized for the whole of it puts the target
   // button below the fold, where nothing can scroll to it
@@ -1373,7 +1374,7 @@ function fitCanvas() {
   const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
   const roomW = Math.min(window.innerWidth, vw), roomH = Math.min(window.innerHeight, vh);
   const wide = roomW > roomH;
-  const availW = TOUCH ? roomW - (wide ? TOUCH_PAD : 8) : roomW * 0.96;
+  const availW = TOUCH ? roomW - (wide ? 2 * TOUCH_PAD : 8) : roomW * 0.96;
   const availH = TOUCH ? roomH - (wide ? 8 : TOUCH_PAD) : roomH * 0.88;
   const k = Math.max(2, Math.min(9, Math.floor(Math.min(availW / SCREEN_W, availH / SCREEN_H) * dpr)));
   if (canvas.width !== SCREEN_W * k) {

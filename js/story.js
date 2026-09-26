@@ -112,6 +112,7 @@ function loadSwapMouse() {
 }
 function setSwapMouse(on) {
   options.swapMouse = on;
+  showFireSide();                  // the target follows the button that fires it
   try { localStorage.setItem("aidare.mouse", on ? "swap" : "normal"); } catch (e) { /* no storage */ }
 }
 

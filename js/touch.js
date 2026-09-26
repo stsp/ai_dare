@@ -19,10 +19,19 @@
    it is remembered. A stylus draws where a finger would, and the target button
    answers any of the three.
 
-   The screen controls - the target button, the places, the layout that makes
-   room for the button - are there on every machine, whatever it is played on.
-   A desktop browser shows them too: the button is a target to click as well
-   as to tap, and it costs the keyboard nothing. */
+   Beside the screen stand two controls: the target that fires, and a keypad
+   for anyone who would rather aim at a control than at the picture. The
+   keypad is read in thirds, so its corners run and jump at once, as the
+   screen's own corners do.
+
+   Which side each stands on follows the mouse: the target keeps company with
+   the button that fires it, so with the left button firing - the way the game
+   comes - the target is on the left and the keypad on the right, and swapping
+   the buttons on the options page swaps the two over.
+
+   The screen controls are there on every machine, whatever it is played on.
+   A desktop browser shows them too: they are targets to click as well as to
+   tap, and they cost the keyboard nothing. */
 
 /** `?touch=1` plays the screen controls with the mouse standing in for a
  *  finger, for a look at the tablet's game from a desktop; `?touch=0` takes
@@ -39,7 +48,9 @@ const FORCED_TOUCH = (() => {
 
 const TOUCH = FORCED_TOUCH !== "0";
 
-/** The room the target button wants beside the game screen. */
+/** The room one control wants beside the game screen. On its side there is
+ *  one at each end of the screen; upright the two stand in a row beneath it,
+ *  and between them they want that much height once. */
 const TOUCH_PAD = 128;
 
 /** How deep the running and jumping bands reach in from the screen's edges,
@@ -72,6 +83,7 @@ function zoneAt(p) {
 
 let pointerHeld = [];             // the codes the pointers are holding down now
 const touchPoints = new Map();    // the touches on the game screen, by id
+const padPoints = new Map();      // the fingers on the keypad, by pointer id
 let mouseDrive = null;            // where the driving button is pointing, if it is down
 let mouseFiring = false;          // the firing button, held down on the game screen
 let wheelCode = null;             // the key a notch of the wheel is holding
@@ -104,6 +116,7 @@ function tapKey(code) {
  *  moved on to another mode, or the pointer has left it. */
 function letGo() {
   touchPoints.clear();
+  padPoints.clear();
   mouseDrive = null;
   setHeld([]);
   endWheel();
@@ -137,7 +150,35 @@ function heldByPlaces() {
     if (fy < BAND_Y) codes.push("ArrowUp");
     else if (fy > 1 - BAND_Y) codes.push("ArrowDown");
   }
-  return codes.filter((c, i) => codes.indexOf(c) === i);
+  return codes;
+}
+
+/** The keys the fingers on the keypad are holding. The pad is read in thirds
+ *  each way, so a finger in a corner holds two and runs while it jumps, and
+ *  the middle holds nothing. */
+function heldByPad() {
+  if (!placesAnswer()) return [];
+  const codes = [];
+  for (const p of padPoints.values()) {
+    if (p.fx < 1 / 3) codes.push("ArrowLeft");
+    else if (p.fx > 2 / 3) codes.push("ArrowRight");
+    if (p.fy < 1 / 3) codes.push("ArrowUp");
+    else if (p.fy > 2 / 3) codes.push("ArrowDown");
+  }
+  return codes;
+}
+
+/** Everything the screen and the keypad hold between them, held down. */
+function refreshHeld() {
+  const codes = [...heldByPlaces(), ...heldByPad()];
+  setHeld(codes.filter((c, i) => codes.indexOf(c) === i));
+  const pad = document.getElementById("pad");
+  if (pad) {
+    const lit = heldByPad();
+    for (const way of ["left", "right", "up", "down"]) {
+      pad.classList.toggle(way, lit.includes("Arrow" + way[0].toUpperCase() + way.slice(1)));
+    }
+  }
 }
 
 function initTouch() {
@@ -157,6 +198,14 @@ function addScreenControls() {
   canvas.parentNode.insertBefore(stage, canvas);
   stage.appendChild(canvas);
 
+  /* the two controls live in a box of their own, so that upright they can
+     stand in one row under the screen while on its side they take an end of
+     the stage each (the box is `display: contents` there, and they become the
+     stage's own children) */
+  const controls = document.createElement("div");
+  controls.id = "controls";
+  stage.appendChild(controls);
+
   const fire = document.createElement("button");
   fire.id = "fire";
   fire.type = "button";
@@ -168,7 +217,17 @@ function addScreenControls() {
     '<circle cx="24" cy="24" r="2.5" fill="currentColor"/>' +
     '<path d="M24 1v11M24 36v11M1 24h11M36 24h11" stroke="currentColor" stroke-width="3" ' +
     'stroke-linecap="round"/></svg>';
-  stage.appendChild(fire);
+  controls.appendChild(fire);
+
+  const pad = document.createElement("div");
+  pad.id = "pad";
+  pad.setAttribute("aria-label", "Move");
+  pad.innerHTML =
+    '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+    '<path class="up" d="M24 2 31 17H17Z"/><path class="down" d="M24 46 31 31H17Z"/>' +
+    '<path class="left" d="M2 24 17 17V31Z"/><path class="right" d="M46 24 31 17V31Z"/></svg>';
+  controls.appendChild(pad);
+  showFireSide();
 
   /* --- the game screen: places, and the menus' own lines */
 
@@ -183,7 +242,7 @@ function addScreenControls() {
       const zone = zoneAt(atScreen(e.changedTouches[0], rect));
       if (zone) tapKey(zone.code);
     }
-    setHeld(heldByPlaces());
+    refreshHeld();
   };
   for (const kind of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
     canvas.addEventListener(kind, onScreenTouch, { passive: false });
@@ -208,7 +267,7 @@ function addScreenControls() {
     } else {
       touchPoints.delete(key);
     }
-    setHeld(heldByPlaces());
+    refreshHeld();
   };
   for (const kind of ["pointerdown", "pointermove", "pointerup", "pointercancel"]) {
     canvas.addEventListener(kind, onScreenPen, { passive: false });
@@ -237,6 +296,26 @@ function addScreenControls() {
   }
   fire.addEventListener("contextmenu", (e) => e.preventDefault());
 
+  /* --- the keypad, read in thirds: where the finger sits on it is what it
+         holds, and sliding across it turns Ai round without letting go */
+
+  const onPad = (e) => {
+    e.preventDefault();
+    if (e.type === "pointerdown" || e.type === "pointermove") {
+      if (e.type === "pointerdown") pad.setPointerCapture(e.pointerId);
+      else if (!padPoints.has(e.pointerId)) return;      // a finger merely passing over
+      const r = pad.getBoundingClientRect();
+      padPoints.set(e.pointerId, { fx: (e.clientX - r.left) / r.width, fy: (e.clientY - r.top) / r.height });
+    } else {
+      padPoints.delete(e.pointerId);
+    }
+    refreshHeld();
+  };
+  for (const kind of ["pointerdown", "pointermove", "pointerup", "pointercancel", "pointerleave"]) {
+    pad.addEventListener(kind, onPad, { passive: false });
+  }
+  pad.addEventListener("contextmenu", (e) => e.preventDefault());
+
   /* --- nothing on the page scrolls, zooms or gets picked up by a stray tap.
          A desktop has nothing to scroll to anyway: the screen is sized to the
          window, so this costs the mouse and the keyboard nothing. */
@@ -254,6 +333,14 @@ function addScreenControls() {
   if (window.visualViewport) window.visualViewport.addEventListener("resize", refit);
 }
 
+/** The target keeps company with the button that fires it: with the left
+ *  button firing - the way the game comes - the target stands on the left of
+ *  the screen and the keypad on the right, and the options page's fourth line
+ *  swaps the buttons and the two controls together. */
+function showFireSide() {
+  document.body.classList.toggle("fire-right", !!options.swapMouse);
+}
+
 /** The mouse: one button drives, the other fires, and the wheel goes up and
  *  down. The left button fires and the right one drives, unless the fourth
  *  option on the options page swaps them. On the menus either button picks the
@@ -266,9 +353,9 @@ function initMouse() {
   // stands in for a finger: press, drag and let go of the left button where a
   // finger would land, and the target button is pressed the same way
   const asFinger = () => FORCED_TOUCH === "1";
-  const fingerGone = () => { if (touchPoints.delete("mouse")) setHeld(heldByPlaces()); };
+  const fingerGone = () => { if (touchPoints.delete("mouse")) refreshHeld(); };
   const stopFire = () => { if (mouseFiring) { mouseFiring = false; releaseKey("Space"); } };
-  const stopDrive = () => { if (mouseDrive) { mouseDrive = null; setHeld(heldByPlaces()); } };
+  const stopDrive = () => { if (mouseDrive) { mouseDrive = null; refreshHeld(); } };
 
   // over the game screen the right button is a control, not a menu
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -284,12 +371,12 @@ function initMouse() {
     if (asFinger()) {
       if (e.button !== 0) return;
       touchPoints.set("mouse", where(e));
-      setHeld(heldByPlaces());
+      refreshHeld();
       return;
     }
     if (e.button === driveButton()) {
       mouseDrive = where(e);
-      setHeld(heldByPlaces());
+      refreshHeld();
     } else {
       mouseFiring = true;
       pressKey("Space");
@@ -301,13 +388,13 @@ function initMouse() {
       if (!touchPoints.has("mouse")) return;
       if (!(e.buttons & 1)) return fingerGone();  // let go elsewhere
       touchPoints.set("mouse", where(e));
-      setHeld(heldByPlaces());
+      refreshHeld();
       return;
     }
     if (!mouseDrive) return;
     if (!(e.buttons & (driveButton() === 0 ? 1 : 2))) return stopDrive();   // let go elsewhere
     mouseDrive = where(e);
-    setHeld(heldByPlaces());
+    refreshHeld();
   });
 
   // a button let go anywhere counts, and a pointer that leaves the screen or a

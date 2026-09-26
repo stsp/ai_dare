@@ -23,7 +23,13 @@ ceiling jumps him, near the floor kneels him - and up and down ride the
 grav-lifts, as the keys do. Corners answer both at once, so a jump to the
 left is one touch on the top left, and the middle answers nothing, so a
 finger can rest there. The target button beside the game screen fires - a
-finger, a stylus or a mouse all press it. On the splash and the
+finger, a stylus or a mouse all press it - and a keypad stands at the other
+end of the screen for anyone who would rather aim at a control than at the
+picture; it is read in thirds the same way, so its corners run and jump at
+once. The target keeps company with the button that fires it: with the left
+button firing, the way the game comes, the target is on the left and the
+keypad on the right, and swapping the mouse buttons on the options page
+swaps the two over. On the splash and the
 menus there is nothing to aim at but the words: tap the line the game asks
 for, and it counts as its key. A stylus draws where a finger would, and the
 screen reads it the same way. Nothing else on the menus answers: the best
