@@ -58,7 +58,7 @@ let ending = null;
 
 function beginEnding(outcome) {
   state.mode = "ending";
-  state.msgTop = state.msgBottom = null;
+  clearMessages();
   // a loss opens on the banner, which is already the closing screen
   if (outcome !== "won") music.start("ending");
   ending = {

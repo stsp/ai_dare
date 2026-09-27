@@ -13,7 +13,7 @@ const [room, plan] = process.argv.slice(2);
     const K = { right: 'ArrowRight', left: 'ArrowLeft', up: 'ArrowUp', down: 'ArrowDown' };
     const clear = () => { for (const k in keys) keys[k] = false; };
     const tick = () => { if (state.mode !== 'play') return; updateAi(1 / 60); updatePickups(); };
-    const st = () => `${state.room}@${Math.round(ai.x / 8)},${Math.round(ai.y + AI_H)}${ai.onLift ? ' lift' : ''}${state.msgTop ? ' msg=' + state.msgTop.join('/') : ''}`;
+    const st = () => `${state.room}@${Math.round(ai.x / 8)},${Math.round(ai.y + AI_H)}${ai.onLift ? ' lift' : ''}${state.tops.length ? ' msg=' + state.tops.map((m) => m.lines.join('/')).join(' + ') : ''}`;
     const settle = () => { for (let i = 0; i < 400; i++) { tick(); if (ai.onGround && !ai.onLift && i > 10) break; } };
     const goto = (cell) => { const tx = cell * 8; for (let i = 0; i < 600 && Math.abs(ai.x - tx) > 2; i++) { keys[K[ai.x < tx ? 'right' : 'left']] = true; tick(); if (!ai.onGround && !ai.onLift) { clear(); settle(); } } clear(); for (let i = 0; i < 6; i++) tick(); };
     const walk = (dir) => { const r0 = state.room; let lastX = ai.x, still = 0; for (let i = 0; i < 900; i++) { keys[K[dir]] = true; tick(); if (state.room !== r0) { clear(); settle(); return; } if (Math.abs(ai.x - lastX) < 0.5) { if (++still > 60) break; } else still = 0; lastX = ai.x; } clear(); };

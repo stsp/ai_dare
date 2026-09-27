@@ -232,12 +232,14 @@ function textWidth(text) {
   return w;
 }
 
-/** The narration boxes the original pops up over the play area. */
-function drawMessage(ctx, lines, atTop, flash) {
-  if (!lines || !lines.length) return;
+/** The narration boxes the original pops up over the play area. `at` is the
+ *  box's top edge, or by default the top or bottom of the view. Returns its
+ *  height, for the next box of a stack. */
+function drawMessage(ctx, lines, atTop, flash, at) {
+  if (!lines || !lines.length) return 0;
   const w = Math.max(...lines.map(textWidth)) + 8;
   const h = lines.length * 8 + 6;
-  const x = 2, y = atTop ? 2 : VIEW_H - h - 2;
+  const x = 2, y = at != null ? (atTop ? at : at - h) : atTop ? 2 : VIEW_H - h - 2;
   ctx.fillStyle = C.white;
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = C.black;
@@ -245,6 +247,16 @@ function drawMessage(ctx, lines, atTop, flash) {
   ctx.fillStyle = flash ? [C.byellow, C.white, C.white, C.bblue][Math.floor(state.phase * 6) % 4] : C.white;
   ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
   lines.forEach((ln, i) => drawText(ctx, ln, x + 4, y + 4 + i * 8, C.black));
+  return h;
+}
+
+/** Every box showing: the narrations one under another from the top, the
+ *  asides one over another from the bottom, so none hides another. */
+function drawMessages(ctx) {
+  let y = 2;
+  for (const m of state.tops) y += drawMessage(ctx, m.lines, true, false, y) + 1;
+  y = VIEW_H - 2;
+  for (const m of state.notes) y -= drawMessage(ctx, m.lines, false, m.boss && state.viewer === "boss", y) + 1;
 }
 
 function two(n) { return (n < 10 ? "0" : "") + n; }
