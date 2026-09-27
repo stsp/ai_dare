@@ -62,6 +62,7 @@ const STORY = {
   "GAME|OVER": ["ИГРА", "ВСЁ"],
   "SCORE #": ["СЧЁТ #"],
   "PARTS # OF 5": ["ЯЩИКИ # ИЗ 5"],
+  "CARRYING A PART": ["ЯЩИК В РУКАХ"],
   "CONTROL  OPTIONS": ["НАСТРОЙКИ"],
   "KEYBOARD Q,A,O,P,SPACE": ["КЛАВИШИ Q,A,O,P,ПРОБЕЛ"],
   "CURSOR KEYS AND SPACE": ["СТРЕЛКИ И ПРОБЕЛ"],
