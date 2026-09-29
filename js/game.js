@@ -1417,6 +1417,14 @@ function drawForeground(ctx, key) {
   const s = SHEETS.rooms, rows = state.backdrop && s.meta.solid && s.meta.solid[key];
   if (!rows) return;
   const [sx, sy] = s.meta.rooms[key];
+  // an open door's slab is gone: the original draws the figures over its cells
+  // as they come through (the flag map was read with the door shut)
+  const e = EXITS[key], open = [];
+  for (const l of e ? [...e.lefts, ...e.rights] : []) {
+    const door = l && l.needs && s.meta.doors && s.meta.doors[key + ":" + l.kind];
+    if (door && isOpen(l)) open.push(door);
+  }
+  const inOpenDoor = (c, r) => open.some(([, , w, h, x, y]) => c * 8 >= x && c * 8 < x + w && r * 8 >= y && r * 8 < y + h);
   // the figures' full reach, rifle and hat and all: the drawn figure is wider
   // than the hit box and rises above it, so a rifle pushed into a wall goes
   // behind it whole, not in part, and no hat shows through a door frame
@@ -1428,7 +1436,7 @@ function drawForeground(ctx, key) {
     const r0 = Math.max(0, Math.floor(by / 8)), r1 = Math.min(17, Math.floor((by + bh - 1) / 8));
     for (let r = r0; r <= r1; r++) {
       for (let c = c0; c <= c1; c++) {
-        if (!(rows[r] & (1 << c))) continue;
+        if (!(rows[r] & (1 << c)) || inOpenDoor(c, r)) continue;
         const k = r * 32 + c;
         if (done.has(k)) continue;
         done.add(k);
