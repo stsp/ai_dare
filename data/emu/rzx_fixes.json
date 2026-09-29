@@ -174,5 +174,21 @@
  "hidden_doors": [
   "142:left",
   "143:left"
- ]
+ ],
+ "open_doorways": {
+  "84:right": {
+   "row": 10,
+   "col": 26,
+   "h": 6,
+   "w": 2,
+   "frame": "walk_06994.scr"
+  },
+  "209:right": {
+   "row": 10,
+   "col": 26,
+   "h": 6,
+   "w": 2,
+   "frame": "walk_18663.scr"
+  }
+ }
 }

@@ -9,7 +9,7 @@ bitmaps used again and again.
 
 The game now works the same way. Nothing of the world is stored as a picture:
 
-* **`assets/tiles.png`** — the tile set. 297 bitmaps of 8x8, 16 across, a set
+* **`assets/tiles.png`** — the tile set. 291 bitmaps of 8x8, 16 across, a set
   pixel drawn white. 3.3 kB for all 121 rooms.
 * **`js/rooms_tiles.js`** — the layouts. For every room, and for every sector
   door's slab, two grids of 18 rows by 30 cells: which tile stands in each
@@ -17,7 +17,7 @@ The game now works the same way. Nothing of the world is stored as a picture:
 * **`js/tiles.js`** — the game lays those grids out once, at load, into the
   sheet the drawing code reads.
 
-So redrawing the world means redrawing `assets/tiles.png`: 297 little bitmaps,
+So redrawing the world means redrawing `assets/tiles.png`: 291 little bitmaps,
 in place of 121 screens. Nothing else has to change.
 
 ## Building them
@@ -45,7 +45,9 @@ gun table. `tools/apply_rzx_fixes.py`, run before `make_tiles.py`, puts back
 what the first visit to each room in the published walkthrough shows: nine wall
 and ceiling guns, the drawing of three listed guns the screens had lost, two
 floor guns, six cups, the door slab of room 185 where the original draws it,
-and it drops the slabs of 142 and 143, whose doors the original never draws.
+it drops the slabs of 142 and 143, whose doors the original never draws, and it
+clears the open doorways of 84 and 209 of the green scraps of a figure their
+dumps kept there.
 Each is read off a frame of the walkthrough kept in `data/emu/rzx/`, listed in
 `data/emu/rzx_fixes.json`.
 
@@ -70,23 +72,23 @@ element lists the tiles it is built from.
 
 | element | tiles | cells | rooms | what it is |
 |---|---:|---:|---:|---|
-| empty | 1 | 28948 | 121 | the dark of the room behind everything |
+| empty | 1 | 28955 | 121 | the dark of the room behind everything |
 | band | 6 | 5580 | 100 | the striped courses that top and tail a room; the pattern repeats every four columns |
 | floor course | 4 | 6510 | 120 | a floor or ceiling laid right across the room in one tile |
 | wall or ledge | 96 | 3444 | 108 | what the original's flag map says stops Ai: the walls and the ledges he stands on |
 | side wall | 7 | 3717 | 95 | the two columns of cells down either edge of a room |
 | column or pipe | 12 | 3222 | 99 | one tile laid down a run of six cells or more, away from the edges |
-| fitting in front of Ai | 188 | 12695 | 119 | what the flag map has the original draw over the figures: walkways, shafts, machinery |
-| panel or lamp | 43 | 363 | 5 | the dials, lamps and panels the flag map leaves alone |
+| fitting in front of Ai | 181 | 12514 | 119 | what the flag map has the original draw over the figures: walkways, shafts, machinery |
+| panel or lamp | 42 | 359 | 5 | the dials, lamps and panels the flag map leaves alone |
 | lift rail | 12 | 188 | 43 | the dotted rails a grav-lift's arrow stands between |
 | lift arrow | 17 | 136 | 75 | the arrow cell beside a shaft: it scrolls a pixel every four frames, so a cleaned backdrop mostly has it blank and the game draws it |
-| lift button | 1 | 8 | 4 | the round call button, whose colours cycle while a lift is called or moving |
+| lift button | 1 | 186 | 61 | the round call button, whose colours cycle while a lift is called or moving |
 | wall gun | 8 | 136 | 16 | the fist mounted on a wall, two cells by two, facing left or right |
 | ceiling gun | 10 | 480 | 29 | the visor high on a wall, five cells by two; one drawing in every room |
 | door | 11 | 48 | 4 | the slabs of the four sector doors the original draws, two cells by six |
 | mechanism | 6 | 20 | 1 | the five spheres of the mechanism, each two cells by two |
 
-286 of the 297 tiles stand in rooms; the other 11 are the door slabs' own.
+280 of the 291 tiles stand in rooms; the other 11 are the door slabs' own.
 
 ## What is not a tile yet
 
