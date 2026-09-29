@@ -155,7 +155,7 @@ magenta and red, swapping every four frames, both blue as the ride begins.
 
 The game itself keeps no picture of a room. `tools/make_tiles.py` takes those
 cleaned screens apart into the 8x8 cells the original builds its rooms from -
-308 of them for all 121 rooms, `assets/tiles.png`, 3.3 kB - and writes each
+297 of them for all 121 rooms, `assets/tiles.png`, 3.3 kB - and writes each
 room as a layout over that set (`js/rooms_tiles.js`); `js/tiles.js` lays the
 layouts out at load. Redrawing the world means redrawing the tiles. What each
 tile is - floor, ledge, column, pipe, rail, lamp, panel, gun, door, mechanism -
@@ -181,9 +181,10 @@ python3 tools/make_sprites.py                               # the pose renders (
 python3 tools/make_title.py                                 # the render -> assets/title.png
 python3 tools/make_rooms.py DUMPDIR... --prefer MOVEDDIRS --parts-from data/emu/masks/part_148.scr \
     --erase data/emu/masks/ai_14.scr:11:16:3:6,data/emu/masks/guard_212.scr:10:15:1:4,data/emu/masks/guard_89.scr:6:10:20:23 \
-    --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right,143:left,142:left \
+    --door 84:right:data/emu/doors/room_84_shut.scr:data/emu/doors/room_84_open.scr,209:right:...,159:left:...,185:right:... \
     --objects data/emu/guns.json --solid data/emu/solid.json --button data/emu/room_146.scr:4:16 --arrow data/emu/masks/arrow_83.scr:12:23 \
     -o assets/rooms.png                                     # the rooms from the original's screens, cleaned
+python3 tools/apply_rzx_fixes.py                          # what the surveys missed, put back from the walkthrough
 python3 tools/make_tiles.py --check                         # -> assets/tiles.png + js/rooms_tiles.js, checked against the screens
 python3 tools/inventory_tiles.py                            # what the rooms are made of -> docs/tile-chart.png
 NODE_PATH=... node tools/check_tiles.js out.png             # the rooms the game builds from the tiles, saved to compare
