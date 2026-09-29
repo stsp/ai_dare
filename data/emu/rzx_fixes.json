@@ -1,0 +1,178 @@
+{
+ "objects": [
+  {
+   "room": "56",
+   "kind": "wallR",
+   "row": 12,
+   "col": 6,
+   "how": "add",
+   "frame": "walk_52886.scr"
+  },
+  {
+   "room": "57",
+   "kind": "wallR",
+   "row": 11,
+   "col": 16,
+   "how": "add",
+   "frame": "walk_52714.scr"
+  },
+  {
+   "room": "58",
+   "kind": "wallR",
+   "row": 11,
+   "col": 11,
+   "how": "add",
+   "frame": "walk_52531.scr"
+  },
+  {
+   "room": "61",
+   "kind": "wallR",
+   "row": 12,
+   "col": 17,
+   "how": "add",
+   "frame": "walk_51017.scr"
+  },
+  {
+   "room": "94",
+   "kind": "wallL",
+   "row": 11,
+   "col": 15,
+   "how": "add",
+   "frame": "walk_50402.scr"
+  },
+  {
+   "room": "126",
+   "kind": "wallL",
+   "row": 3,
+   "col": 10,
+   "how": "add",
+   "frame": "walk_49508.scr"
+  },
+  {
+   "room": "127",
+   "kind": "wallL",
+   "row": 3,
+   "col": 12,
+   "how": "add",
+   "frame": "walk_49758.scr"
+  },
+  {
+   "room": "158",
+   "kind": "wallR",
+   "row": 12,
+   "col": 10,
+   "how": "add",
+   "frame": "walk_46964.scr"
+  },
+  {
+   "room": "213",
+   "kind": "ceil",
+   "row": 5,
+   "col": 21,
+   "how": "add",
+   "frame": "walk_19632.scr"
+  },
+  {
+   "room": "92",
+   "kind": "wallL",
+   "row": 11,
+   "col": 21,
+   "how": "draw",
+   "frame": "walk_55275.scr"
+  },
+  {
+   "room": "157",
+   "kind": "wallL",
+   "row": 3,
+   "col": 14,
+   "how": "draw",
+   "frame": "walk_47202.scr"
+  },
+  {
+   "room": "158",
+   "kind": "wallR",
+   "row": 3,
+   "col": 10,
+   "how": "draw",
+   "frame": "walk_46964.scr"
+  },
+  {
+   "room": "249",
+   "kind": "floorgun",
+   "row": 15,
+   "col": 13,
+   "how": "add",
+   "frame": "walk_20844.scr"
+  },
+  {
+   "room": "252",
+   "kind": "floorgun",
+   "row": 15,
+   "col": 16,
+   "how": "add",
+   "frame": "walk_33195.scr"
+  },
+  {
+   "room": "61",
+   "kind": "tall",
+   "row": 14,
+   "col": 8,
+   "how": "add",
+   "frame": "walk_51018.scr"
+  },
+  {
+   "room": "81",
+   "kind": "tall",
+   "row": 14,
+   "col": 5,
+   "how": "add",
+   "frame": "walk_05804.scr"
+  },
+  {
+   "room": "81",
+   "kind": "tall",
+   "row": 14,
+   "col": 7,
+   "how": "add",
+   "frame": "walk_05804.scr"
+  },
+  {
+   "room": "94",
+   "kind": "tall",
+   "row": 14,
+   "col": 14,
+   "how": "add",
+   "frame": "walk_50402.scr"
+  },
+  {
+   "room": "60",
+   "kind": "squat",
+   "row": 15,
+   "col": 24,
+   "how": "add",
+   "frame": "walk_51661.scr"
+  },
+  {
+   "room": "213",
+   "kind": "squat",
+   "row": 15,
+   "col": 5,
+   "how": "add",
+   "frame": "walk_19633.scr"
+  }
+ ],
+ "doors": {
+  "185:right": {
+   "row": 10,
+   "col": 26,
+   "h": 6,
+   "w": 2,
+   "shut": "walk_21130.scr",
+   "open": "walk_28953.scr"
+  }
+ },
+ "hidden_doors": [
+  "142:left",
+  "143:left"
+ ]
+}

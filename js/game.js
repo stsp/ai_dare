@@ -1174,7 +1174,7 @@ function capture() {
 function updatePickups() {
   const key = state.room;
   for (const p of pickups) {
-    if (!p.taken && ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, 8, p.h)) {   // taken as he lands on it, at the bottom of the jump
+    if (!p.taken && ai.landed && overlaps(ai.x, ai.y, AI_W, AI_H, p.x, p.y, p.h > 8 ? 8 : 16, p.h)) {   // taken as he lands on it, at the bottom of the jump
       p.taken = true;
       state.takenItems.add(p.id);
       state.energy = Math.min(ENERGY_MAX, state.energy + 25);
@@ -1249,10 +1249,11 @@ let zapBuffer = null;
  *  routine steps a bit pattern round, holding each edge for a count that
  *  drifts by a step after so many toggles. [hold, outer, step, inner, bits] */
 // the two cups of energy, as the original draws them, lifted off its screens:
-// the tall one white, a cell wide and two tall; the squat one cyan, one cell
+// the tall one white, a cell wide and two tall; the squat one two cells wide,
+// its left cell cyan and its right bright white (the walkthrough's room 110)
 const CUP_BITS = ["...##...", "..#..#..", ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", ".#..###.",
                   ".#..###.", ".#..###.", ".#..###.", ".#..###.", "........", "#..#####", "........", "........"];
-const CUP8_BITS = [".....###", "...##..#", "..#...##", ".....###", ".#......", ".....###", "........", "........"];
+const CUP8_BITS = [".....######.....", "...##..######...", "..#...########..", ".....########...", ".#...........##.", ".....########...", "................", "................"];
 const BURSTS = {
   guardHit: [0xfa, 0x0a, 0x90, 0x10, 0x63],    // C7FF: a guard is hit
   guardGone: [0xfa, 0x05, 0x90, 0x0c, 0x63],   // C80E: and vanishes, fifty points
@@ -1509,6 +1510,9 @@ function drawGates(ctx, key, room) {
       if (!open) { const [sx, sy, w, h, x, y] = door; ctx.drawImage(SHEETS.rooms.img, sx, sy, w, h, x, y, w, h); }
       continue;
     }
+    // a door the original holds shut without drawing one (142 and 143, by the
+    // walkthrough): its screen is shown as it is, nothing laid over the wall
+    if (state.backdrop) continue;
     if (l.kind === "left" || l.kind === "right") {
       const floor = platformsOf(room).filter((p) => p.y > 40).reduce((a, b) => (b.y > a.y ? b : a), { y: VIEW_H - 16 }).y;
       const x = l.kind === "right" ? VIEW_W - 16 : 0, y = floor - 40;
@@ -1612,7 +1616,10 @@ function draw() {
       if (p.h > 8) {                             // the original's own attributes: the bowl bright, the stem below it plain
         drawBits(ctx, CUP_BITS.slice(0, 8), px, py, [C.bwhite]);
         drawBits(ctx, CUP_BITS.slice(8), px, py + 8, [C.white]);
-      } else drawBits(ctx, CUP8_BITS, px, py, [C.cyan]);
+      } else {
+        ctx.fillRect(px + 8, py, 8, p.h);
+        drawBits(ctx, CUP8_BITS, px, py, [C.cyan, C.bwhite]);
+      }
     }
   }
   for (const k of sdsParts) {
