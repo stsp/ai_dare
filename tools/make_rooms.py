@@ -328,10 +328,11 @@ def main():
         for n in rooms:
             path = os.path.join(args.screens, f"room_{n}.scr")
             t, a = load(path)
-            # the same round cell decorates walls elsewhere: a button sits beside a shaft's arrow cell
-            near = arrows.get(str(n), [])
-            found = [[(c - 1) * 8, r * 8, int(a[r, c])] for r in range(2, 17) for c in range(1, 31)
-                     if t[r, c].tobytes() == pat and any(abs(ax - (c - 1) * 8) <= 16 and abs(ay - r * 8) <= 8 for ax, ay, *_ in near)]
+            # every round cell blinks with the ride, the station's and those on the
+            # wheels about the room alike (so the walkthrough films it, in every room
+            # it rides in); at rest they are blue, whatever phase a screen caught them in
+            found = [[(c - 1) * 8, r * 8, (int(a[r, c]) & ~7) | 1] for r in range(0, 18) for c in range(1, 31)
+                     if t[r, c].tobytes() == pat]
             if found: buttons[str(n)] = found
         print(f"{sum(len(v) for v in buttons.values())} lift buttons in {len(buttons)} rooms")
     # the sector doors, shut: the original's slabs, drawn over the backdrop while the door holds

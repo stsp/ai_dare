@@ -200,8 +200,19 @@ key is pressed, and a ride moves him a steady 3-5 px a frame the way the key
 says. The calls that did anything else - a jump, a fall through a gap, a call
 made in the air with no floor under it - are `data/emu/phantom_lifts.json`,
 and the level is built without them (`--fake-lifts`; a call made mid-ride over
-a real lift is moved down to the floor the ride starts from). Room 111, for
-one, has no lift at all.
+a real lift is moved down to the floor the ride starts from).
+
+That check tried each call from one cell, the first of its span, and a lift's
+span often begins with the cell off the end of its floor, where the key only
+drops Ai off the ledge. So a phantom takes out that cell and not the lift: a
+ride down that is left with two cells or more on solid floor beside a shaft
+is kept (pressing down on a floor only kneels him). This brought back the
+rides down from the upper floors of 55, 59, 88, 111, 189, 210 and 221, and
+from 89 down into 121. The check also took the ride up from 113's upper floor
+into 81 for a jump, though its trace climbs four pixels every three frames -
+the lift's own pace - so that entry is gone. A ride from a room's floor into
+the room its hole drops into is a fall, unless the call is beside a shaft that
+runs down through that floor: 212's lift down into 244 is one.
 
 ## The title screen
 

@@ -1455,18 +1455,21 @@ function drawLiftMarks(ctx, key, room) {
         for (let i = 0; i < 8; i++) if (row & (0x80 >> i)) ctx.fillRect(x + i, y + j, 1, 1);
       }
     }
-    // the stations' call buttons blink while a lift is moving, as filmed in the
-    // original: the two take turns, one magenta while the other is red, swapping
-    // every four frames, and both go blue for a moment as the ride begins
+    // the round cells blink while a lift is moving, as filmed in the original:
+    // the stations' call buttons and the pairs on the wheels about the room
+    // alike. The two of a pair take turns, the upper red while the lower is
+    // magenta, swapping every four frames, and go blue for a moment as the
+    // ride begins
     const buttons = window.ROOMS_SHEET.buttons && window.ROOMS_SHEET.buttons[key];
     const riding = ai.onLift || guards.some((t) => !t.dead && t.riding);
     if (buttons && riding) {
       const starting = ai.onLift && ai.onLift.at != null && state.phase - ai.onLift.at < 8 * FRAME;
-      buttons.forEach(([x, y, attr], i) => {
+      buttons.forEach(([x, y, attr]) => {
+        const lower = buttons.some(([bx, by]) => bx === x && by === y - 8);
         const paper = PALETTE[(attr >> 3) & 7];
         ctx.fillStyle = attr & 0x40 ? paper.replace("d8", "ff") : paper;
         ctx.fillRect(x, y, 8, 8);
-        ctx.fillStyle = starting ? C.bblue : ((step + i) & 1) ? C.bred : C.bmagenta;
+        ctx.fillStyle = starting ? C.bblue : ((step + (lower ? 1 : 0)) & 1) ? C.bred : C.bmagenta;
         for (let j = 0; j < 8; j++) for (let k = 0; k < 8; k++) if (LIFT_BUTTON[j] & (0x80 >> k)) ctx.fillRect(x + k, y + j, 1, 1);
       });
     }
