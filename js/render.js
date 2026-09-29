@@ -267,7 +267,9 @@ function formatClock(seconds) {
   return two(Math.floor(s / 3600)) + "." + two(Math.floor(s / 60) % 60) + "." + two(s % 60);
 }
 
-/** Status panel: countdown, energy gauge, score and the viewer window. */
+const ENERGY_BAR_W = 103;   // the original's energy bar, full
+
+/** Status panel: countdown, energy bar, score and the viewer window. */
 function drawPanel(ctx, state) {
   const px = 6, py = 158, pw = SCREEN_W - 12, ph = 30;
   ctx.fillStyle = C.white;
@@ -279,20 +281,18 @@ function drawPanel(ctx, state) {
 
   drawText(ctx, formatClock(state.timeLeft), px + 6, py + 4, C.byellow);
 
-  // energy gauge, drawn as a ruler like the original's
-  const gx = px + 6, gy = py + 14, gw = 84, gh = 6;
-  ctx.fillStyle = C.black;
-  ctx.fillRect(gx - 1, gy - 1, gw + 2, gh + 2);
+  // energy: as the original draws it, a plain bar of white ink on the red
+  // panel, four rows deep and 103 pixels full, that only ever gets shorter -
+  // no ruler over it and no change of colour when it runs low (filmed in
+  // the original's walkthrough, from full down to the last few pixels)
   const fill = Math.max(0, Math.min(1, state.energy / state.energyMax));
-  ctx.fillStyle = fill > 0.3 ? C.byellow : C.bred;
-  ctx.fillRect(gx, gy, Math.round(gw * fill), gh);
-  ctx.fillStyle = C.black;
-  for (let i = 0; i <= gw; i += 6) ctx.fillRect(gx + i, gy + gh - 3, 1, 3);
+  ctx.fillStyle = C.bwhite;
+  ctx.fillRect(px + 6, py + 15, Math.round(ENERGY_BAR_W * fill), 4);
 
-  drawText(ctx, tx(["SCORE #"], state.score)[0], px + 104, py + 4, C.bwhite);
-  drawText(ctx, tx(["PARTS # OF 5"], state.fitted)[0], px + 104, py + 14, C.bcyan);
+  drawText(ctx, tx(["SCORE #"], state.score)[0], px + 112, py + 4, C.bwhite);
+  drawText(ctx, tx(["PARTS # OF 5"], state.fitted)[0], px + 112, py + 14, C.bcyan);
   // a part in hand gets a line of its own, not a "+1" on the counter
-  if (state.carrying) drawText(ctx, tx(["CARRYING A PART"])[0], px + 104, py + 22, C.byellow);
+  if (state.carrying) drawText(ctx, tx(["CARRYING A PART"])[0], px + 112, py + 22, C.byellow);
 
   // viewer window at the right: the asteroid, or the alien boss when he taunts you
   const vx = SCREEN_W - 44, vy = py + 2, vs = 26;
