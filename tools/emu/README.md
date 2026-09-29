@@ -88,10 +88,14 @@ emulator page on `http://127.0.0.1:8802/`.
   cell, where his feet end up: every room's floors against the original's
   own, not just the ones a route crosses. It reports where he walks a
   course above or below the original, where he drops through a floor the
-  original stood on, and where a walk ends in another room. Walks that end
-  in a cell are the survey's Ai being taken by the guards, not a fault.
-  The corrections it turned up are kept in `tools/level_fixes.json` and
-  written into the generated level by `tools/apply_level_fixes.py`.
+  original stood on, where a walk ends in another room, and where he drops
+  off an edge at another place than the original: between where his body
+  stood in the original's last cell on the floor and in its first off it.
+  Walks that end in a cell are the survey's Ai being taken by the guards,
+  not a fault. The corrections it turned up are kept in
+  `tools/level_fixes.json` and written into the generated level by
+  `tools/apply_level_fixes.py`; `tools/snap_floor_edges.py`, run after it,
+  puts the ends of the floors where the original's flag map has them.
 * `quest_seq.js > quest_seq.json` reads the level itself for the rooms a
   player must walk to finish the game - each part in turn, each one carried
   to the slot, then the way out, with the doors that wait on parts

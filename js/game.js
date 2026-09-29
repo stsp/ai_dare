@@ -50,6 +50,12 @@ const ENERGY_MAX = 100;
 const CAPTURE_PENALTY = 600;   // ten minutes
 
 const AI_W = 10, AI_H = 32, AI_KNEEL_H = 22;  // his hit box; kneeling keeps the top 10 rows clear
+// the original's figure is three cells wide with the rifle's cell in front of
+// him: he stands, and lands, while any of the three is over a floor. Behind him
+// that is his own box - he drops off an edge as his back foot leaves it - but
+// in front the rifle's cell reaches on: he lands a jump with his middle this far
+// short of the floor it comes down on, as the original does
+const AI_REACH = 12;
 const AI_WALL_W = 8;             // the original walks him through gaps one cell wide - the cells' doorways
 const GUARD_W = 10, GUARD_H = 32;
 const FIG_OVER = 8;              // how far a drawn figure rises above its box: the guards' hats, Ai's cap
@@ -707,7 +713,7 @@ function moveX(body, dx, walls, w, h, yOff) {
 }
 
 /** Move vertically; platforms catch a falling body at their top edge. */
-function moveY(body, dy, platforms, w, h, yOff, reach = 0.5) {
+function moveY(body, dy, platforms, w, h, yOff, reach = 0.5, x0 = 0) {
   const prevBottom = body.y + yOff + h;
   body.y += dy;
   body.onGround = false;
@@ -715,7 +721,7 @@ function moveY(body, dy, platforms, w, h, yOff, reach = 0.5) {
     for (const p of platforms) {
       const bottom = body.y + yOff + h;
       if (bottom >= p.y && prevBottom <= p.y + reach &&     // once below a floor's top he is past it: no catching the far edge of a gap
-          body.x + w > p.x0 && body.x < p.x1) {
+          body.x + x0 + w > p.x0 && body.x + x0 < p.x1) {
         body.y = p.y - h - yOff;
         body.vy = 0;
         body.onGround = true;
@@ -910,7 +916,8 @@ function updateAi(dt) {
     const feetBefore = ai.y + AI_H, airborne = !ai.onGround, vyBefore = ai.vy;
     // a jump lands on a ledge a course above where it started: the original
     // moves him by cells and sets him down on whatever his last cell rests on
-    moveY(ai, ai.vy * dt, catchers, AI_W, h, yOff, ai.jumping ? 9 : 0.5);
+    const lead = AI_REACH - AI_W / 2;         // his footing: his box, and the rifle's reach in front of it
+    moveY(ai, ai.vy * dt, catchers, AI_W + lead, h, yOff, ai.jumping ? 9 : 0.5, ai.face < 0 ? -lead : 0);
     ai.landed = airborne && ai.onGround;      // this is the frame he comes down
     if (ai.onGround) ai.jumping = false;
     if (vyBefore >= 0) gunsUnderAi(feetBefore, vyBefore);   // coming down on a floor gun: stands on it, or crushes it
