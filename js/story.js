@@ -121,7 +121,8 @@ function setTargetRight(on) {
   try { localStorage.setItem("aidare.controls", on ? "right" : "left"); } catch (e) { /* no storage */ }
 }
 
-function updateOptions() {
+function updateOptions(dt) {
+  tickMarquee(dt);   // the title's running line runs on under the options
   if (tapped.Digit1) options.control = 1;
   if (tapped.Digit2) options.control = 2;
   if (tapped.Digit3) setStory(state.story === "postal" ? "dare" : "postal");
@@ -130,12 +131,10 @@ function updateOptions() {
 }
 
 function drawOptions(ctx) {
-  drawFrame(ctx);
+  drawTitleFrame(ctx);           // as the original's: the title's frame, no panel
   ctx.save();
   ctx.translate(VIEW_X, VIEW_Y);
-  ctx.fillStyle = C.black;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  drawTitleBox(ctx);
+  drawTitleBack(ctx);
   const tick = Math.floor(state.phase * 10);
   const head = tx(["CONTROL  OPTIONS"])[0];
   drawBig(ctx, head, 120 - textWidth(head) * 0.8, 62, C.white, 1.6);
@@ -156,5 +155,5 @@ function drawOptions(ctx) {
   drawBig(ctx, foot, 120 - textWidth(foot) * 0.8, 130, C.white, 1.6);
   tapZone(VIEW_X, VIEW_Y + 127, VIEW_W, 16, "Enter");
   ctx.restore();
-  drawPanel(ctx, state);
+  drawMarquee(ctx);
 }

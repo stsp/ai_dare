@@ -1708,44 +1708,6 @@ function drawSplash(ctx) {
   ctx.restore();
 }
 
-function drawTitle() {
-  drawFrame(ctx);
-  ctx.save();
-  ctx.translate(VIEW_X, VIEW_Y);
-  drawStarfield(ctx, "title");
-  ctx.fillStyle = C.red;
-  ctx.fillRect(20, 14, VIEW_W - 40, 30);
-  ctx.fillStyle = C.byellow;
-  ctx.fillRect(20, 14, VIEW_W - 40, 2);
-  ctx.fillRect(20, 42, VIEW_W - 40, 2);
-  let w = textWidth(tx(["AI DARE"])[0]) * 2;
-  ctx.save();
-  ctx.translate((VIEW_W - w) / 2, 20);
-  ctx.scale(2, 2);
-  drawText(ctx, tx(["AI DARE"])[0], 0, 0, C.byellow);
-  ctx.restore();
-  drawText(ctx, "COP'S ADVENTURE",
-           (VIEW_W - textWidth("COP'S ADVENTURE")) / 2, 34, C.bwhite);
-
-  const lines = [
-    "THE ALIEN'S ASTEROID IS ON",
-    "COURSE FOR EARTH. FIND THE",
-    "FIVE PARTS OF THE MECHANISM",
-    "AND FIT THEM IN ITS ROOM.",
-    "",
-    "O/P OR ARROWS  MOVE",
-    "Q OR UP  JUMP     A OR DOWN  KNEEL",
-    "SPACE  FIRE",
-  ];
-  lines.forEach((ln, i) => drawText(ctx, ln, 14, 56 + i * 9, i < 4 ? C.bcyan : C.white));
-  if (Math.floor(state.phase * 2) % 2) {
-    drawText(ctx, "PRESS ENTER TO START",
-             (VIEW_W - textWidth("PRESS ENTER TO START")) / 2, 132, C.byellow);
-  }
-  ctx.restore();
-  drawPanel(ctx, state);
-}
-
 // ------------------------------------------------------------------ main loop
 
 let last = performance.now();
@@ -1762,7 +1724,7 @@ function frame(now) {
     if (tapped.Enter || tapped.Space) beginIntro();
     else if (tapped.Digit1) { state.mode = "options"; }
   } else if (state.mode === "options") {
-    updateOptions();
+    updateOptions(dt);
   } else if (state.mode === "intro") {
     updateIntro(dt);
   } else if (state.mode === "ending") {

@@ -39,13 +39,18 @@ function updateMenu(dt) {
     menu.scroll += dt * 140;
     if (menu.scroll > 120) { menu.page = 1 - menu.page; menu.t = 0; menu.scroll = 0; }
   }
+  tickMarquee(dt);
+}
+
+function tickMarquee(dt) {
   menu.marquee += dt * MARQUEE_SPEED;
   const round = textWidth(MARQUEE[state.story] || MARQUEE.dare) * MARQUEE_K + SCREEN_W;
   if (menu.marquee > round) menu.marquee -= round;
 }
 
 /** The title screen's frame is the whole screen's, as the original's: no
- *  panel, and the running line along its foot. */
+ *  panel, and the running line along its foot. The options page has the
+ *  same frame and the same line running on. */
 function drawTitleFrame(ctx) {
   ctx.fillStyle = C.white;
   ctx.fillRect(VIEW_X - 2, VIEW_Y - 2, VIEW_W + 4, SCREEN_H - VIEW_Y - 4);
@@ -78,17 +83,22 @@ function drawTitleBox(ctx) {
   drawBig(ctx, b, 120 - textWidth(b) * 0.7, 36, C.blue, 1.4);
 }
 
-function drawMenu(ctx) {
-  drawTitleFrame(ctx);
-  ctx.save();
-  ctx.translate(VIEW_X, VIEW_Y);
+/** Behind the title and options pages: black, the frame line that runs
+ *  behind the title box, and the box. */
+function drawTitleBack(ctx) {
   ctx.fillStyle = C.black;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  // the frame line that runs behind the title box
   ctx.fillStyle = C.white;
   ctx.fillRect(0, 34, VIEW_W, 1);
   ctx.fillRect(VIEW_W - 1, 34, 1, VIEW_H - 34);
   drawTitleBox(ctx);
+}
+
+function drawMenu(ctx) {
+  drawTitleFrame(ctx);
+  ctx.save();
+  ctx.translate(VIEW_X, VIEW_Y);
+  drawTitleBack(ctx);
   // the page, its lines each in a colour of their own that keeps changing
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 56, VIEW_W, SCREEN_H - 24 - VIEW_Y - 56); ctx.clip();   // down to the running line
@@ -289,5 +299,4 @@ function drawIntro(ctx) {
     drawMessage(ctx, tx(["THE SHIP STAYS BEHIND", "TO AWAIT AI'S RETURN"]), true);
   }
   ctx.restore();
-  drawPanel(ctx, state);
 }
