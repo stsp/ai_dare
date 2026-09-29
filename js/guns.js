@@ -16,15 +16,21 @@
      a wreck: a drawing of its own, black on bright blue over its ten cells.
 
    Any of them is destroyed by one hit, with the whole screen inverted for a
-   frame. Each frame the original rolls one chance in four of a shot, picks
-   one gun at random and fires it if one of its three shot slots is free; a
-   shot moves a cell every three frames and ends at the screen's edge, in a
-   floor or wall, or in Ai. */
+   frame. The guns run on the original's game loop, one turn every three
+   frames: each turn it rolls one chance in four of a shot, picks one gun at
+   random and fires it if one of its three shot slots is free, then moves
+   every shot a cell. A shot ends at the screen's edge or in a floor or wall.
+   Ai does not stop it: it flies on through him, and every turn it is inside
+   him - three cells wide, his feet to five rows under the top of his head -
+   it takes three pixels off his energy bar (disassembled and filmed in the
+   original, room 142: a shot through a standing Ai takes nine). */
 
 const GUN_CEILING = 0, GUN_LEFT = 1, GUN_RIGHT = 2, GUN_FLOOR = 3;
-const GUN_SHOT_FRAMES = 3;            // a cell every three frames
+const GUN_TURN_FRAMES = 3;            // the original's game loop: a turn every three frames
 const GUN_SHOTS_MAX = 3;
-const GUN_FIRE_CHANCE = 0.25;         // rolled every frame
+const GUN_FIRE_CHANCE = 0.25;         // rolled every turn
+const GUN_HIT_BAR = 3;                // pixels off the energy bar each turn a shot is in him
+const ENERGY_BAR_PX = 104;            // the original's bar, full
 const GUN_CRUSH_SCORE = 75;
 
 // the bitmaps the original draws, read off its screen: '#' is ink
@@ -120,7 +126,7 @@ function gunFires() {
   let s;
   if (g.type === GUN_CEILING) {
     // from two cells in, down at a slant: right for half the rolls, straight or left for the rest
-    s = { x: g.x + 16, y: g.y, dx: r < 2 ? 1 : r === 2 ? 0 : -1, dy: 1, len: 8, grow: false };
+    s = { x: g.x + 16, y: g.y, dx: r < 2 ? 1 : r === 2 ? 0 : -1, dy: 1, len: 8, grow: false, fresh: true };
   } else if (g.type === GUN_LEFT) {
     s = { x: g.x, y: g.y + 8, dx: -1, dy: 0, len: 8, grow: false };
   } else if (g.type === GUN_RIGHT) {
@@ -129,43 +135,55 @@ function gunFires() {
     const left = r < 2;
     s = { x: left ? g.x : g.x + 8, y: g.y, dx: left ? -1 : 1, dy: 0, len: 8, grow: false };
   }
-  s.acc = 0; s.by = g;
+  s.by = g;
   gunShots.push(s);
 }
 
-function updateGuns(dt) {
-  if (!guns.length && !gunShots.length) return;
-  const room = currentRoom();
-  const walls = wallsOf(state.room), platforms = platformsOf(room);
-  if (Math.random() < GUN_FIRE_CHANCE * dt / FRAME) gunFires();
+/** One turn of the original's loop: maybe a shot, then every shot on a cell.
+ *  A fist's or a floor gun's new shot moves in the turn it is fired, so it is
+ *  first seen a cell clear of the gun; a visor's keeps its first turn. */
+function gunTurn(walls, platforms) {
+  if (Math.random() < GUN_FIRE_CHANCE) gunFires();
   for (const s of gunShots) {
-    s.acc += dt;
-    while (s.acc >= GUN_SHOT_FRAMES * FRAME && !s.done) {
-      s.acc -= GUN_SHOT_FRAMES * FRAME;
-      s.x += s.dx * 8; s.y += s.dy * 8;
-      if (s.grow && s.len < 24) s.len += 8;
-      const x0 = s.dx < 0 ? s.x : s.x, w = s.dy === 0 ? s.len : 8, h = s.dy === 0 ? 1 : 8;
-      if (s.x < 0 || s.x + w > VIEW_W || s.y < 0 || s.y + h > VIEW_H) { s.done = true; break; }
-      // into a wall or a floor: the dash ends
-      if (walls.some((wl) => overlaps(x0, s.y, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) ||
-          platforms.some((p) => s.y + h > p.y && s.y < p.y + 8 && x0 + w > p.x0 && x0 < p.x1)) { s.done = true; break; }
-      if (gunShotHitsAi(x0, s.y, w, h)) { s.done = true; break; }
-    }
+    if (s.fresh) { s.fresh = false; continue; }
+    s.x += s.dx * 8; s.y += s.dy * 8;
+    if (s.grow && s.len < 24) s.len += 8;
+    const w = s.dy === 0 ? s.len : 8, h = s.dy === 0 ? 1 : 8;
+    if (s.x < 0 || s.x + w > VIEW_W || s.y < 0 || s.y + h > VIEW_H) { s.done = true; continue; }
+    // into a wall or a floor: the dash ends
+    if (walls.some((wl) => overlaps(s.x, s.y, w, h, wl.x0, wl.y0, wl.x1 - wl.x0, wl.y1 - wl.y0)) ||
+        platforms.some((p) => s.y + h > p.y && s.y < p.y + 8 && s.x + w > p.x0 && s.x < p.x1)) { s.done = true; continue; }
+    gunShotHitsAi(s);
   }
   gunShots = gunShots.filter((s) => !s.done);
 }
 
-/** A gun's dash reaching Ai strikes him as a guard's beam does. */
-function gunShotHitsAi(x, y, w, h) {
-  const bh = ai.kneeling ? AI_KNEEL_H : AI_H;
-  if (ai.onLift || !overlaps(x, y, w, h, ai.x, ai.y + AI_H - bh, AI_W, bh)) return false;
-  ai.hurt = Math.max(ai.hurt, 0.25);
-  if (!(ai.rattle > 0)) {
-    ai.rattle = HIT_RATTLE_EVERY;
-    state.energy -= HIT_ENERGY;
-    rattle();
-    if (state.energy <= 0) capture();
+function updateGuns(dt) {
+  if (!guns.length && !gunShots.length) { state.gunClock = 0; return; }
+  const walls = wallsOf(state.room), platforms = platformsOf(currentRoom());
+  state.gunClock = (state.gunClock || 0) + dt;
+  while (state.gunClock >= GUN_TURN_FRAMES * FRAME) {
+    state.gunClock -= GUN_TURN_FRAMES * FRAME;
+    gunTurn(walls, platforms);
   }
+}
+
+/** A gun's shot inside Ai, as the original tests it: the cell the shot's
+ *  head is in, against the three cells of his sprite (the one he stands in
+ *  and one either side), and its row against his height - his feet to five
+ *  rows above his crown, 32 rows standing, 24 kneeling. It does not stop
+ *  there: each turn it is in him costs him three pixels of the bar. */
+function gunShotHitsAi(s) {
+  if (ai.onLift) return false;
+  const cell = Math.floor((ai.x + AI_W / 2) / 8);
+  const sc = Math.floor(s.x / 8);
+  if (sc < cell - 1 || sc > cell + 1) return false;
+  const top = ai.y + AI_H - 5;                                      // the original's y for him: five rows over his feet
+  if (!(top - s.y >= 0 && top - s.y < (ai.kneeling ? 24 : 32))) return false;
+  ai.hurt = Math.max(ai.hurt, 0.25);
+  state.energy -= GUN_HIT_BAR * ENERGY_MAX / ENERGY_BAR_PX;
+  if (!(ai.rattle > 0)) { ai.rattle = HIT_RATTLE_EVERY; rattle(); }
+  if (state.energy <= 0) capture();
   return true;
 }
 

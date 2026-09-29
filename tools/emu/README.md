@@ -138,3 +138,7 @@ emulator page on `http://127.0.0.1:8802/`.
 * `titlescroll.js` boots the original past its loading picture and measures
   the title screen's running line frame by frame (four pixels a frame).
   `gunshot255.js OUT` films a ceiling gun firing in the game's room 255.
+  `wallgun.js ROOM CELL FEET [KEYS] [FRAMES] [OUT]` stands (or, with KEYS
+  such as `ArrowRight`, runs) Ai in a room with a wall gun and logs every
+  frame's shots and the energy he loses in the original's bar pixels: a
+  shot through a standing Ai takes nine, as the original does in its room 127.
