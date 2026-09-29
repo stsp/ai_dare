@@ -651,7 +651,10 @@ def main():
         if (x0 <= 0 or x1 >= TW - 1) and any((t[0] if isinstance(t, tuple) else t) == b
                                               for t in walks[(a, "left" if x0 <= 0 else "right")]):
             continue
-        if b in walks[(a, "drop")] and floor >= 100:
+        # (a call beside a shaft is the lift, though: it carries him down
+        # through the floor into the same room the hole drops into)
+        if b in walks[(a, "drop")] and floor >= 100 and (b in prisons or \
+                not any(sh["x"] - 3 <= x1 and sh["x"] + sh["w"] >= x0 and sh["y1"] >= TH for sh in rooms[a]["shafts"])):
             continue
         # the key pressed calls the lift; where it carries him is the lift's
         # doing: from a gallery down into the room his floor drops into, the
@@ -831,6 +834,23 @@ def main():
         have = {(l["from"], l["kind"], l.get("x0"), l.get("feet")) for l in links}
         for l in links:
             k = (l["from"], l["kind"], l.get("x0"), l.get("feet"))
+            # the check tried the link's first cell only, and a lift's span
+            # often takes in the cell off the end of its floor, where the key
+            # drops Ai off the ledge: the phantom is that cell, not the lift.
+            # Pressing down on solid floor beside a shaft running down through
+            # it only kneels, so a ride down from the cells left is the lift.
+            if k in fake and fake[k] is None and l["kind"] == "down" and l.get("feet", -1) >= 0:
+                t = dict(l)
+                while t["x0"] <= t["x1"] and (t["from"], t["kind"], t["x0"], t["feet"]) in fake:
+                    t["x0"] += 1
+                room = rooms[t["from"]]
+                floor = [p for p in room["platforms"] if abs(p["y"] * 8 - t["feet"]) <= 8 and p["x0"] <= t["x1"] and t["x0"] < p["x1"]]
+                if floor:                     # the cells over the floor, not those off its end
+                    t["x0"], t["x1"] = max(t["x0"], floor[0]["x0"]), min(t["x1"], floor[0]["x1"] - 1)
+                # (a lift answers from two cells or more; one cell left is the ledge's end)
+                if floor and t["x0"] < t["x1"] and t["stop"] > (t["feet"] if t["to"] == t["from"] else 40) and \
+                        any(sh["x"] - 3 <= t["x0"] and t["x1"] <= sh["x"] + sh["w"] and sh["y1"] >= TH for sh in room["shafts"]):
+                    l, k = t, (t["from"], t["kind"], t["x0"], t["feet"])
             if k not in fake:
                 kept.append(l)
             elif fake[k] is not None and (k[0], k[1], k[2], fake[k]) not in have:
