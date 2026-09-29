@@ -22,7 +22,10 @@ the game lacked, each with the walkthrough frame it was read off
   * a door slab: the one the original shows while the door holds, cut from a
     frame with it shut, and the doorway as a frame with it open shows it;
   * doors the original never draws: dropped from the index, so the game lays
-    nothing over the wall there.
+    nothing over the wall there;
+  * an open doorway whose cleaned screen kept scraps of a figure in it (84 and
+    209: green specks down the far side of the doorway, which no frame of the
+    walkthrough shows): its cells as the walkthrough shows them open.
 
 Then run tools/make_tiles.py --check. Running this twice changes nothing.
 
@@ -109,6 +112,15 @@ def main():
                     st[VIEW_R0 + r + dr, VIEW_C0 + c + dc], int(sa[VIEW_R0 + r + dr, VIEW_C0 + c + dc]))
         meta["doors"][key] = [sx, sy, w * 8, h * 8, c * 8, r * 8]
 
+    for key, d in fixes.get("open_doorways", {}).items():
+        n = key.split(":")[0]
+        ft, fa = frame(d["frame"])
+        t, a = room_scr(n)
+        for dr in range(d["h"]):
+            for dc in range(d["w"]):
+                t[VIEW_R0 + d["row"] + dr, VIEW_C0 + d["col"] + dc] = ft[VIEW_R0 + d["row"] + dr, VIEW_C0 + d["col"] + dc]
+                a[VIEW_R0 + d["row"] + dr, VIEW_C0 + d["col"] + dc] = fa[VIEW_R0 + d["row"] + dr, VIEW_C0 + d["col"] + dc]
+
     for key in fixes.get("hidden_doors", []):
         meta["doors"].pop(key, None)
 
@@ -130,7 +142,8 @@ def main():
     head = s[:s.index("window.ROOMS_SHEET = ")]
     with open(index_path, "w") as f: f.write(head + "window.ROOMS_SHEET = " + json.dumps(meta) + ";\n")
     print(f"{len(fixes['objects'])} things and {len(fixes['doors'])} door put back in {len(scr)} rooms; "
-          f"{len(fixes.get('hidden_doors', []))} doors the original never draws dropped")
+          f"{len(fixes.get('hidden_doors', []))} doors the original never draws dropped, "
+          f"{len(fixes.get('open_doorways', {}))} open doorways cleaned")
 
 
 if __name__ == "__main__":

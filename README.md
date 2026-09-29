@@ -155,7 +155,7 @@ magenta and red, swapping every four frames, both blue as the ride begins.
 
 The game itself keeps no picture of a room. `tools/make_tiles.py` takes those
 cleaned screens apart into the 8x8 cells the original builds its rooms from -
-297 of them for all 121 rooms, `assets/tiles.png`, 3.3 kB - and writes each
+291 of them for all 121 rooms, `assets/tiles.png`, 3.3 kB - and writes each
 room as a layout over that set (`js/rooms_tiles.js`); `js/tiles.js` lays the
 layouts out at load. Redrawing the world means redrawing the tiles. What each
 tile is - floor, ledge, column, pipe, rail, lamp, panel, gun, door, mechanism -
