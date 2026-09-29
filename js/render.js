@@ -155,6 +155,7 @@ function drawBackdrop(ctx, key) {
   const s = SHEETS.rooms;
   if (!s || !s.meta || !s.meta.rooms[key]) return false;
   const [sx, sy] = s.meta.rooms[key];
+  blinkLamps(key, state.phase);
   ctx.drawImage(s.img, sx, sy, s.meta.w, s.meta.h, 0, 0, s.meta.w, s.meta.h);
   return true;
 }

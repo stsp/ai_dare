@@ -49,6 +49,13 @@ function attrColours(attr) {
   return [p[attr & 7], p[(attr >> 3) & 7]];
 }
 
+// The lamps (the round cell of the tile set, number 155) blink in the original:
+// every one on the screen goes red on black for four frames, then black for four,
+// all together, in the reactor room and the rooms beside it and on the towers
+// outside alike, as filmed off the walkthrough. The dumps caught some lit and
+// some dark; the sheet keeps each room's lamp cells and relights them in turn.
+const LAMP_TILE = 155, LAMP_ATTR = 0x02;
+
 /** Lay one grid of cells into the sheet's pixels at (x0, y0). */
 function blitLayout(px, stride, x0, y0, layout, tiles, colours, size) {
   for (let r = 0; r < layout.tiles.length; r++) {
@@ -100,7 +107,41 @@ function buildRoomSheet(img) {
     blitLayout(data.data, w, x, y, t.doors[k], tiles, colours, size);
   }
   c.putImageData(data, 0, 0);
-  SHEETS.rooms = { img: cv, meta: index };
+
+  const lamps = {};
+  for (const k in t.rooms) {
+    if (!index.rooms[k]) continue;
+    const [x, y] = index.rooms[k], rows = t.rooms[k].tiles, cells = [];
+    rows.forEach((row, r) => {
+      for (let col = 0; col * 2 < row.length; col++) {
+        if (TILE_VALUE[row[col * 2]] * 64 + TILE_VALUE[row[col * 2 + 1]] === LAMP_TILE) cells.push([x + col * size, y + r * size]);
+      }
+    });
+    if (cells.length) lamps[k] = { cells, lit: null };
+  }
+  // the lamp both ways, lit and dark, to stamp over the room's cells
+  const lampCell = (attr) => {
+    const lc = document.createElement("canvas");
+    lc.width = lc.height = size;
+    const d = lc.getContext("2d").createImageData(size, size);
+    blitLayout(d.data, size, 0, 0, { tiles: [TILE_ALPHA[LAMP_TILE >> 6] + TILE_ALPHA[LAMP_TILE & 63]], colours: ["A"] },
+               tiles, [attrColours(attr)], size);
+    lc.getContext("2d").putImageData(d, 0, 0);
+    return lc;
+  };
+  SHEETS.rooms = { img: cv, meta: index, lamps, lampOn: lampCell(LAMP_ATTR), lampOff: lampCell(0) };
+}
+
+/** Light or darken the room's lamps on the sheet itself, so the backdrop and
+ *  the cells painted back over the figures show the same. */
+function blinkLamps(key, phase) {
+  const s = SHEETS.rooms, l = s && s.lamps && s.lamps[key];
+  if (!l) return;
+  const lit = Math.floor(phase / (4 / 50)) % 2 === 0;   // four of the original's frames on, four off
+  if (l.lit === lit) return;
+  l.lit = lit;
+  const c = s.img.getContext("2d");
+  for (const [x, y] of l.cells) c.drawImage(lit ? s.lampOn : s.lampOff, x, y);
 }
 
 (function loadTiles() {
