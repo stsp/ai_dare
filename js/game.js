@@ -181,19 +181,20 @@ function highestPlatform(room) {
  *  open on, so everything the player is told goes by them. */
 function sectorOf(room) { return room.label || room.zone; }
 
-/** Prison cells: the rooms the original puts a captured Ai in, one per
- *  sector; a sector without one of its own uses the nearest behind it.
- *  Keyed by sector, not by zone: one zone can carry two sectors, and then
- *  the later one has its own cell that the zone alone would miss. */
+/** Prison cells: where the original puts a captured Ai, from its own table
+ *  (0xC0E3), one cell per sector it counts: 1 - 50, 2 - 53, 3 - 241, 4 and
+ *  5 - 192. It counts five; the rooms past the self-destruct room (142, 141,
+ *  109, 77, 76, 75), which the panel calls sector 6, are in its list for
+ *  sector 1 (0xC2ED), so a capture there wakes him in 50. A sector the table
+ *  has no cell for uses the last one behind it. */
+const PRISON_OF = { 1: "50", 2: "53", 3: "241", 4: "192", 5: "192", 6: "50" };
+
 function placePrisons() {
   const out = new Map();
-  const cells = (LEVEL.prisons || []).map((k) => ({ key: k, sector: sectorOf(ROOMS[k]) }))
-                                     .sort((a, b) => a.sector - b.sector);
-  for (const sector of new Set(PLAYABLE.map((item) => sectorOf(item.room)))) {
-    // his own sector's cell, else the last one behind him - never one beyond
-    // a door he has not opened
-    const own = cells.filter((c) => c.sector <= sector).pop() || cells[0];
-    if (own) out.set(sector, own.key);
+  const cells = (LEVEL.prisons || []).filter((k) => ROOMS[k]);
+  for (const sector of [...new Set(PLAYABLE.map((item) => sectorOf(item.room)))].sort((a, b) => a - b)) {
+    const own = PRISON_OF[sector];
+    out.set(sector, ROOMS[own] ? own : out.get(sector - 1) || cells[0]);
   }
   return out;
 }
@@ -495,7 +496,7 @@ const state = {
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
-  taunts: 0, nextTaunt: 40,   // the alien boss's calls
+  taunts: 0, nextTaunt: 40, wakeTaunt: false, lastWake: -1,   // the alien boss's calls
   clearedRooms: new Set(),
   roomGuards: new Map(),   // room -> the guards standing in it while Ai is away
   guardSeq: 0,           // ids for the guards that arrive, per game
@@ -607,10 +608,45 @@ const TAUNTS = [
   ["TIME IS RUNNING", "OUT, EARTHMAN"],
   ["GIVE UP, DARE.", "EARTH IS FINISHED"],
 ];
+/** His calls when Ai wakes in a cell. The original has the one; here he
+ *  picks among these, never the same twice running, and once the last
+ *  sector is open he says the last one, about the cells. */
+const WAKE_TAUNTS = [
+  ["YOU WILL NOT", "SUCCEED, DARE!"],
+  ["WAKEY WAKEY, DARE.", "THE CLOCK DID NOT WAIT"],
+  ["COMFY IN MY CELL, DARE?"],
+  ["TEN MINUTES GONE, DARE.", "YOU CANNOT SPARE MANY MORE"],
+  ["MY GUARDS SEND", "THEIR REGARDS, DARE"],
+  ["BACK BEHIND BARS, DARE.", "WHERE YOU BELONG"],
+  ["THE PARTS GATHER DUST", "WHILE YOU SLEEP, DARE"],
+  ["DID YOU DREAM OF EARTH, DARE?"],
+  ["GET UP, DARE.", "THE ASTEROID WILL NOT WAIT"],
+  ["CAUGHT AGAIN, DARE?", "HOW VERY CARELESS"],
+  ["THE CELL DOOR IS OPEN.", "DO TRY AGAIN, DARE"],
+  ["EVEN THE CELL KNOWS", "YOUR NAME BY NOW, DARE"],
+];
+const LAST_SECTOR_WAKE = ["STILL WAKING UP IN", "MY CELLS, DARE?"];
+function wakeTaunt() {
+  if (lastSectorOpen()) return LAST_SECTOR_WAKE;
+  const fresh = state.lastWake < 0;
+  let i = Math.floor(Math.random() * (WAKE_TAUNTS.length - (fresh ? 0 : 1)));
+  if (!fresh && i >= state.lastWake) i++;                 // never the one he said last time
+  state.lastWake = i;
+  return WAKE_TAUNTS[i];
+}
 /** He calls to gloat: on a new sector, a fitted part, a capture, and now and then. */
 function taunt() {
-  call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
+  if (state.wakeTaunt) {
+    state.wakeTaunt = false;
+    call(tx(wakeTaunt()), 4);
+  } else call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
   state.nextTaunt = 45 + Math.random() * 60;
+}
+/** The last sector is open: the door into it has been unlocked. */
+function lastSectorOpen() {
+  const last = Math.max(...PLAYABLE.map((item) => sectorOf(item.room)));
+  return LEVEL.links.some((l) => l.needs && ROOMS[l.to] && sectorOf(ROOMS[l.to]) === last &&
+                                 sectorOf(ROOMS[l.from]) !== last && isOpen(l));
 }
 
 /** Words due in `t` seconds: a narration (say) or the alien boss's call. Kept as
@@ -669,6 +705,8 @@ function startGame() {
   state.energy = ENERGY_MAX;
   state.score = 0;
   state.sectorSeen = new Set();
+  state.wakeTaunt = false;
+  state.lastWake = -1;
   state.alerted = new Set();
   state.clearedRooms = new Set();
   state.deadGuards = new Map();
@@ -1174,6 +1212,7 @@ function capture() {
   say(tx(["AI FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
   ai.stun = 2.2;                              // he lies where they left him before coming round
   state.nextTaunt = 4;                         // he calls to gloat once Ai wakes
+  state.wakeTaunt = true;                      // ... about the cell he woke in
 }
 
 // ------------------------------------------------------------------- pickups
