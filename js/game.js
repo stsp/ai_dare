@@ -181,19 +181,20 @@ function highestPlatform(room) {
  *  open on, so everything the player is told goes by them. */
 function sectorOf(room) { return room.label || room.zone; }
 
-/** Prison cells: the rooms the original puts a captured Ai in, one per
- *  sector; a sector without one of its own uses the nearest behind it.
- *  Keyed by sector, not by zone: one zone can carry two sectors, and then
- *  the later one has its own cell that the zone alone would miss. */
+/** Prison cells: where the original puts a captured Ai, from its own table
+ *  (0xC0E3), one cell per sector it counts: 1 - 50, 2 - 53, 3 - 241, 4 and
+ *  5 - 192. It counts five; the rooms past the self-destruct room (142, 141,
+ *  109, 77, 76, 75), which the panel calls sector 6, are in its list for
+ *  sector 1 (0xC2ED), so a capture there wakes him in 50. A sector the table
+ *  has no cell for uses the last one behind it. */
+const PRISON_OF = { 1: "50", 2: "53", 3: "241", 4: "192", 5: "192", 6: "50" };
+
 function placePrisons() {
   const out = new Map();
-  const cells = (LEVEL.prisons || []).map((k) => ({ key: k, sector: sectorOf(ROOMS[k]) }))
-                                     .sort((a, b) => a.sector - b.sector);
-  for (const sector of new Set(PLAYABLE.map((item) => sectorOf(item.room)))) {
-    // his own sector's cell, else the last one behind him - never one beyond
-    // a door he has not opened
-    const own = cells.filter((c) => c.sector <= sector).pop() || cells[0];
-    if (own) out.set(sector, own.key);
+  const cells = (LEVEL.prisons || []).filter((k) => ROOMS[k]);
+  for (const sector of [...new Set(PLAYABLE.map((item) => sectorOf(item.room)))].sort((a, b) => a - b)) {
+    const own = PRISON_OF[sector];
+    out.set(sector, ROOMS[own] ? own : out.get(sector - 1) || cells[0]);
   }
   return out;
 }
