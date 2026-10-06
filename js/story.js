@@ -54,6 +54,7 @@ const STORY = {
   "MY GUARDS WILL|FIND YOU, DARE": ["МОИ ПАЦАНЫ", "ТЕБЯ НАЙДУТ, МЕНТ"],
   "TIME IS RUNNING|OUT, EARTHMAN": ["ВРЕМЯ ВЫХОДИТ,", "ЛЕГАВЫЙ"],
   "GIVE UP, DARE.|EARTH IS FINISHED": ["БРОСЬ ЯЩИКИ, МЕНТ.", "МАРС ПОДОЖДЁТ"],
+  "STILL WAKING UP IN|MY CELLS, DARE?": ["ЧТО, МЕНТ, ДУМАЕШЬ,", "И ДАЛЬШЕ БУДЕШЬ ВОСКРЕСАТЬ", "В СВОИХ МЕНТОВКАХ?"],   // Stas's words
   "AI DARE MAKES A GETAWAY!": ["ИИ УВОДИТ РАКЕТУ НА МАРС!", "МЕНТ ОСТАЛСЯ НА КОСМОДРОМЕ"],
   "FIVE": ["ПЯТЬ"], "FOUR": ["ЧЕТЫРЕ"], "THREE": ["ТРИ"], "TWO": ["ДВА"], "ONE": ["ОДИН"],
   "WELL DONE SIR! THIS COULD|GET YOU YOUR KNIGHTHOOD!": ["МЕНТ ДАРЕ ОБЪЯВЛЕН В РОЗЫСК", "ПО ВСЕЙ СОЛНЕЧНОЙ СИСТЕМЕ"],

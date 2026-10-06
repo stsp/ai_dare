@@ -496,7 +496,7 @@ const state = {
   sectorSeen: new Set(),
   alerted: new Set(),      // rooms whose guards have raised the alarm
   viewerTimer: 0, viewerStatic: 0,
-  taunts: 0, nextTaunt: 40,   // the alien boss's calls
+  taunts: 0, nextTaunt: 40, wakeTaunt: false,   // the alien boss's calls
   clearedRooms: new Set(),
   roomGuards: new Map(),   // room -> the guards standing in it while Ai is away
   guardSeq: 0,           // ids for the guards that arrive, per game
@@ -608,10 +608,22 @@ const TAUNTS = [
   ["TIME IS RUNNING", "OUT, EARTHMAN"],
   ["GIVE UP, DARE.", "EARTH IS FINISHED"],
 ];
+/** His call when Ai wakes in a cell with the last sector already open: he
+ *  has been jailed sector by sector, and the cells will not hold off the end. */
+const WAKE_TAUNT = ["STILL WAKING UP IN", "MY CELLS, DARE?"];
 /** He calls to gloat: on a new sector, a fitted part, a capture, and now and then. */
 function taunt() {
-  call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
+  if (state.wakeTaunt) {
+    state.wakeTaunt = false;
+    call(tx(WAKE_TAUNT), 4);
+  } else call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
   state.nextTaunt = 45 + Math.random() * 60;
+}
+/** The last sector is open: the door into it has been unlocked. */
+function lastSectorOpen() {
+  const last = Math.max(...PLAYABLE.map((item) => sectorOf(item.room)));
+  return LEVEL.links.some((l) => l.needs && ROOMS[l.to] && sectorOf(ROOMS[l.to]) === last &&
+                                 sectorOf(ROOMS[l.from]) !== last && isOpen(l));
 }
 
 /** Words due in `t` seconds: a narration (say) or the alien boss's call. Kept as
@@ -670,6 +682,7 @@ function startGame() {
   state.energy = ENERGY_MAX;
   state.score = 0;
   state.sectorSeen = new Set();
+  state.wakeTaunt = false;
   state.alerted = new Set();
   state.clearedRooms = new Set();
   state.deadGuards = new Map();
@@ -1175,6 +1188,7 @@ function capture() {
   say(tx(["AI FALLS UNCONSCIOUS", "FOR TEN MINUTES"]), 3);
   ai.stun = 2.2;                              // he lies where they left him before coming round
   state.nextTaunt = 4;                         // he calls to gloat once Ai wakes
+  state.wakeTaunt = lastSectorOpen();          // ... and once the last sector is open, about the cells
 }
 
 // ------------------------------------------------------------------- pickups
