@@ -1,5 +1,7 @@
 # Ai Dare — fully AI-written game
 
+![The title screen](docs/title-screen.png)
+
 A browser game after a ZX Spectrum platformer of the 1980s, built by reading the game's room layouts out of the
 published screen map at
 [maps.speccy.cz](https://maps.speccy.cz/).
