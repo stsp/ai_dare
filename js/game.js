@@ -608,9 +608,13 @@ const TAUNTS = [
   ["TIME IS RUNNING", "OUT, EARTHMAN"],
   ["GIVE UP, DARE.", "EARTH IS FINISHED"],
 ];
+/** The first time Ai wakes in a cell he is told why he can walk out of
+ *  every one of them. */
+const FIRST_WAKE = ["YOU WOULD LOCK US UP, DARE.", "WE WILL NOT EVEN BOTHER", "LOCKING YOU UP. OUT YOU GO!"];
 /** His calls when Ai wakes in a cell. The original has the one; here he
- *  picks among these, never the same twice running, and once the last
- *  sector is open he says the last one, about the cells. */
+ *  says FIRST_WAKE first, then picks among these, never the same twice
+ *  running, and once the last sector is open he says the last one, about
+ *  the cells. */
 const WAKE_TAUNTS = [
   ["YOU WILL NOT", "SUCCEED, DARE!"],
   ["WAKEY WAKEY, DARE.", "THE CLOCK DID NOT WAIT"],
@@ -624,13 +628,17 @@ const WAKE_TAUNTS = [
   ["CAUGHT AGAIN, DARE?", "HOW VERY CARELESS"],
   ["THE CELL DOOR IS OPEN.", "DO TRY AGAIN, DARE"],
   ["EVEN THE CELL KNOWS", "YOUR NAME BY NOW, DARE"],
+  ["SO, DARE, ALL RUN OUT?", "NOW HAVE A LIE DOWN!"],
+  ["YOU SEEM TO BE ON THE", "WRONG SIDE OF THE BARS, DARE"],
+  FIRST_WAKE,
 ];
 const LAST_SECTOR_WAKE = ["STILL WAKING UP IN", "MY CELLS, DARE?"];
 function wakeTaunt() {
-  if (lastSectorOpen()) return LAST_SECTOR_WAKE;
   const fresh = state.lastWake < 0;
-  let i = Math.floor(Math.random() * (WAKE_TAUNTS.length - (fresh ? 0 : 1)));
-  if (!fresh && i >= state.lastWake) i++;                 // never the one he said last time
+  if (fresh) { state.lastWake = WAKE_TAUNTS.indexOf(FIRST_WAKE); return FIRST_WAKE; }
+  if (lastSectorOpen()) return LAST_SECTOR_WAKE;
+  let i = Math.floor(Math.random() * (WAKE_TAUNTS.length - 1));
+  if (i >= state.lastWake) i++;                           // never the one he said last time
   state.lastWake = i;
   return WAKE_TAUNTS[i];
 }
@@ -638,7 +646,8 @@ function wakeTaunt() {
 function taunt() {
   if (state.wakeTaunt) {
     state.wakeTaunt = false;
-    call(tx(wakeTaunt()), 4);
+    const lines = tx(wakeTaunt());
+    call(lines, lines.length > 3 ? 5.5 : 4);
   } else call(tx(TAUNTS[state.taunts++ % TAUNTS.length]), 3);
   state.nextTaunt = 45 + Math.random() * 60;
 }

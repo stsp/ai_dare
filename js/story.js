@@ -66,6 +66,9 @@ const STORY = {
   "CAUGHT AGAIN, DARE?|HOW VERY CARELESS": ["ОПЯТЬ ПОПАЛСЯ, МЕНТ?", "А ЕЩЁ ПОГОНЫ НОСИШЬ"],
   "THE CELL DOOR IS OPEN.|DO TRY AGAIN, DARE": ["ДВЕРЬ ОТКРЫТА, МЕНТ.", "ПОПРОБУЙ ЕЩЁ РАЗОК"],
   "EVEN THE CELL KNOWS|YOUR NAME BY NOW, DARE": ["ТЕБЯ ТУТ УЖЕ ВСЕ ЗНАЮТ, МЕНТ.", "ДАЖЕ НАРЫ"],
+  "SO, DARE, ALL RUN OUT?|NOW HAVE A LIE DOWN!": ["НУ ЧТО, МЕНТ, ДОБЕГАЛСЯ?", "ТЕПЕРЬ НА НАРАХ ПОЛЕЖИ!"],   // Stas's words
+  "YOU SEEM TO BE ON THE|WRONG SIDE OF THE BARS, DARE": ["ЧТО-ТО ТЫ В СВОЕЙ МЕНТОВКЕ", "НЕ С ТОЙ СТОРОНЫ РЕШЁТКИ", "ОКАЗАЛСЯ"],   // Stas's words
+  "YOU WOULD LOCK US UP, DARE.|WE WILL NOT EVEN BOTHER|LOCKING YOU UP. OUT YOU GO!": ["ВОТ СТЕРЁГ ТЫ НАС, СТЕРЁГ", "В СВОЕЙ МЕНТОВКЕ...", "А МЫ ТЕБЯ ДАЖЕ СТЕРЕЧЬ", "НЕ БУДЕМ! ВЫХОДИ"],   // Stas's words; the first capture's
   "STILL WAKING UP IN|MY CELLS, DARE?": ["ЧТО, МЕНТ, ДУМАЕШЬ,", "И ДАЛЬШЕ БУДЕШЬ ВОСКРЕСАТЬ", "В СВОИХ МЕНТОВКАХ?"],   // Stas's words
   "AI DARE MAKES A GETAWAY!": ["ИИ УВОДИТ РАКЕТУ НА МАРС!", "МЕНТ ОСТАЛСЯ НА КОСМОДРОМЕ"],
   "FIVE": ["ПЯТЬ"], "FOUR": ["ЧЕТЫРЕ"], "THREE": ["ТРИ"], "TWO": ["ДВА"], "ONE": ["ОДИН"],
